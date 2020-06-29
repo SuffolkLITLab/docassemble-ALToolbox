@@ -74,28 +74,16 @@ class myTable:
   def __init__(self, tblData, tblTitle, tblHeader):
   #1. Put the DAList items into a regular list      
     recordList = list()
-    for w in tblData:            
-      my_dict = safe_json2(w)
-      for key in list(my_dict):
-        #determine the class type
-        if key == '_class':        
-          if y[key] == 'docassemble.base.util.Individual':
-            indicator = 'Individual'      
-          elseif y[key] == 'docassemble.base.util.Thing':
-            indicator = 'thing'
-          else:  
-            indicator = 'nothing' #need refinement
-          my_dict.pop(key) #remove the class item
-        elif key == 'instanceName' or key.startswith('_') or key == 'complete':
+    for x in tblData:      
+      #my_dict = x.as_serializable()
+      my_dict = safe_json2(x)
+      for key  in list(my_dict):
+        if key == 'instanceName' or key.startswith('_') or key == 'complete':
           #remove the item from the dictionary
           my_dict.pop(key) 
-        
-        #use the indicator to get rid of extra stuff in the name item
-        if key == 'name':          
-          if indicator == 'Individual':
-            my_dict[key] = my_dict[key]['first'] + ' ' + my_dict[key]['last'] 
-          elif indicator == 'thing':          
-            my_dict[key] = my_dict['name']['text']             
+        if key == 'name':
+          #get rid of extra stuff in name item          
+          my_dict[key] = my_dict['name']['text']             
       #Save it to a list
       recordList.append(my_dict)
 
