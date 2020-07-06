@@ -43,9 +43,9 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
     return out
 
 setup(name='docassemble.VirtualCourtToolbox',
-      version='0.0.3',
+      version='0.0.4',
       description=('A docassemble extension.'),
-      long_description='This interview is used to host user-built modules. The purpose is to provide a toolbox so that other users can directly call these user-built modules.\r\n\r\n\r\n',
+      long_description='This project is used to host custom-built modules, js files etc. The purpose is to provide a toolbox so that other coders can call these code in their interview.\r\n\r\nIf you want to add a small fuction to this project, consider adding it to the existing misc.py to avoid creating too many module files.\r\n\r\nIf you have a sample yml to show how to call your code, please add it to the VirtualCourtSampleInterview project.\r\n\r\n',
       long_description_content_type='text/markdown',
       author='Lily Yang',
       author_email='',

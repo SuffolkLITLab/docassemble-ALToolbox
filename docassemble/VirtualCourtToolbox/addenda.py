@@ -1,4 +1,63 @@
-#This function safe_json2 is a revision of Jonathan's function safe_json2, in order to format a date as a date, not a string.
+# This function creates a Table list to be used in an addendum file. Currently it handles 'Thing' and 'Inidvidual' object type of DAList (special name attribute).
+class myTable:
+  def __init__(self, tblData, tblTitle, tblHeader):
+  #1. Put the DAList items into a regular list      
+    recordList = list()
+    for w in tblData:            
+      my_dict = safe_json2(w)
+      for key in list(my_dict):
+        #determine the class type
+        if key == '_class':        
+          if my_dict[key] == 'docassemble.base.util.Individual':
+            indicator = 'Individual'      
+          elif my_dict[key] == 'docassemble.base.util.Thing':
+            indicator = 'thing'
+          else:  
+            indicator = 'nothing' #need refinement
+          my_dict.pop(key) #remove the class item
+        elif key == 'instanceName' or key == 'address' or key == 'location' or key.startswith('_') or key == 'complete':
+          #remove the item from the dictionary
+          my_dict.pop(key) 
+        
+        #use the indicator to get rid of extra stuff in the name item
+        if key == 'name':          
+          if indicator == 'Individual':
+            my_dict[key] = my_dict[key]['first'] + ' ' + my_dict[key]['last'] 
+          elif indicator == 'thing':          
+            my_dict[key] = my_dict['name']['text']             
+      #Save it to a list
+      recordList.append(my_dict)
+
+  #2. Store the table data in a list for the addendum.   
+    self.tableList = list()
+    self.tableList.append(
+      {'tbl_title': tblTitle,
+      'headers': tblHeader,
+      'value': recordList[1:]
+      })
+
+# This function creates a Text Fields list, which can then be used in an addendum file. The limit input is needed to determine if the text field input is too long to fit in the main form.
+class myTextList:
+  def __init__(self, text, limit, title): 
+    self.g(text, limit, title)
+    
+  def g(self,text, limit, title):
+    # 1. Adjust limit
+    sLimit = limit - 16 # 16 gives the standard room for inserting " (See Addendum)"  
+    # 2. Evaluate and shorten a text/area variable 
+    need_addendum =  len(text) > limit  
+    self.txtList = list()
+    if need_addendum:
+      self.text_cutoff = text[:sLimit] + " (See Addendum.)" 
+      # 3. Store the cutoff variable and its lable in txtFieldsList, whitch is referenced in the addendum file.
+      self.txtList.append(
+        {'text_title': title,
+        'value': text
+      })
+    else:
+      self.text_cutoff = text
+	  
+#Function safe_json2 is a revision of Jonathan's function safe_json - mainly to change the date format from string to date.
 import types
 import datetime
 import decimal
@@ -68,51 +127,4 @@ def type_name(the_object):
     if m:
         return m.group(1)
     return name 
-  
-# This function creates a Table list to be used in an addendem file.
-class myTable:
-  def __init__(self, tblData, tblTitle, tblHeader):
-  #1. Put the DAList items into a regular list      
-    recordList = list()
-    for x in tblData:      
-      #my_dict = x.as_serializable()
-      my_dict = safe_json2(x)
-      for key  in list(my_dict):
-        if key == 'instanceName' or key.startswith('_') or key == 'complete':
-          #remove the item from the dictionary
-          my_dict.pop(key) 
-        if key == 'name':
-          #get rid of extra stuff in name item          
-          my_dict[key] = my_dict['name']['text']             
-      #Save it to a list
-      recordList.append(my_dict)
-
-  #2. Store the table data in a list for the addendum.   
-    self.tableList = list()
-    self.tableList.append(
-      {'tbl_title': tblTitle,
-      'headers': tblHeader,
-      'value': recordList[1:]
-      })
-
-# This function creates a Text Fields list, which can then be used in an addendum file. The limit input is needed to determine if the text field input is too long to fit in the main form.
-class myTextList:
-  def __init__(self, text, limit, title): 
-    self.g(text, limit, title)
-    
-  def g(self,text, limit, title):
-    # 1. Adjust limit
-    sLimit = limit - 16 # 16 gives the standard room for inserting " (See Addendum)"  
-    # 2. Evaluate and shorten a text/area variable 
-    need_addendum =  len(text) > limit  
-    self.txtList = list()
-    if need_addendum:
-      self.text_cutoff = text[:sLimit] + " (See Addendum.)" 
-      # 3. Store the cutoff variable and its lable in txtFieldsList, whitch is referenced in the addendum file.
-      self.txtList.append(
-        {'text_title': title,
-        'value': text
-      })
-    else:
-      self.text_cutoff = text
  
