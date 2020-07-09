@@ -48,9 +48,16 @@ $(document).on('daPageLoad', function(){
 		dayElement.attr('value', dateEntered.getDate());
 		yearElement.attr('value', dateEntered.getFullYear());
 	}
+
 	function updateDate(){
-		$(dateElement).val($(monthElement).val() + '/' + $(dayElement).val() + '/' + $(yearElement).val());		
-	}	
+		$(dateElement).val($(monthElement).val() + '/' + $(dayElement).val() + '/' + $(yearElement).val());
+    // Trigger an error message right away if needed by changing
+    // jQuery's validator settings temporarily
+    var previousIgnore = daValidator.settings.ignore;
+    daValidator.settings.ignore = ""
+    daValidator.form();
+    daValidator.settings.ignore = previousIgnore;
+	}
 	
 	$(dateElement).before(parentElement);	
 	$(monthParent).append(monthLabel);
