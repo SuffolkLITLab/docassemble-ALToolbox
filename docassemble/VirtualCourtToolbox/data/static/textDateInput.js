@@ -1,6 +1,6 @@
 //this is a revision of Jonathan Pyle's datereplace.js
 $(document).on('daPageLoad', function(){
-    $('input[type="textdate"]').each(function(){
+  $('input[type="textdate"]').each(function(){
 	var dateElement = this;
 	$(dateElement).hide();
 	$(dateElement).attr('type', 'hidden');
@@ -60,7 +60,7 @@ $(document).on('daPageLoad', function(){
 	}
 
 	function updateDate(){
-		$(dateElement).val($(monthElement).val() + '/' + $(dayElement).val() + '/' + $(yearElement).val());		
+		$(dateElement).val($(monthElement).val() + '/' + $(dayElement).val() + '/' + $(yearElement).val());	
 	}	
 	
 	$(dateElement).before(parentElement);	
