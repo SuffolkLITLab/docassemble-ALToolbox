@@ -1,6 +1,8 @@
 //this is a revision of Jonathan Pyle's datereplace.js
 $(document).on('daPageLoad', function(){
   $('input[type="textdate"]').each(function(){
+    var max_year = new Date().getFullYear();
+    var min_year = max_year - 140;
 	var dateElement = this;
 	$(dateElement).hide();
 	$(dateElement).attr('type', 'hidden');
@@ -12,7 +14,7 @@ $(document).on('daPageLoad', function(){
 	var yearLabel = $('<div style="text-align:center">Year</div>');
 	var dayLabel = $('<div style="text-align:center">Day</div>');
 	var monthLabel = $('<div style="text-align:center">Month</div>');	
-	var yearElement = $('<input type="text" class="form-control" type="number" min="1901" max="2020" required>');
+	var yearElement = $('<input type="text" class="form-control" type="number" min="' + min_year + '" max="'+ max_year +'" required>');
 	var dayElement = $('<input type="text" class="form-control" type="number" min="1" max="31"  required>' );
 	var monthElement = $('<select class="form-control" style="width:7.5em" required>');
       
