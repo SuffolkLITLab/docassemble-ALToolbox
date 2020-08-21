@@ -3,8 +3,8 @@ import docassemble.base.functions
 class shortenMe:
   def __init__(self, originalURL):
     self.shortenedURL = docassemble.base.functions.temp_redirect(originalURL, 60*60*24*7, False, False)
-   
- #This function triggers client side validation.
+ 
+  # This function triggers server-side validation.
 from docassemble.base.util import as_datetime
 class is_date_valid:
   def __init__(self, aDate):
@@ -15,4 +15,4 @@ class is_date_valid:
     # If error, date is not a valid DADateTime (out of range, usually)
     except:
       self.valid = False
-    
+  
