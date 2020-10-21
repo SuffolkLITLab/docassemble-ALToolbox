@@ -1,0 +1,48 @@
+---
+metadata:
+  title: Add up numeric values from a DAList object
+---
+modules: 
+  - .Addup
+---
+objects:  
+  - renters: DAList.using(object_type=Individual, ask_number=True) 
+---
+question: |  
+subquestion: |
+  This example shows you how to add up numeric values collected through a DAList object. <br><br>
+  Use a numeric variable in your DAList to collect data, then call the "Addup" function to add up its values.
+
+fields:
+  - How many renters do you have?: renters.target_number
+    datatype: integer
+    default: 2
+---
+question: |    
+subquestion: | 
+  % if renters.target_number > 1:
+    Please info of your ${ ordinal(i) } renter.
+  % else:
+    Please enter info of your renter. 
+  % endif
+fields:
+  - First name: renters[i].name.first  
+    default: 'James'
+  - Last name: renters[i].name.last  
+    default: 'Smith'
+  - Month rent: renters[i].mrent
+    datatype: currency
+    default: 800
+---
+mandatory: true
+question: |
+subquestion: |
+  **You have these renters:** ${ renters }.
+  
+  **Your total rent income is:** ${currency(totalRent)}.
+  
+---
+code: |
+  #The function "Addup" takes two parameters: the name of your DAList object, and the name of the field you want to add up which has to be put in quotes. These names are case sensitive, so copy/paste rather than type them, otherwise you'll get an error.  
+  totalRent = Addup(renters, 'mrent').sum
+
