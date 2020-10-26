@@ -43,7 +43,7 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
     return out
 
 setup(name='docassemble.AssemblyLineToolbox',
-      version='0.0.51',
+      version='0.0.6',
       description=('A docassemble extension.'),
       long_description='This project is used to host custom-built modules, js files etc. The purpose is to provide a toolbox so that other coders can call these code in their interview.\r\n\r\nIf you want to add a small fuction to this project, consider adding it to the existing misc.py to avoid creating too many module files.\r\n\r\n--------------------------\r\nContributors:\r\nplocket\r\nQuinten Steenhuis\r\npurplesky2016\r\n',
       long_description_content_type='text/markdown',

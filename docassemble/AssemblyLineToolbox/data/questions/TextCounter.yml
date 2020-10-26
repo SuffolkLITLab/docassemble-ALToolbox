@@ -1,0 +1,37 @@
+metadata:
+  title: Text/area fields with a character counter
+---
+features:
+  javascript: TextCounter.js    
+---
+question: |
+subquestion: |
+  The regular **text/area** fields show an error when your inputs exceeded the maxlength.<br><br>
+  The **textC/areaC** fields added a character counter, which will show you how many characters you have entered as you type. If your input exceeded the limit, the message is handy as you adjust your input.<br><br>
+  Per Jonathan we cannot access maxlength via code, that's why the counter message cannot display how many characters are left.
+  
+fields:
+  - Normal text type: text1
+    datatype: text  
+    maxlength: 5
+  - Text with counter: text2
+    datatype: textC  
+    maxlength: 7    
+  - Normal area type: area1
+    datatype: area  
+    maxlength: 5
+  - Textarea with counter: area2
+    datatype: areaC  
+    maxlength: 8
+
+---
+mandatory: true
+question: |
+subquestion: |
+  Here are your inputs:<br>  
+  **Text input:**<br>
+  ${text1}<br>
+  ${text2}<br><br> 
+  **Text area field:**<br>
+  ${area1}<br>
+  ${area2}
