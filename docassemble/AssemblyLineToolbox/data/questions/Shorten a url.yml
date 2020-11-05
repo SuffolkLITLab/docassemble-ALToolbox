@@ -1,0 +1,35 @@
+---
+metadata:
+  title: Shorten a URL
+---
+modules:  
+  - .misc
+---
+question: |
+subquestion: |
+  Sometimes you may need to display a URL in your interview, but it is very long and doesn't look neat. This interview calls a function to shorten a URL while still keeps the correct link.
+fields:
+  Enter a URL: my_url  
+---
+mandatory: true
+question: |
+  The output includes two sets of URLs for comparison:
+  
+  1. The original URL vs the shortened URL of your current interview.<br>
+  2. The original URL of user input vs the shortened URL.
+subquestion: |
+  A. This is the **original interview URL**:  
+  ${ interview_url() }
+  
+  B. This is the shortened interview URL:  
+  ${ y.shortenedURL }
+  
+  A. This is the **original user entered URL**:  
+  ${ my_url }
+  
+  B. This is the shortened user entered URL:
+  ${ z.shortenedURL }
+---
+code: |
+  y = shortenMe(interview_url())
+  z = shortenMe(my_url)
