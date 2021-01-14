@@ -55,6 +55,6 @@ setup(name='docassemble.ALToolbox',
       namespace_packages=['docassemble'],
       install_requires=[],
       zip_safe=False,
-      package_data=find_package_data(where='docassemble.ALToolbox/', package='docassemble.ALToolbox'),
+      package_data=find_package_data(where='docassemble/ALToolbox/', package='docassemble.ALToolbox'),
      )
 
