@@ -1,0 +1,30 @@
+metadata:
+  title: CustomDatatype "ThreePartsDate"
+---
+modules:
+  - .ThreePartsDate
+---
+question: |
+  Regular datatype vs ThreePartsDate datatype.
+subquestion: | 
+  This example shows you how to use the **ThreePartsDate** datatype.<br/><br/>
+  ThreePartsDate is good for dates such as a birth date where it's easier for a user to type than to use a long dropdown, or when a browser doesn't honor a datepicker.  
+  
+  The BirthDate datatype is like ThreePartsDate, but it adds
+  validation so that you cannot enter dates in the future.
+
+fields:
+  - When is your high school graduation?: date_of_graduation
+    datatype: ThreePartsDate  
+    default: '2/1/2000'
+  - When did you start working: employment_date
+    datatype: date
+    required: False
+  - Validated birth: date_of_birth
+    datatype: BirthDate
+---
+mandatory: true
+question: |
+  You were born on ${ date_of_birth }.  
+
+  Your graduation date is ${ date_of_graduation }

@@ -1,0 +1,28 @@
+---
+metadata:
+  title: Bells and Whistles
+---
+modules: 
+  - .misc  
+---
+question: |  
+subquestion: |
+  This sample shows some bells and whistles that you can use to enrich your interview.
+fields: 
+  - Numerical input ${fa_icon("bell", color="primary", size="sm")}: myNumber
+    datatype: currency
+    default: 12345.3
+  - Enter a phone: myPhone
+    default: 1-877-785-2020
+---
+mandatory: true
+question: |  
+  Summary
+subquestion: |
+  1. Your number has been formatted with a thousand separator and rounded to interger: $${ thousands(myNumber) }.
+  
+  2. In addition to the bell you saw on the input screen, here are some more cute icons for you to enjoy: 
+      * Small size - ${fa_icon("laugh-wink", color="primary", size="sm")}</li>
+      * Large size -  ${fa_icon("child", color="primary", size="lg")}</li>
+      * You can go to [font awesome website]("https://fontawesome.com/") to find more icon names. <br /><br />
+    3. Click on the phone number to open it in your phone dialer. ${tel(myPhone)}

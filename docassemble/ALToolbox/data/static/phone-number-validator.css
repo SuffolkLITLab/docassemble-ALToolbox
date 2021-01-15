@@ -1,0 +1,11 @@
+/*
+Fixes CSS for dropdown height being affected by DA error message
+*/
+.iti__flag-container {
+  bottom: initial;
+}
+
+.iti__selected-flag {
+  padding-top: .75em;
+  padding-bottom: .75em;
+}

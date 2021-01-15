@@ -1,0 +1,24 @@
+metadata:
+  title: Phone number validation
+  description: |
+    Imports files for phone number validation custom data type field using an international validator. Users select their country from a dropdown. The current downside is that the data for a number's country isn't stored on the server, so when the user hits 'back', the phone number country defaults to the US (sorry everyone else) and they have to re-select the country for their phone number.
+---
+comment: |
+  Suggested improvements:
+  - Store country of each phone number
+  - Allow customization of default country
+  - Actually control the input so that the user can't type something in the wrong format to begin with.
+---
+features:
+  javascript:
+    - "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/intlTelInput-jquery.js"
+    - "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/intlTelInput.js"
+    - phone-number-validation.js
+  css:
+    - "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/css/intlTelInput.min.css"
+    - phone-number-validator.css
+    
+# In phone-number-validation.js: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/utils.min.js"
+---
+modules:
+  - .PhoneNumberDataType

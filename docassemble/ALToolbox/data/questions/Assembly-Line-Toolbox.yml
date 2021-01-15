@@ -1,0 +1,9 @@
+metadata:
+  title: Assembly Line Toolbox
+---
+mandatory: true
+question: |
+subquestion: |
+  This project is used to host custom-built modules, js files etc. The purpose is to provide a toolbox so that other coders can use these tools in their interview.
+    
+  When you add a new tool to this project, it's better to add an example to this interview to show how to use it.
