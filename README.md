@@ -3,7 +3,7 @@ This project is used to host custom-built modules, js files etc. The purpose is 
 If you want to add a small fuction to this project, consider adding it to the existing misc.py to avoid creating too many module files.
 
 --------------------------
-Contributors:
-plocket
-Quinten Steenhuis
-purplesky2016
+Contributors:  
+* @plocket  
+* @nonprofittechy
+* @purplesky2016
