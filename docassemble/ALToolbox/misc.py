@@ -32,4 +32,34 @@ def fa_icon(icon, color="primary", color_css=None, size="sm"):
     return '<i class="fa fa-' + icon + ' fa-' + size + '" style="color:' + color_css + ';"></i>'
   else:
     return '<i class="fa fa-' + icon + ' fa-' + size + '" style="color:var(--' + color + ');"></i>'
-  
+
+def space(var_name, prefix=' ', suffix=''):
+  """If the value as a string is defined, return it prefixed/suffixed. Defaults to prefix
+  of a space. Helps build a sentence with less cruft. Equivalent to SPACE function in
+  HotDocs."""
+  if var_name and isinstance(var_name, str) and re.search(r'[A-Za-z][A-Za-z0-9\_]*', var_name) and defined(var_name) and value(var_name):
+    return prefix + showifdef(var_name) + suffix
+  else:
+    return ''  
+
+def yes_no_unknown(var_name, condition, unknown="Unknown", placeholder=0):
+  """Return 'unknown' if the value is None rather than False. Helper for PDF filling with
+  yesnomaybe fields"""
+  if condition:
+    return value(var_name)
+  elif condition is None:
+    return unknown
+  else:
+    return placeholder
+
+def number_to_letter(n):
+  """Returns a capital letter representing ordinal position. E.g., 1=A, 2=B, etc. Appends letters
+  once you reach 26 in a way compatible with Excel/Google Sheets column naming conventions. 27=AA, 28=AB...
+  """
+  string = ""
+  if n is None:
+    n = 0
+  while n > 0:
+    n, remainder = divmod(n - 1, 26)
+    string = chr(65 + remainder) + string
+  return string
