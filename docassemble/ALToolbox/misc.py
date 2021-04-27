@@ -1,4 +1,5 @@
 import docassemble.base.functions
+from docassemble.base.util import defined, value, showifdef
 import re
 
 class shortenMe:
