@@ -5,22 +5,22 @@ question: |
 fields:
   - note: |
       <div class="al_share">
-      <span>Copy and share this link</span>
       <input type="text" value="${ interview_url(i=user_info().filename, style="short", new_session=1) }"  class="al_share_value">
       <span class="copy-tooltip al_share_button_container">
       <button class="btn btn-primary al_share_button" type="button">
         <span class="tooltiptext al_tooltip">Copy to clipboard</span>
+        <span>Copy a link to share your answers</span>
         <i class="far fa-copy"></i>
       </button>
       </span>
       </div>
       
       <div class="al_share">
-      <span>Copy and share this second link</span>
       <input type="text" value="some text"  class="al_share_value">
       <span class="copy-tooltip al_share_button_container">
       <button class="btn btn-primary al_share_button" type="button">
         <span class="tooltiptext al_tooltip">Copy to clipboard</span>
+        <span>Copy some text</span>
         <i class="far fa-copy"></i>
       </button>
       </span>
@@ -78,6 +78,8 @@ css: |
   
   .al_share_value {
     pointer-events: none;
+    width: 10px;
+    position: absolute;
   }
   
   .copy-tooltip {
