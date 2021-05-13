@@ -1,34 +1,69 @@
 mandatory: True
 question: |
   Share button
-# Bootstrap tooltip (needs popper.js): https://getbootstrap.com/docs/4.1/components/tooltips/
+# May be more robust to use Bootstrap tooltip (needs popper.js): https://getbootstrap.com/docs/4.1/components/tooltips/
 fields:
   - note: |
       <div class="al_share">
       <span>Copy and share this link</span>
-      <input disabled="true" type="text" value="${ interview_url(i=user_info().filename, style="short", new_session=1) }" id="myInput" class="al_share_value">
+      <input disabled="true" type="text" value="${ interview_url(i=user_info().filename, style="short", new_session=1) }"  class="al_share_value">
       <span class="copy-tooltip al_share_button_container">
-      <button class="btn btn-primary al_share_button" onclick="myFunction()" onmouseout="outFunc()" type="button">
-        <span class="tooltiptext" id="al_tooltip">Copy to clipboard</span>
+      <button class="btn btn-primary al_share_button" type="button">
+        <span class="tooltiptext al_tooltip">Copy to clipboard</span>
+        <i class="far fa-copy"></i>
+      </button>
+      </span>
+      </div>
+      
+      <div class="al_share">
+      <span>Copy and share this second link</span>
+      <input disabled="true" type="text" value="some text"  class="al_share_value">
+      <span class="copy-tooltip al_share_button_container">
+      <button class="btn btn-primary al_share_button" type="button">
+        <span class="tooltiptext al_tooltip">Copy to clipboard</span>
         <i class="far fa-copy"></i>
       </button>
       </span>
       </div>
 script: |
   <script>
-    function myFunction() {
-      var copyText = document.getElementById("myInput");
-      copyText.select();
-      copyText.setSelectionRange(0, 99999);
-      document.execCommand("copy");
+    try {
+      var share_nodes = document.getElementsByClassName('al_share');
 
-      var tooltip = document.getElementById("al_tooltip");
-      tooltip.innerHTML = "Copied: " + copyText.value;
-    }
+      for ( var node_i = 0; node_i < share_nodes.length; node_i++ ) {
+        add_share_event_listeners( $(share_nodes[ node_i ]) );
+      }
 
-    function outFunc() {
-      var tooltip = document.getElementById("al_tooltip");
-      tooltip.innerHTML = "Copy to clipboard";
+      function add_share_event_listeners( $node ) {
+        var input = $node.find('.al_share_value')[0];
+        var $container = $node.find('.al_share_button_container').eq(0);
+        var $tooltip = $node.find('.al_tooltip').eq(0);
+        
+        $container.on( 'click', function ( event ) {
+          try {
+            input.select();
+            input.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+
+            $tooltip.html( "Copied: " + input.value );
+          } catch ( error ) {
+            console.warn( 'Error in AL share button click');
+            console.warn( error );
+          }
+        });
+        
+        $container.on( 'mouseout', function ( event ) {
+          try {
+            $tooltip.html( 'Copy to clipboard' );
+          } catch ( error ) {
+            console.warn( 'Error in AL share button mouseout');
+            console.warn( error );
+          }
+        });
+      }
+    } catch ( error ) {
+      console.warn( 'Error in AL share button');
+      console.warn( error );
     }
   </script>
 css: |
@@ -43,7 +78,7 @@ css: |
 
   .copy-tooltip .tooltiptext {
     visibility: hidden;
-    width: 140px;
+    max-width: 10em;
     background-color: #555;
     color: #fff;
     text-align: center;
