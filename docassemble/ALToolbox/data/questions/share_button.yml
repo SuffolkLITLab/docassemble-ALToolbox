@@ -6,7 +6,7 @@ fields:
   - note: |
       <div class="al_share">
       <span>Copy and share this link</span>
-      <input disabled="true" type="text" value="${ interview_url(i=user_info().filename, style="short", new_session=1) }"  class="al_share_value">
+      <input type="text" value="${ interview_url(i=user_info().filename, style="short", new_session=1) }"  class="al_share_value">
       <span class="copy-tooltip al_share_button_container">
       <button class="btn btn-primary al_share_button" type="button">
         <span class="tooltiptext al_tooltip">Copy to clipboard</span>
@@ -17,7 +17,7 @@ fields:
       
       <div class="al_share">
       <span>Copy and share this second link</span>
-      <input disabled="true" type="text" value="some text"  class="al_share_value">
+      <input type="text" value="some text"  class="al_share_value">
       <span class="copy-tooltip al_share_button_container">
       <button class="btn btn-primary al_share_button" type="button">
         <span class="tooltiptext al_tooltip">Copy to clipboard</span>
@@ -41,11 +41,13 @@ script: |
         
         $container.on( 'click', function ( event ) {
           try {
+            input.focus();
             input.select();
-            input.setSelectionRange(0, 99999);
             document.execCommand("copy");
-
             $tooltip.html( "Copied: " + input.value );
+            
+            input.blur();
+            
           } catch ( error ) {
             console.warn( 'Error in AL share button click');
             console.warn( error );
@@ -54,7 +56,9 @@ script: |
         
         $container.on( 'mouseout', function ( event ) {
           try {
+            console.log($tooltip)
             $tooltip.html( 'Copy to clipboard' );
+            
           } catch ( error ) {
             console.warn( 'Error in AL share button mouseout');
             console.warn( error );
@@ -70,6 +74,10 @@ css: |
   <style>
   .al_share_button_container {
     vertical-align: bottom;
+  }
+  
+  .al_share_value {
+    pointer-events: none;
   }
   
   .copy-tooltip {
