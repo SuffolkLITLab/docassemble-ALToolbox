@@ -1,0 +1,76 @@
+mandatory: True
+question: |
+  Share button
+# Bootstrap tooltip (needs popper.js): https://getbootstrap.com/docs/4.1/components/tooltips/
+fields:
+  - note: |
+      <div class="al_share">
+      <span>Copy and share this link</span>
+      <input disabled="true" type="text" value="${ interview_url(i=user_info().filename, style="short", new_session=1) }" id="myInput" class="al_share_value">
+      <span class="copy-tooltip al_share_button_container">
+      <button class="btn btn-primary al_share_button" onclick="myFunction()" onmouseout="outFunc()" type="button">
+        <span class="tooltiptext" id="al_tooltip">Copy to clipboard</span>
+        <i class="far fa-copy"></i>
+      </button>
+      </span>
+      </div>
+script: |
+  <script>
+    function myFunction() {
+      var copyText = document.getElementById("myInput");
+      copyText.select();
+      copyText.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+
+      var tooltip = document.getElementById("al_tooltip");
+      tooltip.innerHTML = "Copied: " + copyText.value;
+    }
+
+    function outFunc() {
+      var tooltip = document.getElementById("al_tooltip");
+      tooltip.innerHTML = "Copy to clipboard";
+    }
+  </script>
+css: |
+  <style>
+  .al_share_button_container {
+    vertical-align: bottom;
+  }
+  
+  .copy-tooltip {
+    position: relative;
+  }
+
+  .copy-tooltip .tooltiptext {
+    visibility: hidden;
+    width: 140px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 150%;
+    left: 50%;
+    margin-left: -75px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .copy-tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+  }
+
+  .copy-tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+  }
+  </style>
