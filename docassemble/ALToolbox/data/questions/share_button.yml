@@ -23,7 +23,8 @@ fields:
       
       ${ share_button( interview_url(i=user_info().filename, style="short", new_session=1) ) }
       
-      ${ share_button( "some text" ) }
+      ${ share_button( "some text", text_before="Text before: ", label="Copy this text", tooltip_inert_text="Best tooltip", tooltip_copied_text="I'm copied!"  ) }
+      
 script: |
   <script>
     try {
