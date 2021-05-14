@@ -1,3 +1,10 @@
+---
+metadata:
+  title: Share some text button
+---
+modules:  
+  - .share_button
+---
 mandatory: True
 question: |
   Share button
@@ -13,6 +20,10 @@ fields:
         <span>Copy the link</span>
       </button>
       </div>
+      
+      ${ share_button( interview_url(i=user_info().filename, style="short", new_session=1) ) }
+      
+      ${ share_button( "some text" ) }
 script: |
   <script>
     try {
@@ -30,7 +41,6 @@ script: |
         
         $button.on( 'mouseenter', function ( event ) {
           try {
-          console.log(1)
             $tooltip_inert.show()
             $tooltip_active.hide()
             
@@ -42,13 +52,12 @@ script: |
         
         $button.on( 'click', function ( event ) {
           try {
-          console.log(2)
             input.focus();
             input.select();
             document.execCommand("copy");
+            
             $tooltip_inert.hide()
             $tooltip_active.show()
-            
             input.blur();
             
           } catch ( error ) {
@@ -58,7 +67,6 @@ script: |
         });
         
         $button.on( 'mouseleave', function ( event ) {
-          console.log(3)
           try {
             $tooltip_inert.hide()
             $tooltip_active.hide()
