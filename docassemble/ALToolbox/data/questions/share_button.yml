@@ -5,25 +5,13 @@ question: |
 fields:
   - note: |
       <div class="al_share">
-      <span>Copy and share this link</span>
-      <input type="text" value="${ interview_url(i=user_info().filename, style="short", new_session=1) }"  class="al_share_value">
-      <span class="copy-tooltip al_share_button_container">
+      <input readonly class="al_share_value" type="text" value="${ interview_url(i=user_info().filename, style="short", new_session=1) } 1">
       <button class="btn btn-primary al_share_button" type="button">
-        <span class="tooltiptext al_tooltip">Copy to clipboard</span>
+        <span class="al_tooltip al_tooltip_inert">Copy to clipboard</span>
+        <span class="al_tooltip al_tooltip_active">Copied: ${ interview_url(i=user_info().filename, style="short", new_session=1) }</span>
         <i class="far fa-copy"></i>
+        <span>Copy the link</span>
       </button>
-      </span>
-      </div>
-      
-      <div class="al_share">
-      <span>Copy and share this second link</span>
-      <input type="text" value="some text"  class="al_share_value">
-      <span class="copy-tooltip al_share_button_container">
-      <button class="btn btn-primary al_share_button" type="button">
-        <span class="tooltiptext al_tooltip">Copy to clipboard</span>
-        <i class="far fa-copy"></i>
-      </button>
-      </span>
       </div>
 script: |
   <script>
@@ -36,31 +24,47 @@ script: |
 
       function add_share_event_listeners( $node ) {
         var input = $node.find('.al_share_value')[0];
-        var $container = $node.find('.al_share_button_container').eq(0);
-        var $tooltip = $node.find('.al_tooltip').eq(0);
+        var $button = $node.find('.al_share_button').eq(0);
+        var $tooltip_inert = $node.find('.al_tooltip_inert').eq(0);
+        var $tooltip_active = $node.find('.al_tooltip_active').eq(0);
         
-        $container.on( 'click', function ( event ) {
+        $button.on( 'mouseenter', function ( event ) {
           try {
-            input.focus();
-            input.select();
-            document.execCommand("copy");
-            $tooltip.html( "Copied: " + input.value );
-            
-            input.blur();
+          console.log(1)
+            $tooltip_inert.show()
+            $tooltip_active.hide()
             
           } catch ( error ) {
-            console.warn( 'Error in AL share button click');
+            console.warn( 'Error in AL share button mouseenter' );
             console.warn( error );
           }
         });
         
-        $container.on( 'mouseout', function ( event ) {
+        $button.on( 'click', function ( event ) {
           try {
-            console.log($tooltip)
-            $tooltip.html( 'Copy to clipboard' );
+          console.log(2)
+            input.focus();
+            input.select();
+            document.execCommand("copy");
+            $tooltip_inert.hide()
+            $tooltip_active.show()
+            
+            input.blur();
             
           } catch ( error ) {
-            console.warn( 'Error in AL share button mouseout');
+            console.warn( 'Error in AL share button click' );
+            console.warn( error );
+          }
+        });
+        
+        $button.on( 'mouseleave', function ( event ) {
+          console.log(3)
+          try {
+            $tooltip_inert.hide()
+            $tooltip_active.hide()
+            
+          } catch ( error ) {
+            console.warn( 'Error in AL share button mouseleave' );
             console.warn( error );
           }
         });
@@ -72,19 +76,22 @@ script: |
   </script>
 css: |
   <style>
-  .al_share_button_container {
+  
+  .al_share {
+    margin-bottom: 1em;
+  }
+  
+  .al_share_button {
+    position: relative;
     vertical-align: bottom;
   }
   
-  .al_share_value {
-    pointer-events: none;
-  }
-  
-  .copy-tooltip {
-    position: relative;
+  .al_visible_text {
+    max-width: 100%;
+    overflow-x: scroll;
   }
 
-  .copy-tooltip .tooltiptext {
+  .al_share_button .al_tooltip {
     visibility: hidden;
     max-width: 10em;
     background-color: #555;
@@ -101,7 +108,7 @@ css: |
     transition: opacity 0.3s;
   }
 
-  .copy-tooltip .tooltiptext::after {
+  .al_share_button .al_tooltip::after {
     content: "";
     position: absolute;
     top: 100%;
@@ -112,7 +119,7 @@ css: |
     border-color: #555 transparent transparent transparent;
   }
 
-  .copy-tooltip:hover .tooltiptext {
+  .al_share_button:hover .al_tooltip {
     visibility: visible;
     opacity: 1;
   }
