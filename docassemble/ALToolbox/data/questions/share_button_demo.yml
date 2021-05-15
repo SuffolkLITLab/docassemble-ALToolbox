@@ -1,0 +1,25 @@
+---
+metadata:
+  title: Share some text button
+---
+include:
+  - share_button.yml
+---
+mandatory: True
+code: |
+  show_hidden_button
+---
+# May be more robust to use Bootstrap tooltip (needs popper.js): https://getbootstrap.com/docs/4.1/components/tooltips/
+id: share button demo
+question: |
+  Share button
+fields:
+  - note: |
+      ${ share_button( interview_url(i=user_info().filename, style="short", new_session=1) ) }
+  - note: |
+      ${ share_button( "some text", text_before="Text before: ", label="Copy this text", tooltip_inert_text="Best tooltip", tooltip_copied_text="I'm copied!"  ) }
+  - Show hidden share button: show_hidden_button
+    datatype: yesnowide
+  - note: |
+      ${ share_button( "hidden button" ) }
+    show if: show_hidden_button
