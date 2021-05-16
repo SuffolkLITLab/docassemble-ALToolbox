@@ -2,12 +2,11 @@ from docassemble.base.functions import word, log
 
 # See GitHub issue https://github.com/SuffolkLITLab/docassemble-ALToolbox/issues/16
 def share_button (
-  text_to_copy,
-  text_before='',
-  label='Copy',
-  tooltip_inert_text='Copy to clipboard',
-  tooltip_copied_text='Copied: '  # Will have `text_to_copy` added to it
-):
+  text_to_copy:str,
+  text_before:str='',
+  tooltip_inert_text:str='Copy to clipboard',
+  tooltip_copied_text:str='Copied: '  # Will have `text_to_copy` added to it
+  )->str:
   '''Return the html for a button that will let a user share the given text'''
   button_str = '<div class="al_share">\n'
   if ( text_before != '' ):
