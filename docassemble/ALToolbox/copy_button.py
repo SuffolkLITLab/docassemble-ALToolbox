@@ -6,7 +6,7 @@ def copy_button_html (
   text_before:str='',
   label:str='Copy',
   tooltip_inert_text:str='Copy to clipboard',
-  tooltip_copied_text:str='Copied: '  # Will have `text_to_copy` added to it
+  tooltip_copied_text:str='Copied!'
   )->str:
   '''Return the html for a button that will let a user copy the given text'''
   button_str = '<div class="al_copy">\n'
@@ -15,14 +15,7 @@ def copy_button_html (
   button_str += f'<input readonly class="al_copy_value" type="text" value="{ text_to_copy }">\n'
   button_str += f'<button class="btn btn-primary al_copy_button" type="button">\n'
   button_str += f'<span class="al_tooltip al_tooltip_inert">{word( tooltip_inert_text )}</span>\n'
-  
-  if ( tooltip_copied_text == 'Copied: ' ):
-    # Our default text will show 'Copied: text that will be copied'
-    button_str += f'<span class="al_tooltip al_tooltip_active">{word( tooltip_copied_text ) + text_to_copy }</span>\n'
-  else:
-    # Otherwise, use the custom text handed in
-    button_str += f'<span class="al_tooltip al_tooltip_active">{word( tooltip_copied_text )}</span>\n'
-  
+  button_str += f'<span class="al_tooltip al_tooltip_active">{word( tooltip_copied_text )}</span>\n'
   button_str += f'<i class="far fa-copy"></i>\n'
   button_str += f'<span>{word( label )}</span>\n'
   button_str += f'</div>\n'
