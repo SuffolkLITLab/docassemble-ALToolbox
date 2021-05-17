@@ -24,7 +24,7 @@ def copy_button_html (
     button_str += f'<span class="al_tooltip al_tooltip_active">{word( tooltip_copied_text )}</span>\n'
   
   button_str += f'<i class="far fa-copy"></i>\n'
-  button_str += f'<span>{ label }</span>\n'
+  button_str += f'<span>{word( label )}</span>\n'
   button_str += f'</div>\n'
   
   return button_str
