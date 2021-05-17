@@ -1,0 +1,42 @@
+.al_copy_button {
+  position: relative;
+  vertical-align: bottom;
+}
+
+.al_visible_text {
+  max-width: 100%;
+  overflow-x: scroll;
+}
+
+.al_copy_button .al_tooltip {
+  visibility: hidden;
+  max-width: 10em;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 150%;
+  left: 50%;
+  margin-left: -75px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.al_copy_button .al_tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.al_copy_button:hover .al_tooltip {
+  visibility: visible;
+  opacity: 1;
+}
