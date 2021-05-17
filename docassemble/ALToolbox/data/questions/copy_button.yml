@@ -1,0 +1,8 @@
+features:
+  javascript:
+    - copy_button.js
+  css:
+    - copy_button.css
+---
+modules:  
+  - .copy_button

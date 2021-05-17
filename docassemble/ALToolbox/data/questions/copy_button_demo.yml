@@ -1,0 +1,26 @@
+---
+metadata:
+  title: Button to copy prepared text to clipboard
+  short title: Copy button
+---
+include:
+  - copy_button.yml
+---
+mandatory: True
+code: |
+  show_hidden_button
+---
+# May be more robust to use Bootstrap tooltip (needs popper.js): https://getbootstrap.com/docs/4.1/components/tooltips/
+id: copy button demo
+question: |
+  Copy text
+fields:
+  - note: |
+      ${ copy_button_html( interview_url(i=user_info().filename, style="short", new_session=1) ) }
+  - note: |
+      ${ copy_button_html( "some text", text_before="Text before: ", label="Copy this text", tooltip_inert_text="Best tooltip", tooltip_copied_text="I'm copied!"  ) }
+  - Show hidden copy button: show_hidden_button
+    datatype: yesnowide
+  - note: |
+      ${ copy_button_html( "hidden button" ) }
+    show if: show_hidden_button
