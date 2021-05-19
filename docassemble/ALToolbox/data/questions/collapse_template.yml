@@ -1,0 +1,49 @@
+# Straight lift from https://docassemble.org/docs/recipes.html#progressive%20disclosure
+# Only added docstring and renamed to collapse_template for clarity
+---
+metadata:
+  title: Progressive disclosure
+---
+modules:
+  - .misc
+---
+features:
+  css: collapse_template.css
+---
+template: fruit_explanation
+subject: |
+  Tell me more about fruit
+content: |
+  ##### What is a fruit?
+  
+  A fruit is the the sweet and
+  fleshy product of a tree or
+  other plant that contains
+  seed and can be eaten as food.
+---
+template: favorite_explanation
+subject: |
+  Explain favorites
+content: |
+  ##### What is a favorite?
+  If you have a favorite something,
+  that means you like it more than
+  you like other things of a similar
+  nature.
+---
+question: |
+  What is your favorite fruit?
+subquestion: |
+  Everybody has a favorite fruit.
+  
+  ${ collapse_template(fruit_explanation) }
+  Don't you have a favorite fruit?
+  ${ collapse_template(favorite_explanation) }
+  You must have a favorite.
+fields:
+  - Favorite fruit: favorite_fruit
+---
+mandatory: True
+question: |
+  Your favorite fruit is
+  ${ favorite_fruit }.
