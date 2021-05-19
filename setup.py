@@ -43,7 +43,7 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
     return out
 
 setup(name='docassemble.ALToolbox',
-      version='0.0.10',
+      version='0.0.11',
       description=('A docassemble extension.'),
       long_description='This project is used to host custom-built modules, js files etc. The purpose is to provide a toolbox so that other coders can call these code in their interview.\r\n\r\nIf you want to add a small fuction to this project, consider adding it to the existing misc.py to avoid creating too many module files.\r\n\r\n--------------------------\r\nContributors:  \r\n* @plocket  \r\n* @nonprofittechy\r\n* @purplesky2016\r\n',
       long_description_content_type='text/markdown',
