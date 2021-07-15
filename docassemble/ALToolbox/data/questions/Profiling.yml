@@ -1,0 +1,65 @@
+---
+comment: |
+  This file helps you determine which parts of your interview take a long time to run.
+
+  It generates a python [profile stats file](https://docs.python.org/3/library/profile.html#profile.Profile.dump_stats)
+  that you can download and view locally. If you are running python locally, I highly recommend using 
+  [venvs](https://docs.python.org/3/tutorial/venv.html).
+
+  * Linux (Ubuntu tested), using a combiation of [kcachegrind](https://kcachegrind.github.io/html/Home.html)
+    pyprof2calltree is very effective. You can install and use there tool with the below commands:
+
+    ```
+    sudo apt install kcachegrind
+    pip install pyprof2calltree
+
+    pyprof2calltree -i ~/Downloads/test.prof -k
+    ```
+
+  * On Mac, using [snakeviz](https://jiffyclub.github.io/snakeviz/) is recommended.
+    The following should work (inside or outside of a venv):
+
+    ```
+    python3 -m pip install snakeviz
+    # test.prof is the name of the downloaded profile file.
+    python3 -m snakeviz ~/Downloads/test.prof
+    ```
+
+  * Windows: untested, but just install snakeviz however you install python packages
+---
+modules:
+  - cProfile
+  - pstats
+---
+objects:
+  - download_profile: DAFile
+---
+code: |
+  profile = Profile()
+---
+code: |
+  profile_filename = 'test.prof'
+---
+code: |
+  download_profile.initialize(filename=profile_filename)
+  profile.enable()
+  start_profile =True
+---
+code: |
+  profile.disable()
+  profile.dump_stats(download_profile.path())
+  log('Profiling ready at ' + download_profile.url_for())
+  del profile
+  stop_profile = True
+---
+comment: |
+  Put the below in the question that asks for the thing you're trying to time. 
+  For example, al_user_bundle, or tenant_repair_letter_bundle
+
+  question: |
+    Your documents are ready  ${start_profile}
+  subquestion: |
+
+    [Profiling Report](${ download_profile.url_for() })
+    ${ stop_profile }
+---
