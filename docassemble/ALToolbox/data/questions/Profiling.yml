@@ -37,18 +37,19 @@ code: |
   profile = Profile()
 ---
 code: |
-  download_profile.initialize(filename='test.prof')
+  profile_filename = 'test.prof'
+---
+code: |
+  download_profile.initialize(filename=profile_filename)
   profile.enable()
   start_profile =True
 ---
 code: |
   profile.disable()
   profile.dump_stats(download_profile.path())
+  log('Profiling ready at ' + download_profile.url_for())
   del profile
   stop_profile = True
----
-code: |
-  new_stuff = True
 ---
 comment: |
   Put the below in the question that asks for the thing you're trying to time. 
