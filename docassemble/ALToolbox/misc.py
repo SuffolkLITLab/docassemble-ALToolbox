@@ -8,12 +8,17 @@ class shortenMe:
  
  #The following three functions are from Quinten
 #format a float number to a whole number with thousands separator
-def thousands(num:float) -> str:
+def thousands(num:float, show_decimals=False) -> str:
   """
   Return a whole number formatted with thousands separator.
+  Optionally, format with 2 decimal points (for a PDF form with the 
+  currency symbol already present in the form)
   """
   try:
-    return f"{int(num):,}"
+    if show_decimals:
+      return f"{num:,.2f}"
+    else:
+      return f"{int(num):,}"
   except:
     return num
 
