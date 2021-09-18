@@ -1,5 +1,5 @@
 import docassemble.base.functions
-from docassemble.base.util import defined, value, showifdef
+from docassemble.base.util import defined, value, showifdef, space_to_underscore
 import re
 
 class shortenMe:
@@ -84,4 +84,29 @@ def collapse_template(template, classname=None):
 <a class="collapsed" data-toggle="collapse" href="#{}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="pdcaretclosed"><i class="fas fa-caret-right"></i></span> {}</a>
 <div class="collapse" id="{}"><div class="card card-body{} pb-1">{}</div></div>\
 """.format(the_id, template.subject_as_html(trim=True), the_id, classname, template.content_as_html())
+
+def tabbed_templates_html(tab_group_name:str, *pargs)->str:
+  """
+  Provided a list of templates, create Bootstrap v 4.5 tabs with the `subject` as the tab label.
+  """
+  if isinstance(tab_group_name, str):
+    tab_group_name = space_to_underscore(tab_group_name)  
+  else:
+    tab_group_name = "tabbed-group"
+  tabs = f'<ul class="nav nav-tabs" id="{tab_group_name}" role="tablist">\n'
+  tab_content = '<div class="tab-content" id="myTabContent">'
+  for index, templ in enumerate(pargs):
+    tab_id = space_to_underscore(str(templ.subject))
+    tabs += '<li class="nav-item" role="presentation">\n'
+    if index == 0:
+      tabs += f'<a class="nav-link active" id="{tab_group_name}-{tab_id}-tab" data-toggle="tab" href="#{tab_group_name}-{tab_id}" role="tab" aria-controls="{tab_id}" aria-selected="true">{templ.subject}</a>\n'
+      tab_content += f'<div class="tab-pane fade show active" id="{tab_group_name}-{tab_id}" role="tabpanel" aria-labelledby="{tab_group_name}-{tab_id}-tab">{templ.content}</div>\n'      
+    else:
+      tabs += f'<a class="nav-link" id="{tab_group_name}-{tab_id}-tab" data-toggle="tab" href="#{tab_group_name}-{tab_id}" role="tab" aria-controls="{tab_id}" aria-selected="false">{templ.subject}</a>\n'
+      tab_content += f'<div class="tab-pane fade" id="{tab_group_name}-{tab_id}" role="tabpanel" aria-labelledby="{tab_group_name}-{tab_id}-tab">{templ.content}</div>\n'      
+    tabs += '</li>'
+  tabs += '</ul>'
+  tab_content += '</div>'  
+  
+  return tabs + tab_content
 
