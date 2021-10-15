@@ -113,3 +113,11 @@ def tabbed_templates_html(tab_group_name:str, *pargs)->str:
   tab_content += '</div>'  
   
   return tabs + tab_content
+
+def sum_if_defined(*pargs):
+  """Lets you add up the value of variables that are not in a list"""
+  total = 0
+  for source in pargs:
+    if defined(source):
+      total += value(source)
+  return total
