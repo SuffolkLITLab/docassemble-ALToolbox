@@ -17,78 +17,74 @@ mkdir /usr/share/nginx/html/errors
 <!DOCTYPE html>
 <html>
     <head>
-		<meta charset="utf-8"/>
-		<meta name="viewport" content="width=device-width, initial-scale=1">
+		  <meta charset="utf-8"/>
+		  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <style>
-            html,
-            body {
-                height: 100%;
-                margin: 0;
+      <style>
+          html,
+          body {
+            height: 100%;
+            margin: 0;
+          }
+			
+          /* ------------ Header section -----------*/			
+          .header {
+            padding: 50px;
+            margin: 15px 20%;
+            text-align: center;
+            background: #1abc9c;
+            color: white;
+            font-size: 20px;			  
+          }			
+          .header h1 {
+            text-align: center;
+            font-style: italic;
+          }
+          @media only screen and (max-width: 600px) and (orientation: portrait) {
+            .header h1 {
+              font-size: 25px; 					
             }
-			
-			/* ------------ Header section -----------*/			
-			.header {
-			  padding: 50px;
-			  margin: 15px 20%;
-			  text-align: center;
-			  background: #1abc9c;
-			  color: white;
-			  font-size: 20px;			  
-			}			
-			.header h1 {
-				text-align: center;
-				font-style: italic;
-			}
-			@media only screen and (max-width: 600px) and (orientation: portrait) {
-				.header h1 {
-					font-size: 25px; 					
-				}
-				.header {
-					margin: 0;					
-				}
-			}
-			@media only screen and (max-width: 800px) and (orientation: landscape) {			
-				.header h1 {
-					font-size: 25px; 					
-				}
-				.header {
-					margin: 0;		
-					padding: 20px;
-				}
-			}
-			
-			/* ------------ Message section -----------*/			
-            .message {
-                position: absolute;
-                left: 50%;
-                top: 60%;
-                transform: translate(-50%, -50%);
-                text-align: center;
-            }   
-            .message   button {
-                    background: #047ba9;
-                    border: 2px solid #C8FFF4;
-                    color: white;
-                    padding: 5px 15px;
-                    font-size: 1.25em;
-                    transition: all 0.15s ease;
-                    border-radius: 3px;					
-            }                
-            .message   button:hover {
-                    background: #1abc9c;
-                    border: 2px solid #03DAC6;                   
-                    cursor: pointer;
-                    transform: scale(1.05);
-					text-align: center;
-             }				              
-			.message #msg1 {
-					color: #047ba9;					
-			}
-			.message #msg2 {
-					color: #926a05;					
-			}
-			
+            .header {
+              margin: 0;					
+            }
+          }
+          @media only screen and (max-width: 800px) and (orientation: landscape) {			
+            .header h1 {
+              font-size: 25px; 					
+            }
+            .header {
+              margin: 0;		
+              padding: 20px;
+            }
+          }
+
+          /* ------------ Message section -----------*/			
+          .message {
+              position: absolute;
+              left: 50%;
+              top: 60%;
+              transform: translate(-50%, -50%);
+              text-align: center;
+          }   
+          .message   button {
+              background: #047ba9;
+              border: 2px solid #C8FFF4;
+              color: white;
+              padding: 5px 15px;
+              font-size: 1.25em;
+              transition: all 0.15s ease;
+              border-radius: 3px;					
+          }                
+          .message   button:hover {
+              background: #1abc9c;
+              border: 2px solid #03DAC6;                   
+              cursor: pointer;
+              transform: scale(1.05);
+              text-align: center;
+          }				              
+          .message #msg1 {
+              color: #047ba9;					
+          }
         </style>
     </head>
 	<body>
