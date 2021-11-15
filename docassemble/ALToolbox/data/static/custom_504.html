@@ -1,108 +1,110 @@
 <!---
 To use this custom error page in your Docassemble server:
-
 1. exec into the Docker container
 e.g.,: docker exec -ti [TAB] /bin/bash
-
 2. install a text editor
 apt install nano
-
 3. Edit the /etc/nginx.conf file and add a line like this, inside the main server { } brackets
-
 nano /etc/nginx.conf
-
     error_page 504 /errors/custom_504.html;
     
 4. Add a new directory for your error pages
-
 mkdir /usr/share/nginx/html/errors
-
 5. Copy and paste the contents of this file into
-
 /usr/share/nginx/html/errors/custom_504.html
     
-
 -->
+<!DOCTYPE html>
 <html>
     <head>
-        <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet">
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
         <style>
             html,
             body {
                 height: 100%;
                 margin: 0;
             }
-
-            body {
-                background: linear-gradient(#111, #333, #111);
-                background-repeat: no-repeat;
-                background-size: cover;
-                color: #eee;
-                position: relative;
-                font-family: 'Roboto', sans-serif;
-            }
-
+			
+			/* ------------ Header section -----------*/			
+			.header {
+			  padding: 50px;
+			  margin: 15px 20%;
+			  text-align: center;
+			  background: #1abc9c;
+			  color: white;
+			  font-size: 20px;			  
+			}			
+			.header h1 {
+				text-align: center;
+				font-style: italic;
+			}
+			@media only screen and (max-width: 600px) and (orientation: portrait) {
+				.header h1 {
+					font-size: 25px; 					
+				}
+				.header {
+					margin: 0;					
+				}
+			}
+			@media only screen and (max-width: 800px) and (orientation: landscape) {			
+				.header h1 {
+					font-size: 25px; 					
+				}
+				.header {
+					margin: 0;		
+					padding: 20px;
+				}
+			}
+			
+			/* ------------ Message section -----------*/			
             .message {
                 position: absolute;
                 left: 50%;
-                top: 50%;
+                top: 60%;
                 transform: translate(-50%, -50%);
                 text-align: center;
-                
-                h1, h2, h3 {
-                    margin: 0;
-                    line-height: .8;
-                }
-                
-                h2, h3 {
-                    font-weight: 300;
-                    color: #C8FFF4;
-                }
-                
-                h1 {
-                    font-weight: 700;
-                    color: #03DAC6;
-                    font-size: 8em;
-                }
-                
-                h2 {
-                    margin: 30px 0;
-                }
-                
-                h3 {
-                    font-size: 2.5em;
-                }
-                
-                h4 {
-                    display: inline-block;
-                    margin: 0 15px;
-                }
-                
-                button {
-                    background: transparent;
+            }   
+            .message   button {
+                    background: #047ba9;
                     border: 2px solid #C8FFF4;
-                    color: #C8FFF4;
+                    color: white;
                     padding: 5px 15px;
                     font-size: 1.25em;
                     transition: all 0.15s ease;
-                    border-radius: 3px;
-                }
-                
-                button:hover {
-                    background: #03DAC6;
-                    border: 2px solid #03DAC6;
-                    color: #111;
+                    border-radius: 3px;					
+            }                
+            .message   button:hover {
+                    background: #1abc9c;
+                    border: 2px solid #03DAC6;                   
                     cursor: pointer;
                     transform: scale(1.05);
-                }
-            }
+					text-align: center;
+             }				              
+			.message #msg1 {
+					color: #047ba9;					
+			}
+			.message #msg2 {
+					color: #926a05;					
+			}
+			
         </style>
     </head>
-<div class="message">
-	<h3>Your page timed out</h3>
-	<h2>Something went wrong on our server. This usually does not take this long.</h2>
-	<!-- use window.history.back(); to go back, but it doesn't seem to work in Docassemble -->
-	<!-- <button onclick="window.history.back();">Go back</button> -->
-	<button onclick="window.location.reload();">Try again</button>
-</div>
+	<body>
+		<div class="header">
+		  <h1>CourtFormsOnline</h1>
+		  <h3>at Suffolklitlab</h3>
+		</div> 
+
+		<div class="message">
+			<h2 id="msg1">Sorry, your form has timed out &#128533</h2>				
+			<!-- use window.history.back(); to go back, but it doesn't seem to work in Docassemble -->
+			<!-- <button onclick="window.history.back();">Go back</button> -->
+			<button onclick="window.location.reload();">Try again</button>
+			<div>
+				<p>&#128276 To report this issue, send an email to <a href="mailto:courtformsonline@suffolklitlab.org">courtformsonline@suffolklitlab.org</a>, explain what form you were filling-in and what question you had just answered.</p>
+			</div>
+		</div>
+	</body>
 </html>
