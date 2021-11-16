@@ -9,7 +9,7 @@ js_text = """\
   	  $(dateElement).attr('type', 'hidden');
       
       //Construct the input components
-  	  var parentElement = $('<div class="form-row">');	  
+  	  var parentElement = $('<div class="form-row row">');	  
   	  var monthParent = $('<div class="col">');
       var monthLabel = $('<div style="text-align:center">Month</div>');	    
       var monthElement = $('<select class="form-control" style="width:7.5em" required>');
