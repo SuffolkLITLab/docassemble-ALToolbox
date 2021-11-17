@@ -85,21 +85,27 @@ mkdir /usr/share/nginx/html/errors
           .message #msg1 {
               color: #047ba9;					
           }
+          .refresh {
+            display: inline-block;
+            transform: rotate(90deg);
+          }          
         </style>
     </head>
 	<body>
 		<div class="header">
-		  <h1>CourtFormsOnline</h1>
-		  <h3>at Suffolklitlab</h3>
+		  <h1>CourtFormsOnline.org</h1>
 		</div> 
 
 		<div class="message">
 			<h2 id="msg1">Sorry, your form has timed out &#128533</h2>				
 			<!-- use window.history.back(); to go back, but it doesn't seem to work in Docassemble -->
 			<!-- <button onclick="window.history.back();">Go back</button> -->
-			<button onclick="window.location.reload();">Try again</button>
+			<button onclick="window.location.reload();"><span class="refresh">↻</span> Try again</button>
 			<div>
-				<p>&#128276 To report this issue, send an email to <a href="mailto:courtformsonline@suffolklitlab.org">courtformsonline@suffolklitlab.org</a>, explain what form you were filling-in and what question you had just answered.</p>
+				<p>&#128276 To report this issue: send an email to <a
+				href="mailto:help@courtformsonline.org">help@courtformsonline.org</a>,
+				explain what form you were filling-in and what question you answered
+        before you ran into this problem.</p>
 			</div>
 		</div>
 	</body>
