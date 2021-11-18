@@ -1,0 +1,14 @@
+---
+code: |
+  al_navigation_items = [
+    al_escape_button_html
+  ]
+---
+code: |
+  al_escape_button_html = '<li class="nav-item "><a class="btn btn-danger" href="https://google.com">Escape</a></li>'
+---
+default screen parts:
+  navigation bar html: |
+    % for nav_item in al_navigation_items:
+    ${ nav_item }
+    % endfor
