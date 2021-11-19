@@ -1,0 +1,28 @@
+---
+features:
+  css: bootstrap-multiselect.css
+  javascript: bootstrap-multiselect.js
+---
+comment: |
+  This feature requires JavaScript on the multiselect that you want to 
+  transform into a filterable dropdown. 
+  
+  Apply the .multiselect() function to the input, with any desired parameters.
+  Note you will need to use the base64-encoded version of the input's name because
+  of the way Docassemble transforms input names.
+  
+  Example:  
+  
+  script: |
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $('#bXNlbGVjdA').multiselect({enableCaseInsensitiveFiltering: true, inheritClass: true});
+        });
+    </script>
+    
+    
+  Additional documentation: 
+  
+  https://davidstutz.github.io/bootstrap-multiselect/
+  
+  Forked as of 11/18/2021, with changes to make compatible with Bootstrap 5
