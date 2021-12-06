@@ -1,0 +1,5 @@
+.scrollable-panel{
+  height:200px;
+  overflow-y:scroll;
+  width:100%;
+}

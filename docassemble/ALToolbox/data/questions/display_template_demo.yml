@@ -1,0 +1,42 @@
+metadata:
+  title: ALToolbox - Display Template
+---
+include: 
+  - display_template.yml
+---
+mandatory: true
+question: |
+  Display a markdown template 
+subquestion: |
+  ####Use cases:
+  
+  1. If your markdown template content is long, you can use this tool to display it with a stroll bar on the screen. 
+  1. If your markown template has a subject line in addition to content, this tool will display both with one line of code rather than two. 
+  
+  ####Notes:
+  
+  1. Template's "subject" line will be displayed automatically, but it's NOT required to use this tool. Your template can have just "content".
+  1. You can turn off the scrollable feature for short content.
+  1. To style the panel, add a class name in the call, then add your css rules either on the screen (like in this demo) or add them to a .css file.
+    
+  ${ display_template(my_template, scrollable=True, class_name="my_color") }<br>
+    
+  ${ display_template(my_template, scrollable=False) }  
+css: |
+  <style>
+    .my_color {
+      background: lightcyan; 
+      color: darkgreen;      
+    }
+  </style>
+
+---
+template: my_template
+subject: |
+  A perfect day
+content: |  
+  Laudem libris lucilius has at. Nec decore fuisset persecuti id. Mel et saperet detracto, ne pri homero ubique facilisi. Feugait minimum inciderint ei has. Facer alterum ut nec. Et est admodum interesset.
+  
+  Laudem libris lucilius has at. Nec decore fuisset persecuti id. Mel et saperet detracto, ne pri homero ubique facilisi. Feugait minimum inciderint ei has. Facer alterum ut nec. Et est admodum interesset.
+  
+  Laudem libris lucilius has at. Nec decore fuisset persecuti id. Mel et saperet detracto, ne pri homero ubique facilisi. Feugait minimum inciderint ei has. Facer alterum ut nec. Et est admodum interesset.

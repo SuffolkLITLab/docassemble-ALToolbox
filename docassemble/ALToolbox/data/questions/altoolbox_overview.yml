@@ -1,0 +1,69 @@
+metadata:
+  title: ALToolbox - Overview
+---
+objects:
+  - samples_list: DAList.using(auto_gather=False, gathered=True)   
+---
+modules:
+  - .misc
+---
+mandatory: true
+code: |
+  list_done
+  display
+---
+event: display
+question: |
+  ALToolbox Overview
+subquestion: |
+  This project is used to host custom-built modules, javascript files etc. The purpose is to provide a toolbox so that other coders can use these tools in their interviews. 
+  
+  To learn more, visit the [ALDocumentation website - ALtoolbox](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/framework/altoolbox) page.
+    
+  ####For contributors:
+
+  1. Use **snake_case.ext** to name all your files   
+  1. Add a demo to show others how to use your tool      
+      - Always include "_demo" at the end of the demo yml file
+      - In the metadata section add a **title** starting with **ALToolbox - **.
+  1. If your tool uses more than one file, add a **package** yml file for easy reference. See "copy_button.yml" as an example.
+  
+  ####For users:
+  
+  1. You can run any demo listed below by clicking its link in the table below.
+  1. To use these tools in your interview, install ALToolbox from docassemble's **Package Management**, then reference the file listed in the last column of the table. 
+      - For a .py file, add it to your "modules" section
+      - For a .yml file, add it to your "include" section
+      - For a .js file, add it to your "features" section
+      - Always add **docassemble.ALToolbox** in front of that file.
+  
+  ${ samples_list.table }
+---
+table: samples_list.table
+rows: samples_list
+columns:
+  - Demo Name: |
+      '<a href="' + interview_url(i=user_info().package + ":" + row_item.name + ".yml") + ' target="\_blank">' + str(row_item.name).replace('-',' ').replace('_',' ').title() + '</a>' 
+  - Description: |
+      row_item.description      
+  - Reference File: |      
+      row_item.reference      
+---
+code: |  
+  samples_list.clear()  
+  labels = {}
+  labels = {
+    "addenda_for_table_ records_overflow": ['Add attachment output for overflow table records', 'addenda.py'],
+    "addenda_for_docx_text_overflow": ['Add attachment output for overflow text, if your template is docx', 'addenda.py'],
+    "addenda_for_pdf_text_overflow": ['Add attachment output for overflow text, if your template is pdf', 'addenda.py'],
+    "Addup": ['Add up numeric values collected through a DAList', 'Addup.py'],
+    "Bells and whistles": ['Add icons; open a phone dialer; format currency', 'misc.py'],
+    "collapse_template_demo": ['Collapse/open text display on the screen', 'collapse_template.yml'],
+    "copy_button_demo": ['Add a copy button with tooltip', 'copy_button.yml'],
+    "display_template_demo": ['Display the subject and content of a markdown template with/without scroll bar; optional css class', 'display_template.yml'], 
+    "Shorten a url": ['Shorten a long url for neater display on the screen', 'misc.py'],
+    "TextCounter": ['Text input with a counter', 'TextCounter.js'], 
+    "ThreePartsDate": ['Date input with month, day, year as separate parts', 'ThreePartsDate.py'],
+  }
+  add_records(samples_list, labels)
+  list_done = True  

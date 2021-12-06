@@ -1,0 +1,69 @@
+---
+metadata:
+  title: ALToolbox - Text field addendum to PDF form
+---
+modules:  
+  - .addenda
+---
+mandatory: true
+question: |  
+  Add overflow text as an addendum for a PDF main form
+subquestion: |
+  If your main template is a PDF file, which cannot handle conditions, and your text fields contain text that is too long to display on your form, you will need to add an **addendum docx template file**. 
+  
+  This interview will show you how to call the 'addenda' module and display the complete text in your addendum docx file, while show a cut-off version of the text in the main form. You want to copy "text-addendum-to-pdf.docx" used in this interview, and change the headings to fit your project.
+  
+  If your main form is an docx file, see the other yml file "Addenda - text too long for docx form" in this package.
+field: intro
+---
+question: |    
+subquestion: | 
+  Create some fields that need addendum
+fields:
+  - Describe other relief: other_relief
+    input type: area
+  - Describe losses caused by defendant: losses
+    input type: area
+---
+mandatory: true
+question: |
+subquestion: | 
+  Here is the output file. 
+  
+  ${ outputFile }
+---
+attachment:
+  - variable name: main
+    pdf template file: debts.pdf
+    fields:
+      - Textfield69: ${ other_relief_cutoff }
+      - Textfield73: ${ losses_cutoff }
+---
+attachment:
+  - variable name: addendum    
+    docx template file: text-addendum-to-pdf.docx
+--- 
+code: |      
+  if addAddendum:
+    outputFile = pdf_concatenate(main, addendum, filename="final.pdf")
+  else:
+    outputFile = pdf_concatenate(main, filename="final.pdf")
+---
+comment: Do all the addenda related code work here.
+code: |    
+  #1. Put text fields into a list: the 1st element is the variable, the 2nd one is the text limit on the main form, and the 3rd one is the title above the text. 
+  tmpList = myTextList(other_relief, 40, 'PART J(5). Losses suffered by the Plaintiff')
+  txtList1 = tmpList.txtList
+  other_relief_cutoff = tmpList.text_cutoff #to be used in the pdf main form
+  
+  tmpList = myTextList(losses, 35, 'PART J(8). Other order requested')
+  txtList2 = tmpList.txtList
+  losses_cutoff = tmpList.text_cutoff #to be used in the pdf main form
+  
+  #2 Merge the above lists into txtFieldsList (standard name used in addendum)
+  txtFieldsList = txtList1 + txtList2
+  
+  #3. Check if we should invoke the addendum
+  addAddendum = bool(txtFieldsList)
+
+  

@@ -1,0 +1,115 @@
+---
+metadata:
+  title: ALToolbox - Table records overflow as addendum
+---
+modules:  
+  - .addenda
+---
+objects:  
+  - debts: DAList.using(object_type=Thing, complete_attribute='complete', ask_number=True) 
+  - children: ChildList.using(ask_number=True) 
+---
+mandatory: true
+question: | 
+  Add overflow table records as an addendum
+subquestion: |
+  If you have a DAList that collected multiple records and your form can only display part of them, you will need to add an addendum docx template file. 
+  
+  This interview will show you how to call the 'addenda' module and display the rest of the records in your addendum docx file.
+  
+  You can copy the docx addendum file used in this interview, and change the title.
+field: intro
+---
+question: |  
+subquestion: |
+fields:
+  - How many debts do you owe?: debts.target_number
+    datatype: integer
+    default: 2
+---
+question: |    
+subquestion: | 
+  % if debts.target_number > 1:
+    Please enter information related to your ${ ordinal(i) } debt.
+  % else:
+    Please enter information related to your debt. 
+  % endif
+fields:
+  - Debt name: debts[i].name.text  
+    default: 'House'
+  - Debt date: debts[i].debtDate
+    datatype: date
+    default: '1/1/2000'
+  - How much did you borrow?: debts[i].borrowedAmt
+    datatype: currency
+    default: 10000
+  - How much do you still owe?: debts[i].oweAmt
+    datatype: currency
+    default: 8000
+---
+question: |  
+subquestion: |
+fields:
+  - How many children do you have?: children.target_number
+    datatype: integer
+    default: 2
+---
+question: |    
+subquestion: | 
+  % if children.target_number > 1:
+    Please info of your ${ ordinal(i) } child.
+  % else:
+    Please enter info of your child. 
+  % endif
+fields:
+  - First name: children[i].name.first  
+    default: 'Jane'
+  - Last name: children[i].name.last  
+    default: 'Anderson'
+  - Birth Date: children[i].birthdate
+    default: '5/4/2010'
+  - School name: children[i].schoolname
+    default: 'Lincoln Elementary School'
+    
+---
+mandatory: true
+question: |
+subquestion: |
+  You entered the flollowing:<br/>
+  ${ debts }<br/>
+  ${ children }<br/>
+
+if: addAddendum
+attachment:
+  - filename: table_addendum    
+    docx template file: table-addendum.docx
+---
+code: |    
+  debts[i].name.text  
+  debts[i].complete = True 
+---
+comment: Do all the addenda related code work here.
+code: |  
+  tblList = list() 
+  #1. Put each DAList into a regular list if it has more than one record
+  if debts.target_number > 1: 
+    tempTable1 = ()
+    heading1 = ['Debt Name', 'Debt Date', 'Borrowed Amount', 'Amount Still Owe']
+    title1 = 'List of debts'  
+    tempTable1 = myTable(debts, title1, heading1).tableList
+    #2. Add it to the table list to be used in docx.
+    tblList.append(tempTable1)
+    
+  #Repeate the above if you have more than one DAList in your interview. 
+  if children.target_number > 1: 
+    tempTable2 = ()
+    heading2 = ['Child Name', 'Child Birth Date', 'School Name']
+    title2 = 'List of children'  
+    tempTable2 = myTable(children, title2, heading2).tableList  
+    tblList.append(tempTable2)
+  
+  #3. Determine if addendum is needed
+  addAddendum = bool(tblList)
+     
+    
+  

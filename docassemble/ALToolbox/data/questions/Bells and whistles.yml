@@ -1,13 +1,14 @@
 ---
 metadata:
-  title: Bells and Whistles
+  title: ALToolbox - Bells and Whistles
 ---
 modules: 
   - .misc  
 ---
 question: |  
+  Bells and Whistles
 subquestion: |
-  This sample shows some bells and whistles that you can use to enrich your interview.
+  This domo shows some bells and whistles that you can use to enrich your interview.
 fields: 
   - Numerical input ${fa_icon("bell", color="primary", size="sm")}: myNumber
     datatype: currency
