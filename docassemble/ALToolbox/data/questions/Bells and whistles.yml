@@ -8,7 +8,7 @@ modules:
 question: |  
   Bells and Whistles
 subquestion: |
-  This domo shows some bells and whistles that you can use to enrich your interview.
+  This demo shows some bells and whistles that you can use to enrich your interview.
 fields: 
   - Numerical input ${fa_icon("bell", color="primary", size="sm")}: myNumber
     datatype: currency
