@@ -1,6 +1,6 @@
 ---
 metadata:
-  title: Add Table Records in Addendum
+  title: ALToolbox - Table records overflow as addendum
 ---
 modules:  
   - .addenda
@@ -10,7 +10,8 @@ objects:
   - children: ChildList.using(ask_number=True) 
 ---
 mandatory: true
-question: |  
+question: | 
+  Add overflow table records as an addendum
 subquestion: |
   If you have a DAList that collected multiple records and your form can only display part of them, you will need to add an addendum docx template file. 
   

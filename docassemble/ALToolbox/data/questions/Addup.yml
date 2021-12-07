@@ -9,6 +9,7 @@ objects:
   - renters: DAList.using(object_type=Individual, ask_number=True) 
 ---
 question: |  
+  Add up numeric values from a DAList object
 subquestion: |
   This example shows you how to add up numeric values collected through a DAList object. <br><br>
   Use a numeric variable in your DAList to collect data, then call the "Addup" function to add up its values.

@@ -2,7 +2,7 @@
 # Only added docstring and renamed to collapse_template for clarity
 ---
 metadata:
-  title: Progressive disclosure
+  title: ALToolbox - Progressive disclosure
 ---
 modules:
   - .misc

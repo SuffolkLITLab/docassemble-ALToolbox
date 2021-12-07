@@ -1,12 +1,13 @@
 ---
 metadata:
-  title: Text Field Addendum to DOCX Main Form
+  title: ALToolbox - Text field addendum to DOCX form
 ---
 modules:  
   - .addenda
 ---
 mandatory: true
 question: |  
+  Add overflow text as an addendum for a DOCX main form
 subquestion: |
   If your main template is a docx file and your text fields contain text that is too long to display on the main form, you will need to add an **addemdum section** in your template file. 
   
