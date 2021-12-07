@@ -1,5 +1,5 @@
 metadata:
-  title: ALToolbox - Text fields w/ a character counter
+  title: ALToolbox - Text fields with a character counter
 ---
 features:
   javascript: TextCounter.js    
