@@ -117,12 +117,12 @@ def tabbed_templates_html(tab_group_name:str, *pargs)->str:
     tab_id = space_to_underscore(str(templ.subject))
     tabs += '<li class="nav-item" role="presentation">\n'
     if index == 0:
-      tabs += f'<a class="nav-link active" id="{tab_group_name}-{tab_id}-tab" data-toggle="tab" href="#{tab_group_name}-{tab_id}" role="tab" aria-controls="{tab_id}" aria-selected="true">{templ.subject}</a>\n'
+      tabs += f'<a class="nav-link active" id="{tab_group_name}-{tab_id}-tab" data-bs-toggle="tab" href="#{tab_group_name}-{tab_id}" role="tab" aria-controls="{tab_id}" aria-selected="true">{templ.subject}</a>\n'
       tab_content += f'<div class="tab-pane fade show active" id="{tab_group_name}-{tab_id}" role="tabpanel" aria-labelledby="{tab_group_name}-{tab_id}-tab">\n'
       tab_content += templ.content_as_html()
       tab_content += '\n</div>\n'      
     else:
-      tabs += f'<a class="nav-link" id="{tab_group_name}-{tab_id}-tab" data-toggle="tab" href="#{tab_group_name}-{tab_id}" role="tab" aria-controls="{tab_id}" aria-selected="false">{templ.subject}</a>\n'
+      tabs += f'<a class="nav-link" id="{tab_group_name}-{tab_id}-tab" data-bs-toggle="tab" href="#{tab_group_name}-{tab_id}" role="tab" aria-controls="{tab_id}" aria-selected="false">{templ.subject}</a>\n'
       tab_content += f'<div class="tab-pane fade" id="{tab_group_name}-{tab_id}" role="tabpanel" aria-labelledby="{tab_group_name}-{tab_id}-tab">\n'
       tab_content += templ.content_as_html()
       tab_content += '\n</div>\n'
