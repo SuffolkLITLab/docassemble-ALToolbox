@@ -3,7 +3,7 @@ from docassemble.base.util import CustomDataType, DAValidationError
 
 class PhoneNumber( CustomDataType ):
     name = 'phone'
-    input_class = 'dal-phone'
+    input_class = 'al-intl-phone'
     javascript = """\
 /* # Resources
 *  1. What we're using: https://github.com/jackocnr/intl-tel-input
@@ -28,7 +28,7 @@ let validatePhoneNumber = function( value, element, params ) {
 $.validator.addMethod( 'phone', validatePhoneNumber );
 """
     jq_rule = 'phone'
-    jq_message = 'You need to enter a valid phone number.'
+    jq_message = 'Invalid input. Did you enter a "+" before your number?'
     
     # No server-side validation. Just avoiding user error here.
     # If you want to discuss that decision, flag someone else for that.
