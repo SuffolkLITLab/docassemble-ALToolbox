@@ -24,9 +24,10 @@ subquestion: |
 
   1. Use **snake_case.ext** to name all your files   
   1. Add a demo to show others how to use your tool      
-      - Always include "_demo" at the end of the demo yml file
+      - Always include "_demo" at the end of the demo yml file name
       - In the metadata section add a **title** starting with **ALToolbox - **.
   1. If your tool uses more than one file, add a **package** yml file for easy reference. See "copy_button.yml" as an example.
+      - Do **not** add any metadata in the package file as it will override the interview's matadata.
   
   ####For users:
   
@@ -61,6 +62,7 @@ code: |
     "collapse_template_demo": ['Collapse/open text display on the screen', 'collapse_template.yml'],
     "copy_button_demo": ['Add a copy button with tooltip', 'copy_button.yml'],
     "display_template_demo": ['Display the subject and content of a markdown template with/without scroll bar; optional css class', 'display_template.yml'], 
+    "phone_number_validation_demo": ['Validate international phone number input', 'phone-number-validation.yml'],
     "Shorten a url": ['Shorten a long url for neater display on the screen', 'misc.py'],
     "TextCounter": ['Text input with a counter', 'TextCounter.js'], 
     "ThreePartsDate": ['Date input with month, day, year as separate parts', 'ThreePartsDate.py'],

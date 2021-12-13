@@ -1,24 +1,26 @@
-/* Immediate (client side) jQuery validation of phone number
-*  input with options of countries.
-*
-*  Haven't found a way to get a phone number's country into
-*  persistent data.
-*
-*  # Resources
-*  1. What we're using: https://github.com/jackocnr/intl-tel-input
-*  1. Especially see: https://github.com/jackocnr/intl-tel-input#static-methods getInstance
-*  1. https://www.npmjs.com/package/google-libphonenumber
-*  1. https://github.com/google/libphonenumber/blob/master/FALSEHOODS.md
-*  1. source: https://www.sitepoint.com/working-phone-numbers-javascript/
-*/
 $(document).on('daPageLoad', function(){
-  // These are always new nodes, even when you click back.
-  let phoneNodes = document.querySelectorAll( '.dal-phone' );
-
+  // Retrieve country code from a hidden field 
+  var country = $(".question-invisible");   
+  var country_code = country.val();  
+  
+  // Set 'us' as the default if country_code has no value.
+  if (!country_code){
+     country_code = 'us'; 
+  }
+  // Loop thru all the phone input fields on the current screen
+  let phoneNodes = document.querySelectorAll( '.al-intl-phone' );  
   for ( let node of phoneNodes ) {
     let telObj = window.intlTelInput( node, {
-      initialCountry: 'US',  // Sorry everyone else :(
+      initialCountry: country_code,        
       utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/utils.min.js"
-    });
-  }
-});
+    });        
+    
+    // Save input as full number (eg +17024181234) to the backend        
+    $(node).val(telObj.getNumber());	
+
+    // Save country input text form (as opposed to digit) separately to the hidden field
+    // This value is "undefined" for US numbers, but our default value takes care of that.
+    $(country).val(telObj.getSelectedCountryData().iso2);      
+  };
+  
+}); 

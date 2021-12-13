@@ -1,4 +1,4 @@
-metadata:
+comment: |
   title: Phone number validation
   description: |
     Imports files for phone number validation custom data type field using an international validator. Users select their country from a dropdown. The current downside is that the data for a number's country isn't stored on the server, so when the user hits 'back', the phone number country defaults to the US (sorry everyone else) and they have to re-select the country for their phone number.
