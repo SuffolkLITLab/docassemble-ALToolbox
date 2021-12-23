@@ -27,8 +27,10 @@ var validatePhoneNumber = function( value, element, params ) {
   */
   // When a field is empty, this value will be '', which counts as `false` here
   if ( value.trim() ) {
-    // Utils lets us accept and validate numbers docassemble has formatted
-    //window.intlTelInputGlobals.loadUtils("build/js/utils.js");
+    // We can't use window.intlTelInputGlobals.loadUtils. It lets us
+    // validate numbers docassemble has formatted, but only the first time
+    // The user hits 'Back'. After that, the numbers are seen as invalid.
+    
     // Get the special field that has already been created during page load
     var telLibObj = window.intlTelInputGlobals.getInstance( element );
     // Validate its value when the form is submitted
