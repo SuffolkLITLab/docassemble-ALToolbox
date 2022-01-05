@@ -1,7 +1,9 @@
 $(document).on('daPageLoad', function(){
-  /** Takes any inputs on the page with the class `al_intl_phone` and changes
-  *    them, giving the user a dropdown from which to choose a country. It
-  *    can also automatically identify the country based on the phone number.
+  /** When the page first loads, gets the value from any `.al_intl_phone` input
+  *    field, transforms it, puts the transformed value back into the input
+  *    field, and adds a dropdown from which to choose a country. It
+  *    can also automatically identify the country based on the phone number
+  *    if one already exists, for example when a user hits 'Back' to such a page.
   *    When you use it with the docassemble custom datatype for phone numbers
   *    that we've included in the ALToolbox, it will also validate the phone
   *    number when the user taps to continue. The default country is 'us' for
@@ -44,6 +46,8 @@ $(document).on('daPageLoad', function(){
     // Unfortunately, docassemble reformats the number and intl-tel-input
     // thinks the number is invalid. It's complicated to describe, but you
     // can see it if you go forward and back three times on our demo screens.
+    
+    // See https://www.npmjs.com/package/intl-tel-input#recommended-usage about the full international format.
     $(node).val(telObj.getNumber());
   };
   
