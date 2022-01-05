@@ -10,7 +10,10 @@ question: |
 subquestion: |
   This tool creates a **custom datatype called "al_intl_phone"**, then use a javascript plugin ([intl-tel-input](https://www.npmjs.com/package/intl-tel-input)) to validate international phone number input in docassemble interviews.
   
-  To use this feature, add one or more input fields with `datatype: al_intl_phone` in a question block.
+  To use this feature, 
+  
+  1. Add `phone_number_validation.yml` to your `include` block.
+  1. Add one or more input fields with `datatype: al_intl_phone` in a question block.
   
   Valid US phone number to try: **201-555-0123**[BR]
   Valid UK phone number to try: **+44 1434 634996**[BR]
