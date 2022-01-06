@@ -44,7 +44,7 @@ $.validator.addMethod( 'al_intl_phone', validatePhoneNumber );
 """
     jq_rule = 'al_intl_phone'
     # People that have just entered an invalid US phone number could find this confusing
-    jq_message = 'Invalid input. Did you remember to type a "+" before your number?'
+    jq_message = 'This phone number doesn\'t look right. Note that a non-US number needs a "+" before the number.'
     
     # No server-side validation. Just avoiding user error here.
     # If you want to discuss that decision, make an issue on the repository.
