@@ -9,3 +9,7 @@ Fixes CSS for dropdown height being affected by DA error message
   padding-top: .75em;
   padding-bottom: .75em;
 }
+
+.al_intl_phone {
+  width: unset;
+}

@@ -8,31 +8,36 @@ include:
 question: |
   International phone number input validation 
 subquestion: |
-  This tool uses a **custom datatype: phone** along with a javascript plugin ([intl-tel-input](https://www.npmjs.com/package/intl-tel-input)) to validate international phone number input in docassemple interviews.
+  This tool creates a **custom datatype called "al_intl_phone"**, then use a javascript plugin ([intl-tel-input](https://www.npmjs.com/package/intl-tel-input)) to validate international phone number input in docassemble interviews.
   
-  How to use this tool in your interview:
+  To use this feature, 
   
-  1. Add a **phone** input field in a question block. You can add more than one such field in the same block.
-  1. Copy the field **invisible** in its entirety from this demo and paste it below your **phone** field(s). This field is used to pass data to javascript behind the scene.  
+  1. Add `phone_number_validation.yml` to your `include` block.
+  1. Add one or more input fields with `datatype: al_intl_phone` in a question block.
   
   Valid US phone number to try: **201-555-0123**[BR]
-  Valid UK phone number to try: **44 1434 634996**[BR]
-  Valid Spain phone number to try: **34 912 345 678** (34 9xx xxx xxx)
+  Valid UK phone number to try: **+44 1434 634996**[BR]
+  Valid Spain phone number to try: **+34 912 345 678** (34 9xx xxx xxx)
 fields:
   - Phone number 1: phone_number_1
-    datatype: phone
+    datatype: al_intl_phone
   - Phone number 2: phone_number_2
-    datatype: phone  
-  - no label: invisible
-    datatype: hidden
+    datatype: al_intl_phone
     required: false
 ---
 mandatory: True
 question: |
   Your phone numbers
 subquestion: |
-  You can press "Back" and see that the numbers are saved, but the countries are both US. Also, the formatting changes a little.
+  You can press "Back" and see that the numbers and country labels are saved. The formatting does change a little.
   
   **Your numbers were:**[BR]
   ${ phone_number_1 }[BR]
   ${ phone_number_2 }[BR]
+  
+  
+  ### More Resources
+  1. The javascript library we're using is [intl-tel-input](https://github.com/jackocnr/intl-tel-input)
+  1. It uses [libphonenumber](https://www.npmjs.com/package/google-libphonenumber)
+  1. [libphonenumber FAQ](https://github.com/google/libphonenumber/blob/master/FAQ.md)
+  1. [Falsehoods developers believe about phone numbers](https://github.com/google/libphonenumber/blob/master/FALSEHOODS.md)

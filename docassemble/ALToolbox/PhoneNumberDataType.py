@@ -2,33 +2,49 @@ import re
 from docassemble.base.util import CustomDataType, DAValidationError
 
 class PhoneNumber( CustomDataType ):
-    name = 'phone'
-    input_class = 'al-intl-phone'
+    name = 'al_intl_phone'
+    input_class = 'al_intl_phone'
     javascript = """\
-/* # Resources
-*  1. What we're using: https://github.com/jackocnr/intl-tel-input
-*  1. Especially see: https://github.com/jackocnr/intl-tel-input#static-methods getInstance
-*  1. https://www.npmjs.com/package/google-libphonenumber
-*  1. https://github.com/google/libphonenumber/blob/master/FALSEHOODS.md
-*  1. source: https://www.sitepoint.com/working-phone-numbers-javascript/
+/** When combined with the phone number javascript file shown in
+*    phone_number_validation_demo.yml, this docassemble CustomDataType
+*    will make sure a user has give valid phone numbers in input fields
+*    with the `datatype` `al_intl_phone`. This includes international
+*    numbers.
+*
+* This docassemble CustomDataType will be installed on your server along
+*    with the ALToolbox package. Like all docassemble CustomDataTypes, it
+*    will always be active on your server as long as it's there.
+*    
+* ## More Resources
+*    1. What we're using: https://github.com/jackocnr/intl-tel-input
+*    1. It uses https://www.npmjs.com/package/google-libphonenumber
+*    1. https://github.com/google/libphonenumber/blob/master/FALSEHOODS.md
+*    1. https://github.com/google/libphonenumber/blob/master/FAQ.md
 */
-
-// Immediate client side validation (add to jQuery validator)
-// https://intl-tel-input.com/node_modules/intl-tel-input/examples/gen/is-valid-number.html
-let validatePhoneNumber = function( value, element, params ) {
-  console.log( 'params', params );
+var validatePhoneNumber = function( value, element, params ) {
+  /** Returns true if the international phone number is valid or if the field
+  *    is empty. Otherwise returns false.
+  */
+  // When a field is empty, this value will be '', which counts as `false` here
   if ( value.trim() ) {
-    let telLibObj = window.intlTelInputGlobals.getInstance( element );
-    if ( telLibObj.isValidNumber() ) { return true; }
+    // We can't use window.intlTelInputGlobals.loadUtils. It lets us
+    // validate numbers docassemble has formatted, but only the first time
+    // The user hits 'Back'. After that, the numbers are seen as invalid.
+    
+    // Get the special field that has already been created during page load
+    var telLibObj = window.intlTelInputGlobals.getInstance( element );
+    // Validate its value when the form is submitted
+    return telLibObj.isValidNumber();
   }
-  // If any of those didn't pass
-  return false;
+  // If it's an empty field, then it's valid as far as this is concerned.
+  return true;
 };
 
-$.validator.addMethod( 'phone', validatePhoneNumber );
+$.validator.addMethod( 'al_intl_phone', validatePhoneNumber );
 """
-    jq_rule = 'phone'
-    jq_message = 'Invalid input. Did you enter a "+" before your number?'
+    jq_rule = 'al_intl_phone'
+    # People that have just entered an invalid US phone number could find this confusing
+    jq_message = 'This phone number doesn\'t look right. Note that a non-US number needs a "+" before the number.'
     
     # No server-side validation. Just avoiding user error here.
-    # If you want to discuss that decision, flag someone else for that.
+    # If you want to discuss that decision, make an issue on the repository.
