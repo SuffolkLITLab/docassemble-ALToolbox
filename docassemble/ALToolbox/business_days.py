@@ -15,10 +15,10 @@ from docassemble.base.util import as_datetime
       local_holidays.pop_named(record) 
   the results will erroneously include 2021's holidays as well. But practically no one would delete New Year anyway, we should be fine and there is no need to alarm the user about this issue.
 """
-def non_business_days(date, interval=0, country='US', state='MA', province=None, add_holidays=None, remove_holidays=None, first_n_dates=0) -> dict:      
+def non_business_days(start_date, add_n_days=0, country='US', state='MA', province=None, add_holidays=None, remove_holidays=None, first_n_dates=0) -> dict:      
   # 1. Collect weekends, standard holidays and user defined add/remove holidays
   # 1.1 Get all saturdays and sundays in the given year  
-  date = as_datetime(date)
+  date = as_datetime(start_date)
   year = date.year
   # Must use .strftime('%m/%d/%Y')to make it a string, otherwise will get 'TypeError'
   sundays = pd.date_range(start=str(year), end=str(year+1), freq='W-SUN').strftime('%m/%d/%Y').tolist()
@@ -70,18 +70,18 @@ def non_business_days(date, interval=0, country='US', state='MA', province=None,
   #5. Return the result  
   return final_output
 	
-def is_business_day(date, interval=0, country='US', state='MA', province=None, add_holidays=None, remove_holidays=None) -> bool:  
-  end_date = (as_datetime(date) + datetime.timedelta(interval)).strftime('%m/%d/%Y')    
-  if end_date in non_business_days(date, interval=interval, country=country, state=state, province=province, add_holidays=add_holidays, remove_holidays=remove_holidays).keys():
+def is_business_day(start_date, add_n_days=0, country='US', state='MA', province=None, add_holidays=None, remove_holidays=None) -> bool:  
+  end_date = (as_datetime(start_date) + datetime.timedelta(days=add_n_days)).strftime('%m/%d/%Y')    
+  if end_date in non_business_days(start_date, add_n_days=add_n_days, country=country, state=state, province=province, add_holidays=add_holidays, remove_holidays=remove_holidays).keys():
     return False
   else: 
     return True
   
-def get_next_business_day(date, interval=0, country='US', state='MA', province=None, add_holidays=None, remove_holidays=None) -> dt:	
-  index = interval    
+def get_next_business_day(start_date, add_n_days=0, country='US', state='MA', province=None, add_holidays=None, remove_holidays=None) -> dt:	
+  index = add_n_days    
   done = False
   while not done: 
-    new_date = (as_datetime(date) + datetime.timedelta(days=index)).strftime('%m/%d/%Y')
-    done = is_business_day(date=new_date, country=country, state=state, province=province, add_holidays=add_holidays, remove_holidays=remove_holidays)
+    new_date = (as_datetime(start_date) + datetime.timedelta(days=index)).strftime('%m/%d/%Y')
+    done = is_business_day(start_date=new_date, country=country, state=state, province=province, add_holidays=add_holidays, remove_holidays=remove_holidays)
     index += 1
   return new_date 

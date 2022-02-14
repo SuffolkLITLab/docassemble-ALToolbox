@@ -16,8 +16,8 @@ subquestion: |
   
   Input parameters for all of them are basically the same:
   
-  1. date - **required**. ex: '02/15/2022'
-  1. interval - integer, **default is 0**
+  1. start_date - **required**. ex: '02/15/2022'
+  1. add_n_days - integer, **default is 0**
   1. country - string, **default is 'US'**
   1. state - string, **default is 'MA'**
   1. province - string, **default is None**
@@ -27,12 +27,12 @@ subquestion: |
     '2022-02-03': "Special Day1", 
     '2022-02-04': "Special Day2"
   }
-  1. remove_holidays - list of strings, default is None. 
+  1. remove_holidays - list of strings, **default is None**. 
       - Used to delete obsolete standard holidays
       - ex: delete_days = ["evacuation"], note that the string is case insensitive and can be a partial holiday name  
-      - For MA, the module already removed the Evacuation Day.
+      - For MA, the module already removed the Evacuation Day
   1. first_n_dates - integer, **default is 0**
-      - Used only in function **non_business_days** to extract the first n non-business days.      
+      - Used only in function **non_business_days** to extract the first n non-business days      
 field: intro
 ---
 question: |
@@ -52,7 +52,7 @@ subquestion: |
   You entered ${my_date}, and you wanted to wait for ${wait_days} day(s).
   
   Is ${my_date} a business day in MA, USA? ${ma_b_date}<br>
-  The next buisiness day after the waiting periord is ${ma_next_bdate}    
+  The next business day after the waiting period is ${ma_next_bdate}     
   
   The first 20 non-business days in **MA of USA** in 2022: <br>
   %for day, name in ma_off_days.items():
@@ -79,12 +79,12 @@ code: |
   }
 ---
 code: |  
-  ma_next_bdate = get_next_business_day(date=my_date, interval=wait_days, add_holidays=add_special_days)   
+  ma_next_bdate = get_next_business_day(start_date=my_date, add_n_days=wait_days, add_holidays=add_special_days)   
   
-  ma_b_date = is_business_day(date=my_date, add_holidays=add_special_days)
+  ma_b_date = is_business_day(start_date=my_date, add_holidays=add_special_days)
   
-  ma_off_days = non_business_days(date=my_date, add_holidays=add_special_days, remove_holidays=delete_days, first_n_dates=20)
+  ma_off_days = non_business_days(start_date=my_date, add_holidays=add_special_days, remove_holidays=delete_days, first_n_dates=20)
   
-  ny_off_days = non_business_days(date=my_date, state='NY', first_n_dates=20)
+  ny_off_days = non_business_days(start_date=my_date, state='NY', first_n_dates=20)
   
-  canada_off_days = non_business_days(date=my_date, country='CAN', province='NS', first_n_dates=20)
+  canada_off_days = non_business_days(start_date=my_date, country='CAN', province='NS', first_n_dates=20)

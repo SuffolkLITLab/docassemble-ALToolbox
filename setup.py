@@ -53,7 +53,7 @@ setup(name='docassemble.ALToolbox',
       url='https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/framework/altoolbox',
       packages=find_packages(),
       namespace_packages=['docassemble'],
-      install_requires=[],
+      install_requires=['holidays>=0.12', 'pandas>=1.2.4'],
       zip_safe=False,
       package_data=find_package_data(where='docassemble/ALToolbox/', package='docassemble.ALToolbox'),
      )
