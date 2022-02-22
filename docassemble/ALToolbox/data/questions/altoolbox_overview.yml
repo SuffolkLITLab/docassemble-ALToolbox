@@ -57,7 +57,7 @@ code: |
     "addenda_for_docx_text_overflow": ['Add attachment output for overflow text, if your template is docx', 'addenda.py'],
     "addenda_for_pdf_text_overflow": ['Add attachment output for overflow text, if your template is pdf', 'addenda.py'],
     "Addup": ['Add up numeric values collected through a DAList', 'Addup.py'],
-    "business_days_demo": ['Get the next business-day, check if a day is business-day, or display non-business days for a given state/province of a given country', 'business_days.py'],
+    "business_days_demo": ['Multiple functions to get the next business-day, check if a day is business-day, display standard holidays or non-business days for a given state/province of a given country', 'business_days.py'],
     "Bells and whistles": ['Add icons; open a phone dialer; format currency', 'misc.py'],
     "collapse_template_demo": ['Collapse/open text display on the screen', 'collapse_template.yml'],
     "copy_button_demo": ['Add a copy button with tooltip', 'copy_button.yml'],
