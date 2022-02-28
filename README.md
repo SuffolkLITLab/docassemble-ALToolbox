@@ -45,3 +45,4 @@ Read more on our [documentation page](https://suffolklitlab.org/docassemble-Asse
 * @plocket  
 * @nonprofittechy
 * @purplesky2016
+* @brycestevenwilley
