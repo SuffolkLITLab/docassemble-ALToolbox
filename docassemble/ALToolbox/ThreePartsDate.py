@@ -1,4 +1,10 @@
-from docassemble.base.util import CustomDataType, DAValidationError, word, as_datetime, today
+from docassemble.base.util import (
+    CustomDataType,
+    DAValidationError,
+    word,
+    as_datetime,
+    today,
+)
 
 js_text = """\
   //this is an adaptation of Jonathan Pyle's datereplace.js
@@ -91,51 +97,54 @@ js_text = """\
   });
 """
 
+
 class ThreePartsDate(CustomDataType):
-  container_class = 'da-ThreePartsDate-container'
-  name = 'ThreePartsDate'
-  input_type = 'ThreePartsDate'
-  input_class = 'da-ThreePartsDate'
-  is_object = True
-  javascript = js_text
-  jq_rule = 'ThreePartsDate'
-  jq_message = 'Your input does not look right.'
-  @classmethod
-  def validate(cls, item):
-	  # Change input string into DADateTime		
-    try:
-      mydate = as_datetime( item )    
-      return True		
-    except:
-      msg =  item + " is not a valid date."      
-      raise DAValidationError(msg)
-  
-  @classmethod
-  def transform(cls, item):
-    return as_datetime(item)
-  
-  @classmethod
-  def default_for(cls, item):
-    return item.format("MM/dd/yyyy")
-  
+    container_class = "da-ThreePartsDate-container"
+    name = "ThreePartsDate"
+    input_type = "ThreePartsDate"
+    input_class = "da-ThreePartsDate"
+    is_object = True
+    javascript = js_text
+    jq_rule = "ThreePartsDate"
+    jq_message = "Your input does not look right."
+
+    @classmethod
+    def validate(cls, item):
+        # Change input string into DADateTime
+        try:
+            mydate = as_datetime(item)
+            return True
+        except:
+            msg = item + " is not a valid date."
+            raise DAValidationError(msg)
+
+    @classmethod
+    def transform(cls, item):
+        return as_datetime(item)
+
+    @classmethod
+    def default_for(cls, item):
+        return item.format("MM/dd/yyyy")
+
+
 class BirthDate(ThreePartsDate):
-  name = 'BirthDate'
-  input_type = 'BirthDate'
-  input_class = 'da-BirthDate'
-  is_object = True
-  jq_rule = 'BirthDate'
-  
-  javascript = js_text.replace("ThreePartsDate","BirthDate")
-  
-  @classmethod
-  def validate(cls, item):
-	  # Change input string into DADateTime		
-    try:
-      mydate = as_datetime( item )      
-    except:
-      msg =  item + " is not a valid date."      
-      raise DAValidationError(msg)    
-    if mydate <= today():
-      return True
-    else:
-      raise DAValidationError("Please enter a date before today")
+    name = "BirthDate"
+    input_type = "BirthDate"
+    input_class = "da-BirthDate"
+    is_object = True
+    jq_rule = "BirthDate"
+
+    javascript = js_text.replace("ThreePartsDate", "BirthDate")
+
+    @classmethod
+    def validate(cls, item):
+        # Change input string into DADateTime
+        try:
+            mydate = as_datetime(item)
+        except:
+            msg = item + " is not a valid date."
+            raise DAValidationError(msg)
+        if mydate <= today():
+            return True
+        else:
+            raise DAValidationError("Please enter a date before today")
