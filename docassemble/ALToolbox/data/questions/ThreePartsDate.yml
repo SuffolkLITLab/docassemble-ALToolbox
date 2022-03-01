@@ -4,6 +4,11 @@ metadata:
 modules:
   - .ThreePartsDate
 ---
+mandatory: True
+code: |
+  date_of_birth
+  end
+---
 question: |
   Regular datatype vs ThreePartsDate datatype.
 subquestion: | 
@@ -15,16 +20,42 @@ subquestion: |
 
 fields:
   - When is your high school graduation?: date_of_graduation
-    datatype: ThreePartsDate  
-    default: '2/1/2000'
-  - When did you start working: employment_date
-    datatype: date
+    datatype: ThreePartsDate
     required: False
-  - Validated birth: date_of_birth
+  - Birth date (today is valid): date_of_birth
     datatype: BirthDate
+    default: ${ today(format='MM/dd/yyyy') }
+    required: True
+  - Show hidden date fields: show_fields
+    datatype: yesno
+  - Court date: court_date
+    datatype: ThreePartsDate
+    default: '2/1/2055'
+    required: True
+    show if: show_fields
+  - Date you lost your first tooth: tooth_date
+    datatype: BirthDate
+    required: False
+    show if: show_fields
 ---
-mandatory: true
+#mandatory: true
+event: end
 question: |
-  You were born on ${ date_of_birth }.  
+  Your dates
+subquestion: |
 
+  % if date_of_birth:
+  You were born ${ date_of_birth }.
+  % endif
+
+  % if date_of_graduation:
   Your graduation date is ${ date_of_graduation }
+  % endif
+
+  % if defined('court_date'):
+  Your court date is ${ court_date }
+  % endif
+
+  % if defined('tooth_date') and not tooth_date is None:
+  The date lost your first tooth was ${ tooth_date }
+  % endif
