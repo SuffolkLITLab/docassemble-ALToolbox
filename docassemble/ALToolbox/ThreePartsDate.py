@@ -1,4 +1,12 @@
-from docassemble.base.util import CustomDataType, DAValidationError, word, as_datetime, today, date_difference, log
+from docassemble.base.util import (
+    CustomDataType,
+    DAValidationError,
+    word,
+    as_datetime,
+    today,
+    date_difference,
+    log,
+)
 import re
 
 js_text = """\
@@ -110,64 +118,69 @@ js_text = """\
   // No jQuery validation, since it doesn't work on hidden elements
 """
 
+
 class ThreePartsDate(CustomDataType):
-  name = 'ThreePartsDate'
-  input_type = 'ThreePartsDate'
-  javascript = js_text
-  jq_message = word('Answer with a valid date')
-  is_object = True
-  # Probably won't work because the input to validate is hidden
-  jq_rule = 'date'
-  
-  @classmethod
-  def validate(cls, item):
-    # If there's no input in the item, it's valid
-    if not isinstance(item, str) or item == '':
-      return True
-    else:
-      # Otherwise it needs to be a date after the year 1000. We ourselves make
-      # sure this format is created if the user gives valid info.
-      matches_date_pattern = re.search( r'^\d{1,2}\/\d{1,2}\/\d{4}$', item )
-      if matches_date_pattern:
-        return True
-      else:
-        raise DAValidationError(f"{ item } {word('is not a valid date')}")
-  
-  @classmethod
-  def transform(cls, item):
-    if item:
-      return as_datetime(item)
-  
-  @classmethod
-  def default_for(cls, item):
-    if item:
-      return item.format("MM/dd/yyyy")
+    name = "ThreePartsDate"
+    input_type = "ThreePartsDate"
+    javascript = js_text
+    jq_message = word("Answer with a valid date")
+    is_object = True
+    # Probably won't work because the input to validate is hidden
+    jq_rule = "date"
+
+    @classmethod
+    def validate(cls, item):
+        # If there's no input in the item, it's valid
+        if not isinstance(item, str) or item == "":
+            return True
+        else:
+            # Otherwise it needs to be a date after the year 1000. We ourselves make
+            # sure this format is created if the user gives valid info.
+            matches_date_pattern = re.search(r"^\d{1,2}\/\d{1,2}\/\d{4}$", item)
+            if matches_date_pattern:
+                return True
+            else:
+                raise DAValidationError(f"{ item } {word('is not a valid date')}")
+
+    @classmethod
+    def transform(cls, item):
+        if item:
+            return as_datetime(item)
+
+    @classmethod
+    def default_for(cls, item):
+        if item:
+            return item.format("MM/dd/yyyy")
 
 
 class BirthDate(ThreePartsDate):
-  name = 'BirthDate'
-  input_type = 'BirthDate'
-  javascript = js_text.replace("ThreePartsDate", "BirthDate")
-  jq_message = word('Answer with a valid date of birth')
-  is_object = True
-  # Probably won't work because the input to validate is hidden
-  jq_rule = 'date'
-  
-  @classmethod
-  def validate(cls, item):
-    # If there's no input in the item, it's valid
-    if not isinstance(item, str) or item == '':
-      return True
-    else:
-      # Otherwise it needs to be a date on or before today and after the year 1000.
-      # We ourselves create this format if the user gives valid info.
-      matches_date_pattern = re.search( r'^\d{1,2}\/\d{1,2}\/\d{4}$', item )
-      if matches_date_pattern:
-        date_diff = date_difference(starting=as_datetime( item ), ending=today())
-        if date_diff.days >= 0.0:
-          return True
+    name = "BirthDate"
+    input_type = "BirthDate"
+    javascript = js_text.replace("ThreePartsDate", "BirthDate")
+    jq_message = word("Answer with a valid date of birth")
+    is_object = True
+    # Probably won't work because the input to validate is hidden
+    jq_rule = "date"
+
+    @classmethod
+    def validate(cls, item):
+        # If there's no input in the item, it's valid
+        if not isinstance(item, str) or item == "":
+            return True
         else:
-          raise DAValidationError(word("Answer with a <strong>date of birth</strong>"))
-      else:
-        msg = f"{ item } {word('is not a valid <strong>date of birth</strong>')}"
-        raise DAValidationError(msg)
+            # Otherwise it needs to be a date on or before today and after the year 1000.
+            # We ourselves create this format if the user gives valid info.
+            matches_date_pattern = re.search(r"^\d{1,2}\/\d{1,2}\/\d{4}$", item)
+            if matches_date_pattern:
+                date_diff = date_difference(starting=as_datetime(item), ending=today())
+                if date_diff.days >= 0.0:
+                    return True
+                else:
+                    raise DAValidationError(
+                        word("Answer with a <strong>date of birth</strong>")
+                    )
+            else:
+                msg = (
+                    f"{ item } {word('is not a valid <strong>date of birth</strong>')}"
+                )
+                raise DAValidationError(msg)
