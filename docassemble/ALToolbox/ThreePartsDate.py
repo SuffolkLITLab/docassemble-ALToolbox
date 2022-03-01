@@ -9,6 +9,7 @@ js_text = """\
       var required = $(dateElement).closest('.da-form-group').hasClass('darequired');
       $(dateElement).hide();
       $(dateElement).attr('type', 'hidden');
+      $(dateElement).attr('aria-hidden', 'true');
       
       //Construct the input components
       var parentElement = $('<div class="form-row row">');
@@ -106,13 +107,12 @@ js_text = """\
     });
   });
   
-  // No jQuery validation, which doesn't work on hidden elements
+  // No jQuery validation, since it doesn't work on hidden elements
 """
 
 class ThreePartsDate(CustomDataType):
   name = 'ThreePartsDate'
   input_type = 'ThreePartsDate'
-  #input_class = 'da-ThreePartsDate'
   javascript = js_text
   jq_message = word('Answer with a valid date')
   is_object = True
@@ -147,7 +147,6 @@ class ThreePartsDate(CustomDataType):
 class BirthDate(ThreePartsDate):
   name = 'BirthDate'
   input_type = 'BirthDate'
-  #input_class = 'da-BirthDate'
   javascript = js_text.replace("ThreePartsDate", "BirthDate")
   jq_message = word('Answer with a valid date of birth')
   is_object = True
