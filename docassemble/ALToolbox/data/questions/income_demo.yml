@@ -1,0 +1,36 @@
+metadata:
+  title:  ALToolbox - Income
+---
+modules: 
+  - .income
+---
+objects:
+  - income: ALIncome
+  #- jobs: ALJobList.using(complete_attribute='complete')
+  #- incomes: ALIncomeList.using(complete_attribute='complete')
+  #- expense: ALIncome
+---
+mandatory: True
+code: |
+  income.value
+  end
+---
+id: income
+generic object: ALIncome
+question: |
+  What is your income for that job?
+fields:
+  - Amount: x.value
+    datatype: currency
+  - Pay period: x.period
+    datatype: radio
+    code: |
+      income_period_list()
+---
+id: end
+event: end
+question: |
+  Your answers
+subquestion: |
+  Income: ${ currency( income.value ) } ${ income.period } times per year
+---
