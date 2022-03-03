@@ -6,19 +6,100 @@ modules:
 ---
 objects:
   - income: ALIncome
-  #- jobs: ALJobList.using(complete_attribute='complete')
-  #- incomes: ALIncomeList.using(complete_attribute='complete')
-  #- expense: ALIncome
+  - incomes: ALIncomeList.using(
+      complete_attribute='complete',
+      there_is_another=False)
+  - job: ALJob
+  - jobs: ALJobList.using(
+      complete_attribute='complete',
+      there_is_another=False)
+  - complex_job: ALMultipartJob.using(
+      complete_attribute='complete',
+      there_is_another=False)
 ---
 mandatory: True
 code: |
-  income.value
+  # Multipart job
+  get_complex_job_sources
+  complex_job.gather()
+
+  ## Individual job
+  #job.source = 'random'
+  #job.value
+  
+  ## List of incomes
+  #income_sources
+  #get_income_sources
+  #incomes.gather()
+  #
+  ## Individual income
+  #income.source = 'random'
+  #income.value
+  
+  before_end_so_answer_are_saved
   end
 ---
-id: income
-generic object: ALIncome
+code: |
+  job_source_transaction_types = {
+    'tip': 'payment',
+    'deduction': 'deduction',
+    'garnishment': 'deduction'
+  }
+---
+code: |
+  # commission, bonus, hourly wage, salary, overtime
+  job_income_choices = [
+    ('tip', 'Tip'),
+    ('deduction', 'Deduction'),
+    ('garnishment', 'Garnishment')
+  ]
+---
+code: |
+  if job_sources.any_true():
+    for source in job_sources.true_values():
+      job_part = complex_job.appendObject(source=source)
+  get_complex_job_sources = True
+---
+code: |
+  complex_job[i].transaction_type = job_source_transaction_types[complex_job[i].source]
+  complex_job[i].value
+  log( complex_job[i].transaction_type, 'console')
+  complex_job[i].complete = True
+---
+id: job parts
 question: |
-  What is your income for that job?
+  Does your job have any of the below?
+fields:
+  - no label: job_sources
+    datatype: checkboxes
+    code: job_income_choices
+---
+code: |
+  if income_sources.any_true():
+    for source in income_sources.true_values():
+      one_income = incomes.appendObject(source=source)
+  get_income_sources = True
+---
+generic object: ALIncomeList
+code: |
+  x[i].value
+  x[i].complete = True
+---
+id: which incomes
+question: |
+  What are your sources of income?
+fields:
+  - no label: income_sources
+    datatype: checkboxes
+    code: |
+      income_source_list()
+---
+id: income value
+generic object: ALIncome
+if: |
+  x.transaction_type != 'deduction'
+question: |
+  What is your income from ${ x.source }?
 fields:
   - Amount: x.value
     datatype: currency
@@ -27,10 +108,81 @@ fields:
     code: |
       income_period_list()
 ---
+id: deduction value
+generic object: ALIncome
+if: |
+  x.transaction_type == 'deduction'
+question: |
+  What is removed from your paycheck for the ${ x.source }?
+fields:
+  - Amount: x.value
+    datatype: currency
+  - Pay period: x.period
+    datatype: radio
+    code: |
+      income_period_list()
+---
+id: before_end_so_answer_are_saved
+question: |
+  Avoid re-entering the answers
+continue button field: before_end_so_answer_are_saved
+---
 id: end
 event: end
 question: |
   Your answers
 subquestion: |
-  Income: ${ currency( income.value ) } ${ income.period } times per year
+
+  complex_job gross: ${ currency( complex_job.gross() ) } per year
+  
+  complex_job net: ${ currency( complex_job.net() ) } per year
+  
+comment: |
+  ${ job.source } gross: ${ currency( job.value ) } ${ job.period } times per year
+  
+  ${ income.source } income: ${ currency( income.value ) } ${ income.period } times per year
+  
+  Other incomes:
+  
+  % for one_income in incomes:
+  * ${ one_income.source }: ${ currency( one_income.value ) } ${ one_income.period } times per year
+  % endfor
+---
+#code: |
+#  if income_sources.any_true():
+#    #log( sources.true_values(), 'console' )
+#    #log( incomes.sources(), 'console' )
+#    for source in sources.true_values():
+#      if not source in incomes.sources():
+#        one_income = incomes.appendObject()
+#        one_income.value
+#        one_income.source = source
+#    
+#    for one_income in incomes:
+#      
+#  incomes.gathered
+#  incomes.complete = True
+---
+  #  for one_income in incomes:
+  #    one_income.value
+  #    one_income.complete = True
+  #  #incomes.there_is_another = False
+  #incomes.gathered = True
+---
+#code: |
+#  for one_income in incomes:
+#    one_income.value
+#  get_income_values = True
+---
+#id: income
+#generic object: ALIncome
+#question: |
+#  What is your income from ${ x.source }?
+#fields:
+#  - Amount: x.value
+#    datatype: currency
+#  - Pay period: x.period
+#    datatype: radio
+#    code: |
+#      income_period_list()
 ---
