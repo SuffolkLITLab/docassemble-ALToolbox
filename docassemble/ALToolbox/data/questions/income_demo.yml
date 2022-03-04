@@ -5,20 +5,26 @@ modules:
   - .income
 ---
 objects:
-  - income: ALIncome
-  - incomes: ALIncomeList.using(
+  - compound_jobs_list: ALMultipartJobList.using(
       complete_attribute='complete',
-      there_is_another=False)
-  - job: ALJob
-  - jobs: ALJobList.using(
-      complete_attribute='complete',
-      there_is_another=False)
+      ask_number=True)
   - compound_job: ALMultipartJob.using(
       complete_attribute='complete',
       there_is_another=False)
+  - jobs: ALJobList.using(
+      complete_attribute='complete',
+      there_is_another=False)
+  - job: ALJob
+  - incomes: ALIncomeList.using(
+      complete_attribute='complete',
+      there_is_another=False)
+  - income: ALIncome
 ---
 mandatory: True
 code: |
+  # Multipart job list
+  compound_jobs_list.gather()
+  
   # Multipart job
   compound_job.period
   get_compound_job_sources
@@ -55,7 +61,55 @@ code: |
     ('garnishment', 'Garnishment')
   ]
 ---
-# MULTIPART JOBS
+# MULTIPART JOBS LIST
+---
+code: |
+  compound_jobs_list[i].complete_attribute='complete'
+  compound_jobs_list[i].there_is_another=False
+  compound_jobs_list[i].there_are_any=True
+  compound_jobs_list[i].source
+  compound_jobs_list[i].period
+  compound_jobs_list[i].job_sources
+  compound_jobs_list[i].get_line_item_sources
+  compound_jobs_list[i].gather()
+  compound_jobs_list[i].complete = True
+---
+generic object: ALMultipartJob
+code: |
+  if x.job_sources.any_true():
+    for source in x.job_sources.true_values():
+      x.appendObject(source=source)
+  x.get_line_item_sources = True
+---
+generic object: ALMultipartJob
+code: |
+  x[i].transaction_type = job_source_transaction_types[x[i].source]
+  x[i].value
+  x[i].complete = True
+---
+id: how many jobs
+question: |
+  How many jobs do you have?
+fields:
+  - no label: compound_jobs_list.target_number
+---
+id: compound job name
+generic object: ALMultipartJob
+question: |
+  What is the name of this job?
+fields:
+  - Job name: x.source
+---
+id: job parts
+generic object: ALMultipartJob
+question: |
+  Does your ${ x.source } job have any of the below?
+fields:
+  - no label: x.job_sources
+    datatype: checkboxes
+    code: job_income_choices
+---
+# MULTIPART JOB
 ---
 code: |
   if job_sources.any_true():
@@ -70,7 +124,7 @@ code: |
 ---
 id: job parts
 question: |
-  Does your job have any of the below?
+  Does your (compound) job have any of the below?
 fields:
   - no label: job_sources
     datatype: checkboxes
@@ -79,7 +133,7 @@ fields:
 id: multipart job period
 generic object: ALMultipartJob
 question: |
-  Tell us about your job hours
+  Tell us about your (compound) job hours
 fields:
   - Hourly or salary?: x.is_hourly
     input type: radio
@@ -151,6 +205,8 @@ fields:
     code: |
       income_source_list()
 ---
+# ONE INCOME
+---
 id: income value
 generic object: ALIncome
 question: |
@@ -176,55 +232,35 @@ question: |
   Your answers
 subquestion: |
 
+  ## List of multipart jobs
+  
+  % for multi_job in compound_jobs_list:
+  **${ multi_job.source }:**
+  
+  * ${ currency( multi_job.gross() ) } **gross**
+  * ${ currency( multi_job.net() ) } **net**
+  
+  % endfor
+
+  ## One multipart job
+  
   compound_job gross: ${ currency( compound_job.gross() ) } per year
   
   compound_job net: ${ currency( compound_job.net() ) } per year
   
+  ## Regular job
+  
   ${ job.source } gross: ${ currency( job.value ) } ${ job.period } times per year
   
+  ## One income
+  
   ${ income.source } income: ${ currency( income.value ) } ${ income.period } times per year
+  
+  ## List of incomes
   
   Other incomes:
   
   % for one_income in incomes:
   * ${ one_income.source }: ${ currency( one_income.value ) } ${ one_income.period } times per year
   % endfor
----
-#code: |
-#  if income_sources.any_true():
-#    #log( sources.true_values(), 'console' )
-#    #log( incomes.sources(), 'console' )
-#    for source in sources.true_values():
-#      if not source in incomes.sources():
-#        one_income = incomes.appendObject()
-#        one_income.value
-#        one_income.source = source
-#    
-#    for one_income in incomes:
-#      
-#  incomes.gathered
-#  incomes.complete = True
----
-  #  for one_income in incomes:
-  #    one_income.value
-  #    one_income.complete = True
-  #  #incomes.there_is_another = False
-  #incomes.gathered = True
----
-#code: |
-#  for one_income in incomes:
-#    one_income.value
-#  get_income_values = True
----
-#id: income
-#generic object: ALIncome
-#question: |
-#  What is your income from ${ x.source }?
-#fields:
-#  - Amount: x.value
-#    datatype: currency
-#  - Pay period: x.period
-#    datatype: radio
-#    code: |
-#      income_period_list()
 ---

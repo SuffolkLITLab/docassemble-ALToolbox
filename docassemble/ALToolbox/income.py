@@ -487,6 +487,7 @@ class ALMultipartJob(ALIncomeList):
         else:
           return (Decimal(line_item.value) * Decimal(self.period)) / Decimal(times_per_year)
     
+    # Q: Allow `line_item` to be a string (source/id name)?
     def line_item_period_value(self, line_item, times_per_year=1):
       """
       Returns the amount earned or deducted over the specified period for
@@ -505,7 +506,7 @@ class ALMultipartJob(ALIncomeList):
         return -1 * absolute_value
       else:
         return absolute_value
- 
+    
     def gross(self, source=None, times_per_year=1):
         """
         Returns the sum of positive values (payments) for a given pay
