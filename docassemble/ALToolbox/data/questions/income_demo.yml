@@ -13,28 +13,29 @@ objects:
   - jobs: ALJobList.using(
       complete_attribute='complete',
       there_is_another=False)
-  - complex_job: ALMultipartJob.using(
+  - compound_job: ALMultipartJob.using(
       complete_attribute='complete',
       there_is_another=False)
 ---
 mandatory: True
 code: |
   # Multipart job
-  get_complex_job_sources
-  complex_job.gather()
+  compound_job.period
+  get_compound_job_sources
+  compound_job.gather()
 
-  ## Individual job
-  #job.source = 'random'
-  #job.value
+  # Individual job
+  job.source = 'Random Work'
+  job.value
   
-  ## List of incomes
-  #income_sources
-  #get_income_sources
-  #incomes.gather()
-  #
-  ## Individual income
-  #income.source = 'random'
-  #income.value
+  # List of incomes
+  income_sources
+  get_income_sources
+  incomes.gather()
+  
+  # Individual income
+  income.source = 'Random Income'
+  income.value
   
   before_end_so_answer_are_saved
   end
@@ -54,17 +55,18 @@ code: |
     ('garnishment', 'Garnishment')
   ]
 ---
+# MULTIPART JOBS
+---
 code: |
   if job_sources.any_true():
     for source in job_sources.true_values():
-      job_part = complex_job.appendObject(source=source)
-  get_complex_job_sources = True
+      job_part = compound_job.appendObject(source=source)
+  get_compound_job_sources = True
 ---
 code: |
-  complex_job[i].transaction_type = job_source_transaction_types[complex_job[i].source]
-  complex_job[i].value
-  log( complex_job[i].transaction_type, 'console')
-  complex_job[i].complete = True
+  compound_job[i].transaction_type = job_source_transaction_types[compound_job[i].source]
+  compound_job[i].value
+  compound_job[i].complete = True
 ---
 id: job parts
 question: |
@@ -73,6 +75,61 @@ fields:
   - no label: job_sources
     datatype: checkboxes
     code: job_income_choices
+---
+id: multipart job period
+generic object: ALMultipartJob
+question: |
+  Tell us about your job hours
+fields:
+  - Hourly or salary?: x.is_hourly
+    input type: radio
+    choices:
+      - Hourly: True
+      - Salary: False
+  - How often do you get paid?: x.period
+    input type: radio
+    code: |
+      income_period_list()
+  - How many hours do you work during that time?: x.hours_per_period
+    input type: number
+    show if: x.is_hourly
+---
+#  - How much do you get paid per hour?: 
+id: payment value
+generic object: ALMultipartJob
+if: |
+  x[i].transaction_type != 'deduction'
+question: |
+  What how much do you get paid for ${ x[i].source }?
+fields:
+  - Amount: x[i].value
+    datatype: currency
+---
+id: deduction value
+generic object: ALMultipartJob
+if: |
+  x[i].transaction_type == 'deduction'
+question: |
+  What is removed from your paycheck for the ${ x[i].source }?
+fields:
+  - Amount: x[i].value
+    datatype: currency
+---
+# JOBS
+---
+id: single job value
+generic object: ALJob
+question: |
+  What how much do you get paid for ${ x.source }?
+fields:
+  - Amount: x.value
+    datatype: currency
+  - Period: x.period
+    input type: radio
+    code: |
+      income_period_list()
+---
+# INCOMES
 ---
 code: |
   if income_sources.any_true():
@@ -96,31 +153,17 @@ fields:
 ---
 id: income value
 generic object: ALIncome
-if: |
-  x.transaction_type != 'deduction'
 question: |
-  What is your income from ${ x.source }?
+  What how much do you get paid for ${ x.source }?
 fields:
   - Amount: x.value
     datatype: currency
-  - Pay period: x.period
-    datatype: radio
+  - Period: x.period
+    input type: radio
     code: |
       income_period_list()
 ---
-id: deduction value
-generic object: ALIncome
-if: |
-  x.transaction_type == 'deduction'
-question: |
-  What is removed from your paycheck for the ${ x.source }?
-fields:
-  - Amount: x.value
-    datatype: currency
-  - Pay period: x.period
-    datatype: radio
-    code: |
-      income_period_list()
+# ENDING SCREENS
 ---
 id: before_end_so_answer_are_saved
 question: |
@@ -133,11 +176,10 @@ question: |
   Your answers
 subquestion: |
 
-  complex_job gross: ${ currency( complex_job.gross() ) } per year
+  compound_job gross: ${ currency( compound_job.gross() ) } per year
   
-  complex_job net: ${ currency( complex_job.net() ) } per year
+  compound_job net: ${ currency( compound_job.net() ) } per year
   
-comment: |
   ${ job.source } gross: ${ currency( job.value ) } ${ job.period } times per year
   
   ${ income.source } income: ${ currency( income.value ) } ${ income.period } times per year

@@ -395,26 +395,26 @@ class ALJobList(ALIncomeList):
         return result
 
 
-class ALJobLineItem(ALIncome):
-    """
-    Represents one job payment or deduction that may be hourly
-    or pay-period based. If non-hourly, may get gross and
-    net income amounts. This is a less common way of reporting income.
-    Ex: salary, tips, deduction
-    """
-    # TODO: pos/neg in here instead? (no because need ot calc gross with only pos?)
-    def gross_for_period(self, times_per_year=1):
-        """Returns the value if non-hourly. Otherwise, returns `None`."""
-        return self.amount(times_per_year = times_per_year)
-        
-    #def net_for_period(self, times_per_year=1):
-    #    """Returns the net amount (e.g., minus deductions) if the income
-    #       is non-hourly. Otherwise, returns `None`"""
-    #    if hasattr(self, 'is_hourly') and self.is_hourly:
-    #      # Throw error? warn somehow? other calculation?
-    #      return None
-    #    else:
-    #      return (Decimal(self.net) * Decimal(self.period)) / Decimal(times_per_year)
+#class ALJobLineItem(ALIncome):
+#    """
+#    Represents one job payment or deduction that may be hourly
+#    or pay-period based. This is a less common way of reporting income.
+#    Ex: salary, tips, deduction
+#    """
+#    # TODO: pos/neg in here instead? (no because need to calc gross with only pos?)
+#    def absolute_period_value(self, times_per_year=1):
+#      """Returns the value of the job line item as a positive number."""
+#      return self.amount(times_per_year = times_per_year)
+#    
+#    def period_value(self, times_per_year=1):
+#      """
+#      Returns the value of the job line item. Payments are returned
+#      as positive values. Deductions are returned as negative values.
+#      """
+#      if self.transaction_type == 'deduction':
+#        return -1 * self.amount(times_per_year = times_per_year)
+#      else:
+#        return self.amount(times_per_year = times_per_year)
 
 
 class ALMultipartJob(ALIncomeList):
@@ -425,78 +425,122 @@ class ALMultipartJob(ALIncomeList):
     be filtered by the source of the income. This is a less common way
     of reporting income.
     
-    This object's `.transaction_type` must be defined to get net and gross.
+    There is one period per job, for tips, wages, deductions, etc.
+    
+    A line item's `.transaction_type` must be defined to get net and gross
+    for this job.
+    
+    WARNING: Each source can only have one line item associated with it.
+    
+    props:
+    .is_hourly {Bool}
+    .hourly_rate {float}
+    .hours_per_period {int}
+    .period {float}
+    .employer (Person)
     """
-    # Tips, wages, deductions, etc, everything will be the same pay period
+    # 
     def init(self, *pargs, **kwargs):
         self.elements = list()
-        # change to just PeriodicValue as won't calculate own amount
-        self.object_type = ALJobLineItem
+        #self.object_type = ALJobLineItem
+        self.object_type = PeriodicValue
         return super(ALMultipartJob, self).init(*pargs, **kwargs)
     
-    def item_absolute_period_value(self, item, times_per_year=1):
+    # Too redundant?
+    def line_items(self):
+      return self.elements
+    
+    # Should `source` be `id`? That only makes sense for jobs, not
+    # incomes/assets. Maybe `name`? In what situations would there
+    # be income values from the same "type"/`source`?
+    def line_items_from_source(self, source=None):
+      """
+      Returns the list of line items from a given source (e.g. 'tips')
+      or list of sources (e.g. [ 'tips', 'commissions' ]).
+      If no sources are specified, all line items will be returned.
+      """
+      line_items = []
+      
+      if source is None:
+        return self.elements
+      
+      # Ensure we're using a list no matter what
+      if isinstance(source, list):
+        sources = source
+      else:
+        sources = [source]
+      # Put all matching items in a list
+      for line_item in self.elements:
+        if line_item.source in sources:
+          line_items.append( line_item )
+      return line_items
+    
+    def absolute_line_item_period_value(self, line_item, times_per_year=1):
         """
-        Returns the amount earned over the specified period for
+        Returns the amount earned or deducted over the specified period for
         the specified line item of the job.
         """
         if times_per_year == 0:
           return 0
         if hasattr(self, 'is_hourly') and self.is_hourly:
-          return Decimal(self.hourly_rate * self.hours_per_period * self.period) / Decimal(times_per_year)
+          return (Decimal(line_item.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
         else:
-          return (Decimal(item.value) * Decimal(self.period)) / Decimal(times_per_year)
+          return (Decimal(line_item.value) * Decimal(self.period)) / Decimal(times_per_year)
+    
+    def line_item_period_value(self, line_item, times_per_year=1):
+      """
+      Returns the amount earned or deducted over the specified period for
+      the line item as a positive or negative value.
+      
+      Example:
+      # Get the montly value of the job's tips
+      my_multipart_job.line_item_period_value( 'tips', times_per_year=12 )
+      # 424.44
+      # Get the yearly value of the job's deductions
+      my_multipart_job.line_item_period_value( 'deductions', times_per_year=1 )
+      # -202.65
+      """
+      absolute_value = self.absolute_line_item_period_value( line_item, times_per_year=times_per_year )
+      if line_item.transaction_type == 'deduction':
+        return -1 * absolute_value
+      else:
+        return absolute_value
  
-    def gross(self, times_per_year=1, source=None):
-        """Gross total is identical to totals of positive values."""
+    def gross(self, source=None, times_per_year=1):
+        """
+        Returns the sum of positive values (payments) for a given pay
+        period. Can be filtered by one line item source or a list of sources.
+        """
         self._trigger_gather()
         total = 0
         if times_per_year == 0:
             return total
         # Filter result by source if desired
-        if source is None:
-          sources = self.sources()  # Use all the sources if none is specified
-        elif isinstance(source, list):
-          sources = source
-        else:
-          sources = [source]
-        # Add them all up. Gross only positive values
-        for item in self.elements:
-            if item.source in sources:
-              gross = Decimal(item.amount(times_per_year=times_per_year))
-              if item.transaction_type != 'deduction':
-                total += gross
+        line_items = self.line_items_from_source( source=source )
+        # Add up positive values
+        for line_item in line_items:
+          if line_item.transaction_type != 'deduction':
+            total += Decimal(self.absolute_line_item_period_value( line_item, times_per_year=times_per_year ))
         return total
     
     def net(self, times_per_year=1, source=None):
-        """Returns the net amount (e.g., minus deductions) of all
-        the desired line item sources."""
+        """
+        Returns the net (payments minus deductions) value of the job
+        for a given pay period. Can be filtered by a line item source
+        or a list of sources.
+        """
         self._trigger_gather()
         total = 0
         if times_per_year == 0:
             return total
         # Filter result by source if desired
-        if source is None:
-          sources = self.sources()  # Use all the sources if none is specified
-        elif isinstance(source, list):
-          sources = source
-        else:
-          sources = [source]
-        # Add/subtract them all up
-        log( 0, 'console' )
-        for item in self.elements:
-          log( 1, 'console' )
-          if item.source in sources:
-            log( 2, 'console' )
-            net = Decimal(item.amount(times_per_year=times_per_year))
-            if item.transaction_type == 'deduction':
-              log( 3, 'console' )
-              total -= net
-            else:
-              log( 4, 'console' )
-              total += net
+        line_items = self.line_items_from_source( source=source )
+        # Add up positive and negative values
+        for line_item in line_items:
+          total += Decimal(self.line_item_period_value( line_item, times_per_year=times_per_year ))
         return total
 
-    # Caroline: Do we need a job title?
+    # Caroline: Do we need a job title/description?
     def name_address_phone(self):
         """Returns concatenation of name, address and phone number of employer"""
         return self.employer.name + ': ' + self.employer.address.on_one_line() + ', ' + self.employer.phone_number
