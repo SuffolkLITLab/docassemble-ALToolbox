@@ -558,12 +558,12 @@ class ALPaystub(ALIncomeList):
         info_list = []
         
         has_address = hasattr( self.employer.address, 'address' ) and self.employer.address.address
-        has_phone_number = hasattr( self.employer, 'phone_number' ) and self.employer.phone_number
+        has_number = hasattr( self.employer, 'phone_number' ) and self.employer.phone_number
         # Create a list so we can take advantage of `comma_list` instead
         # of doing further fiddly list manipulation
         if has_address:
           info_list.append( self.employer.address.on_one_line() )
-        if has_phone_number:
+        if has_number:
           info_list.append( self.employer.phone_number )
         # If either exist, add a colon and the appropriate strings
         if has_address or has_number:
@@ -574,7 +574,7 @@ class ALPaystub(ALIncomeList):
     def normalized_hours(self, times_per_year):
         """Returns the number of hours worked in a given period for an hourly job"""
         # Q: Is there a safe value to return if it's not hourly?
-        return (float(self.hours_per_period) * int(self.period)) / int(times_per_year)
+        return round((float(self.hours_per_period) * int(self.period)) / int(times_per_year))
 
 
 class ALPaystubList(ALJobList):
