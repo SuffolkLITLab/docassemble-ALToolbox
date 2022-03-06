@@ -1,6 +1,6 @@
 # Based on https://github.com/GBLS/docassemble-income/blob/master/docassemble/income/income.py
 
-from docassemble.base.util import DAObject, DAList, DAOrderedDict, PeriodicValue, DAEmpty, Individual, comma_and_list, log
+from docassemble.base.util import DAObject, DAList, DAOrderedDict, PeriodicValue, DAEmpty, Individual, comma_list, log
 from decimal import Decimal
 import datetime
 import docassemble.base.functions
@@ -8,22 +8,26 @@ import json
 
 
 def flatten(listname,index=1):
-    """Return just the nth item in an 2D list. Intended to use for multiple choice option lists in Docassemble.
-        e.g., flatten(asset_source_list()) will return ['Savings','Certificate of Deposit'...]"""
+    """
+    Return just the nth item in an 2D list. Intended to use for multiple
+    choice option lists in Docassemble. e.g., flatten(asset_source_list())
+    will return ['Savings','Certificate of Deposit'...].
+    """
     return [item[index] for item in listname]
 
 def income_period_list():
+    # Q: Is the current order common? If not, can we do decreasing order?
     return [
         [12,"Monthly"],
         [1,"Yearly"],
         [52,"Weekly"],
-        [24,"Twice per month"],
-        [26,"Once every two weeks"],
+        [24,"Twice per month"],  # bimonthly?
+        [26,"Once every two weeks"],  # fortnightly
         [4,"Once every 3 months"]  # quarterly
     ]
 
 def income_period(index):
-    # income_period_description
+    # Q: Name: income_period_description?
     """ Returns text describing the number of intervals of the period in a year."""
     try:
         for row in income_period_list():
@@ -37,9 +41,13 @@ def income_period(index):
 docassemble.base.functions.update_language_function('*', 'period_list', income_period_list)
 
 def recent_years(years=15, order='descending',future=1):
-    """Returns a list of the most recent years, continuing into the future. Defaults to most recent 15 years+1. Useful to populate
-        a combobox of years where the most recent ones are most likely. E.g. automobile years or birthdate.
-        Keyword paramaters: years, order (descending or ascending), future (defaults to 1)"""
+    """
+    Returns a list of the most recent years, continuing into the future.
+    Defaults to most recent 15 years+1. Useful to populate a combobox of
+    years where the most recent ones are most likely. E.g. automobile years
+    or birthdate. Keyword paramaters: years, order (descending or ascending),
+    future (defaults to 1).
+    """
     now = datetime.datetime.now()
     if order=='ascending':
         return list(range(now.year-years,now.year+future,1))
@@ -47,7 +55,7 @@ def recent_years(years=15, order='descending',future=1):
         return list(range(now.year+future,now.year-years,-1))
 
 def asset_source_list() :
-    """Returns a list of assset sources for a multiple choice dropdown"""
+    """Returns a list of asset sources for a multiple choice dropdown."""
     source_list =  DAOrderedDict()
     source_list.auto_gather = False
     source_list.gathered = True
@@ -66,7 +74,7 @@ def asset_source_list() :
     return source_list
 
 def income_source_list() :
-    """Returns a dict of income sources for a multiple choice dropdown"""
+    """Returns a dict of income sources for a multiple choice dropdown."""
     source_list = DAOrderedDict()
     source_list['wages'] = 'A job or self-employment'
 
@@ -77,7 +85,7 @@ def income_source_list() :
     return source_list
 
 def non_wage_income_list():
-    """Returns a dict of income sources, excluding wages"""
+    """Returns a dict of income sources, excluding wages."""
     source_list = DAOrderedDict()
     source_list.auto_gather = False
     source_list.gathered = True
@@ -99,7 +107,7 @@ def non_wage_income_list():
     return source_list
 
 def expense_source_list() :
-    """Returns a dict of expense sources for a multiple choice dropdown"""
+    """Returns a dict of expense sources for a multiple choice dropdown."""
     source_list = DAOrderedDict()
     source_list.auto_gather = False
     source_list.gathered = True
@@ -126,14 +134,19 @@ def expense_source_list() :
 
 
 class ALSimpleValue(DAObject):
-    """Like a Value object, but no fiddling around with .exists attribute because it's designed to store in a list, not a dictionary"""
-    # add a `.delta()` that just returns positive or negative 1?
+    """
+    Like a Value object, but no fiddling around with .exists attribute
+    because it's designed to store in a list, not a dictionary.
+    """
+    # Q: "it's designed to store" means "because this is a dictionary instead
+    # of a list?
+    # Q: add a `.delta()` that just returns positive or negative 1 depending on item?
     
     def amount(self):
         """
-        If desired, to use as a ledger, values can be signed.
-        Setting transaction_type = 'expense' makes the value
-        negative. Use min=0 in that case.
+        If desired, to use as a ledger, values can be signed. Setting
+        transaction_type = 'expense' makes the value negative. Use min=0
+        in that case.
         """
         if hasattr(self, 'transaction_type'):
             return (self.value * -1) if (self.transaction_type == 'expense') else self.value
@@ -145,14 +158,16 @@ class ALSimpleValue(DAObject):
 
 
 class ALValueList(DAList):
-    """Represents a filterable DAList of SimpleValues"""
+    """Represents a filterable DAList of ALSimpleValues."""
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.object_type = ALSimpleValue        
 
     def sources(self):
-        """Returns a set of the unique sources of values stored in the list.
-        Will fail if any items in the list leave the source field unspecified"""
+        """
+        Returns a set of the unique sources of values stored in the list.
+        Will fail if any items in the list leave the source field unspecified.
+        """
         sources = set()
         for item in self.elements:
             if hasattr(item, 'source'):
@@ -160,8 +175,11 @@ class ALValueList(DAList):
         return sources
         
     def total(self, source=None):
-        """Returns the total value in the list, gathering the list items if necessary.
-        You can specify source, which may be a list, to coalesce multiple entries of the same source."""
+        """
+        Returns the total value in the list, gathering the list items if
+        necessary. You can specify source, which may be a list, to coalesce
+        multiple entries of the same source.
+        """
         self._trigger_gather()
         result = 0
         if source is None:
@@ -179,12 +197,13 @@ class ALValueList(DAList):
 
 
 class ALIncome(PeriodicValue):
-    """Represents an income which may have an hourly rate or a salary.
-        Hourly rate incomes must include hours and period. 
-        Period is some demoninator of a year for compatibility with
-        PeriodicFinancialList class. E.g, to express hours/week, use 52"""
-
-    # Really the value per period. "amount" isn't super clear. Change name?
+    """
+    Represents an income which may have an hourly rate or a salary.
+    Hourly rate incomes must include hours and period. 
+    Period is some demoninator of a year for compatibility with
+    PeriodicFinancialList class. E.g, to express hours/week, use 52.
+    """
+    # It's actually the value per period. "amount" isn't super clear. Change name?
     def amount(self, times_per_year=1):
         """Returns the income over the specified period."""
         if hasattr(self, 'is_hourly') and self.is_hourly:
@@ -195,10 +214,9 @@ class ALIncome(PeriodicValue):
 
 class ALIncomeList(DAList):
     """
-    Represents a filterable DAList of income items, each of which
-    has an associated period or hourly wages.
+    Represents a filterable DAList of income items, each of which has
+    an associated period or hourly wages.
     """
-    
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.elements = list()
@@ -213,11 +231,14 @@ class ALIncomeList(DAList):
                 sources.add(item.source)
         return sources
 
+    # Q: Instead require `source` to always be a list? They just have
+    # to put brackets around the item at worst. Same question for all
+    # other locations.
     def owners(self, source=None):
         """
         Returns a set of the unique owners for the specified source of
-        income stored in the list. If source is None, returns all 
-        unique owners in the ALIncomeList
+        income stored in the list. If source is None, returns all unique
+        owners in the ALIncomeList.
         """
         owners=set()
         if source is None:
@@ -313,7 +334,7 @@ class ALIncomeList(DAList):
         return result
     
     def to_json(self):
-        """Creates income list suitable for Legal Server API"""
+        """Creates income list suitable for Legal Server API."""
         return json.dumps([{"source": income.source, "frequency": income.period, "amount": income.value} for income in self.elements])
 
 
@@ -324,7 +345,7 @@ class ALJob(ALIncome):
     more common way of reporting income.
     """
     def gross_for_period(self, times_per_year=1):
-        """Gross amount is identical to value"""
+        """Gross amount is identical to value."""
         return self.amount(times_per_year = times_per_year)
     
     # Q: Not sure of the name, but something like `net_value` or
@@ -340,12 +361,11 @@ class ALJob(ALIncome):
         return (Decimal(self.net) * Decimal(self.period)) / Decimal(times_per_year)
     
     def name_address_phone(self):
-        """Returns concatenation of name, address and phone number
-        of employer Person"""
+        """Returns name, address and phone number of employer."""
         return self.employer + ': ' + self.employer_address + ', ' + self.employer_phone
     
     def normalized_hours(self, times_per_year):
-        """Returns the number of hours worked in a given period"""
+        """Returns the number of hours worked in a given period."""
         return (float(self.hours_per_period) * int(self.period)) / int(times_per_year)
 
 
@@ -420,7 +440,7 @@ class ALPaystub(ALIncomeList):
     .hourly_rate {float}
     .hours_per_period {int}
     .period {float}
-    .employer (Person)
+    .employer {Individual}
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -445,7 +465,7 @@ class ALPaystub(ALIncomeList):
       
       Options for the `source` value come from the source names you create.
       Options for the `transaction_type` value are 'payment' or 'deduction'.
-        (Do they have to be limited to that?)
+      # Q: Do they have to be limited to that?
       """
       self._trigger_gather()
       all_items = self.elements
@@ -474,6 +494,9 @@ class ALPaystub(ALIncomeList):
       
       return filtered_items
     
+    # Q: Should `times_per_year` be a string that's the "name" of the period?
+    # Calling it just `period` is a bit confusing when the value is a number.
+    # e.g. `period = 12`, to me, doesn't shout out "monthly".
     def absolute_period_value(self, line_item, times_per_year=1):
         """
         Returns the amount earned or deducted over the specified period for
@@ -552,7 +575,7 @@ class ALPaystub(ALIncomeList):
     def employer_name_address_phone(self):
         """
         Returns concatenation of employer name and, if they exist,
-        employer address and phone number
+        employer address and phone number.
         """
         employer_str = self.employer.name
         info_list = []
@@ -567,12 +590,12 @@ class ALPaystub(ALIncomeList):
           info_list.append( self.employer.phone_number )
         # If either exist, add a colon and the appropriate strings
         if has_address or has_number:
-          employer_str = f'{ employer_str }: {comma_and_list( info_list )}'
+          employer_str = f'{ employer_str }: {comma_list( info_list )}'
         
         return employer_str
     
     def normalized_hours(self, times_per_year):
-        """Returns the number of hours worked in a given period for an hourly job"""
+        """Returns the number of hours worked in a given period for an hourly job."""
         # Q: Is there a safe value to return if it's not hourly?
         return round((float(self.hours_per_period) * int(self.period)) / int(times_per_year))
 
@@ -590,21 +613,24 @@ class ALPaystubList(ALJobList):
         self.object_type = ALPaystub
     
     def gross(self, times_per_year=1):
-      """Alias for super `.gross_for_period()` to have same interface as paystub"""
+      """Alias for super `.gross_for_period()` to have same interface as paystub."""
       return self.gross_for_period(times_per_year=1)
     
     def net(self, times_per_year=1):
-      """Alias for super `.net_for_period()` to have same interface as paystub"""
+      """Alias for super `.net_for_period()` to have same interface as paystub."""
       return self.net_for_period(times_per_year=1)
 
 
 class ALLedger(ALValueList):
-    """Represents an account ledger. Adds calculate method which adds a running total to the ledger."""
+    """
+    Represents an account ledger. Adds calculate method which adds
+    a running total to the ledger.
+    """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)              
 
     def calculate(self):
-        """ Sort the ledger by date, then add a running total to each ledger entry"""
+        """Sort the ledger by date, then add a running total to each ledger entry."""
         self.elements.sort(key=lambda y: y.date)
         running_total = 0
         for entry in self.elements:
@@ -613,22 +639,20 @@ class ALLedger(ALValueList):
 
 
 class ALVehicle(ALSimpleValue):
-    """Vehicles have a method year_make_model() """
+    """Vehicles have a method year_make_model()."""
     def year_make_model(self):
         return self.year + ' / ' + self.make + ' / ' + self.model
 
 
 class ALVehicleList(ALValueList):
-    """List of vehicles, extends ALValueList. Vehicles have a method year_make_model() """
+    """List of vehicles, extends ALValueList. Vehicles have a method year_make_model()."""
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.object_type = ALVehicle
 
 
 class ALAsset(ALIncome):
-  """
-  Like income but with an optional value.
-  """
+  """Like income but with the `value` attribute is optional."""
   def amount(self, times_per_year=1):
     if not hasattr(self, 'value'):
       return 0

@@ -323,7 +323,9 @@ subquestion: |
   % for one_paystub in paystub_list:
   ### ${ one_paystub.source }
   
-  **Employer info:** ${ one_paystub.employer_name_address_phone() }
+  **Employer info:**
+  
+  ${ one_paystub.employer_name_address_phone() }
   
   % if one_paystub.is_hourly:
   **Hours:** ${ one_paystub.normalized_hours(12) } per month
