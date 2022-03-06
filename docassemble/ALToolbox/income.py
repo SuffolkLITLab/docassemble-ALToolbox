@@ -1,6 +1,6 @@
 # Based on https://github.com/GBLS/docassemble-income/blob/master/docassemble/income/income.py
 
-from docassemble.base.util import DAObject, DAList, DAOrderedDict, PeriodicValue, DAEmpty, log
+from docassemble.base.util import DAObject, DAList, DAOrderedDict, PeriodicValue, DAEmpty, Individual, comma_and_list, log
 from decimal import Decimal
 import datetime
 import docassemble.base.functions
@@ -147,7 +147,7 @@ class ALSimpleValue(DAObject):
 class ALValueList(DAList):
     """Represents a filterable DAList of SimpleValues"""
     def init(self, *pargs, **kwargs):
-        super(ALValueList, self).init(*pargs, **kwargs)
+        super().init(*pargs, **kwargs)
         self.object_type = ALSimpleValue        
 
     def sources(self):
@@ -200,10 +200,10 @@ class ALIncomeList(DAList):
     """
     
     def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
         self.elements = list()
         if not hasattr(self, 'object_type'):
             self.object_type = ALIncome
-        return super(ALIncomeList, self).init(*pargs, **kwargs)
     
     def sources(self):
         """Returns a set of the unique sources of values stored in the list."""
@@ -356,7 +356,7 @@ class ALJobList(ALIncomeList):
     reporting income.
     """
     def init(self, *pargs, **kwargs):
-        super(ALJobList, self).init(*pargs, **kwargs)     
+        super().init(*pargs, **kwargs)     
         self.object_type = ALJob
     
     def gross_for_period(self, times_per_year=1, source=None):
@@ -406,14 +406,16 @@ class ALPaystub(ALIncomeList):
     be filtered by the source of the income. This is a less common way
     of reporting income.
     
-    There is one period per job, for tips, wages, deductions, etc.
+    The `.elements` attribute of this object are plain `PeriodicValue`s.
     
-    A line item's `.transaction_type` must be defined to get net and gross
-    for this job.
+    There is one period per job for tips, wages, deductions, etc.
+    
+    Every line item's `.transaction_type` must be defined to get net and gross
+    for a job.
     
     WARNING: Each source can only have one line item associated with it.
     
-    props:
+    attribs:
     .is_hourly {Bool}
     .hourly_rate {float}
     .hours_per_period {int}
@@ -421,10 +423,11 @@ class ALPaystub(ALIncomeList):
     .employer (Person)
     """
     def init(self, *pargs, **kwargs):
-        # creating these `elements` and then can't use them directly?
+        super().init(*pargs, **kwargs)
         self.elements = list()
         self.object_type = PeriodicValue
-        return super(ALPaystub, self).init(*pargs, **kwargs)
+        if not hasattr(self, 'employer'):
+          self.initializeAttribute('employer', Individual)
     
     # Q: Should `source` be `id`? That only makes sense for jobs, not
     # incomes/assets, so they then won't share an interface.
@@ -546,12 +549,31 @@ class ALPaystub(ALIncomeList):
     def net_for_period(self, times_per_year=1, source=None):
       return self.net(times_per_year=1, source=None)
     
-    def name_address_phone(self):
-        """Returns concatenation of name, address and phone number of employer"""
-        return self.employer.name + ': ' + self.employer.address.on_one_line() + ', ' + self.employer.phone_number
+    def employer_name_address_phone(self):
+        """
+        Returns concatenation of employer name and, if they exist,
+        employer address and phone number
+        """
+        employer_str = self.employer.name
+        info_list = []
+        
+        has_address = hasattr( self.employer.address, 'address' ) and self.employer.address.address
+        has_phone_number = hasattr( self.employer, 'phone_number' ) and self.employer.phone_number
+        # Create a list so we can take advantage of `comma_list` instead
+        # of doing further fiddly list manipulation
+        if has_address:
+          info_list.append( self.employer.address.on_one_line() )
+        if has_phone_number:
+          info_list.append( self.employer.phone_number )
+        # If either exist, add a colon and the appropriate strings
+        if has_address or has_number:
+          employer_str = f'{ employer_str }: {comma_and_list( info_list )}'
+        
+        return employer_str
     
     def normalized_hours(self, times_per_year):
         """Returns the number of hours worked in a given period for an hourly job"""
+        # Q: Is there a safe value to return if it's not hourly?
         return (float(self.hours_per_period) * int(self.period)) / int(times_per_year)
 
 
@@ -564,7 +586,7 @@ class ALPaystubList(ALJobList):
     # Super `.net_for_period()` only works if we include `.net_for_period`
     # and `.gross_for_period`, as in `ALJob`s
     def init(self, *pargs, **kwargs):
-        super(ALPaystubList, self).init(*pargs, **kwargs)     
+        super().init(*pargs, **kwargs)     
         self.object_type = ALPaystub
     
     def gross(self, times_per_year=1):
@@ -579,7 +601,7 @@ class ALPaystubList(ALJobList):
 class ALLedger(ALValueList):
     """Represents an account ledger. Adds calculate method which adds a running total to the ledger."""
     def init(self, *pargs, **kwargs):
-        super(ALLedger, self).init(*pargs, **kwargs)              
+        super().init(*pargs, **kwargs)              
 
     def calculate(self):
         """ Sort the ledger by date, then add a running total to each ledger entry"""
@@ -599,7 +621,7 @@ class ALVehicle(ALSimpleValue):
 class ALVehicleList(ALValueList):
     """List of vehicles, extends ALValueList. Vehicles have a method year_make_model() """
     def init(self, *pargs, **kwargs):
-        super(ALVehicleList, self).init(*pargs, **kwargs)
+        super().init(*pargs, **kwargs)
         self.object_type = ALVehicle
 
 
@@ -616,5 +638,5 @@ class ALAsset(ALIncome):
 
 class ALAssetList(ALIncomeList):
       def init(self, *pargs, **kwargs):
-        super(ALAssetList, self).init(*pargs, **kwargs)  
+        super().init(*pargs, **kwargs)  
         self.object_type = ALAsset

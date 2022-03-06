@@ -9,7 +9,7 @@ objects:
       complete_attribute='complete',
       ask_number=True)
   - paystub: ALPaystub.using(
-      complete_attribute='gather_list_items',
+      complete_attribute='gather_line_items',
       there_is_another=False)
   - jobs: ALJobList.using(
       complete_attribute='complete',
@@ -22,26 +22,31 @@ objects:
 ---
 mandatory: True
 code: |
-  # Paystub list
-  paystub_list.gather()
+  if to_run['ALPaystubList'] or to_run['all']:
+    paystub_list.gather()
   
-  ## Paystub
-  #paystub.period
-  #get_paystub_sources
-  #paystub.gather()
-  #
-  ## Individual job
-  #job.source = 'Random Work'
-  #job.value
-  #
-  ## List of incomes
-  #income_sources
-  #get_income_sources
-  #incomes.gather()
-  #
-  ## Individual income
-  #income.source = 'Random Income'
-  #income.value
+  if to_run['ALPaystub'] or to_run['all']:
+    paystub.source
+    paystub.employer.name.first
+    paystub.period
+    get_paystub_sources
+    paystub.gather()
+  
+  if to_run['ALJob'] or to_run['all']:
+    # Individual job
+    job.source = 'Random Work'
+    job.value
+  
+  if to_run['ALIncomeList'] or to_run['all']:
+    # List of incomes
+    income_sources
+    get_income_sources
+    incomes.gather()
+  
+  if to_run['ALIncome'] or to_run['all']:
+    # Individual income
+    income.source = 'Random Income'
+    income.value
   
   before_end_so_answers_are_saved
   end
@@ -49,10 +54,30 @@ code: |
 id: which to test
 question: |
   Which functionality do you want to try?
+subquestion: |
+  Before choosing what to test:
+  
+  `ALPaystubList` tests all the same functionality as:
+  
+    * `ALJobList`
+    * `ALPaystub`
+  
+# Other classes are testing ALIncomeList's also needs to test
+#  √ sources
+
+# ALIncomeList's also needs to test
+#  owners
+#  matches
+#  total
+#  market_value
+#  balance
+#  to_json
+
 fields:
-  - no label: income_types_to_test
-    input type: checkboxes
+  - no label: to_run
+    datatype: checkboxes
     choices:
+      - All of the them: all
       #- ALSimpleValue: ALSimpleValue
       #- ALValueList: ALValueList
       - ALIncome: ALIncome
@@ -94,6 +119,27 @@ code: |
     ('garnishments', 'Garnishments')
   ]
 ---
+# JOB/PAYSTUB SHARED QUESTIONS
+---
+id: employer
+generic object: DAObject
+question: |
+  Tell us about your employer for ${ x.source }
+fields:
+  - Name: x.employer.name.first
+  - street: x.employer.address.address
+    required: False
+  - unit: x.employer.address.unit
+    required: False
+  - city: x.employer.address.city
+    required: False
+  - state: x.employer.address.state
+    required: False
+  - zip: x.employer.address.zip
+    required: False
+  - Phone number: x.employer.phone_number
+    required: False
+---
 # PAYSTUBS LIST
 ---
 code: |
@@ -102,16 +148,17 @@ code: |
   paystub_list[i].there_are_any=True
   paystub_list[i].source
   paystub_list[i].period
-  paystub_list[i].list_item_sources
+  paystub_list[i].line_item_sources
   paystub_list[i].get_line_item_sources
   paystub_list[i].gather()
   paystub_list[i].complete = True
 ---
 generic object: ALPaystub
 code: |
-  if x.list_item_sources.any_true():
-    for source in x.list_item_sources.true_values():
+  if x.line_item_sources.any_true():
+    for source in x.line_item_sources.true_values():
       x.appendObject(source=source)
+      x.employer.name.first
   x.get_line_item_sources = True
 ---
 generic object: ALPaystub
@@ -138,28 +185,28 @@ generic object: ALPaystub
 question: |
   Does your ${ x.source } job have any of the below?
 fields:
-  - no label: x.list_item_sources
+  - no label: x.line_item_sources
     datatype: checkboxes
     code: job_income_choices
 ---
 # PAYSTUB
 ---
 code: |
-  if list_item_sources.any_true():
-    for source in list_item_sources.true_values():
+  if line_item_sources.any_true():
+    for source in line_item_sources.true_values():
       paystub.appendObject(source=source)
   get_paystub_sources = True
 ---
 code: |
   paystub[i].transaction_type = job_source_transaction_types[paystub[i].source]
   paystub[i].value
-  paystub[i].gather_list_items = True
+  paystub[i].gather_line_items = True
 ---
 id: list items
 question: |
   Does your (paystub) job have any of the below?
 fields:
-  - no label: list_item_sources
+  - no label: line_item_sources
     datatype: checkboxes
     code: job_income_choices
 ---
@@ -265,21 +312,29 @@ question: |
   Your answers
 subquestion: |
 
+  % if to_run['ALPaystubList'] or to_run['all']:
   ## List of paystubs (jobs)
   
   All jobs together:
   
-  * **gross**: ${ currency( paystub_list.gross() ) }
-  * **net**: ${ currency( paystub_list.net() ) }
-  
+  * **gross:** ${ currency( paystub_list.gross() ) }
+  * **net:** ${ currency( paystub_list.net() ) }
   
   % for one_paystub in paystub_list:
   ### ${ one_paystub.source }
   
+  **Employer info:** ${ one_paystub.employer_name_address_phone() }
+  
+  % if one_paystub.is_hourly:
+  **Hours:** ${ one_paystub.normalized_hours(12) } per month
+  % else:
+  The `normalized_hours()` function was excluded because it's only for hourly jobs.
+  % endif
+  
   Totals
   
-  * **gross**: ${ currency( one_paystub.gross() ) }
-  * **net**: ${ currency( one_paystub.net() ) }
+  * **gross:** ${ currency( one_paystub.gross() ) }
+  * **net:** ${ currency( one_paystub.net() ) }
   
   ## Line items
   
@@ -297,26 +352,31 @@ subquestion: |
   
   % endfor
 
-comment: |
+  % endif
   
-  % for line_item in one_paystub.line_items_for_period():
-  * ${ line_item.source }: ${currency( line_item.value )}
-  % endfor
-  
+  % if to_run['ALPaystub'] or to_run['all']:
   ## One paystub
   
-  paystub gross: ${ currency( paystub.gross() ) } per year
+  **Employer info:** ${ paystub.employer_name_address_phone() }
   
-  paystub net: ${ currency( paystub.net() ) } per year
+  % if paystub.is_hourly:
+  **Hours:** ${ paystub.normalized_hours(12) } per month
+  % else:
+  The `normalized_hours()` function was excluded because it's only for hourly jobs.
+  % endif
   
+  **paystub gross:** ${ currency( paystub.gross() ) } per year
+  
+  **paystub net:** ${ currency( paystub.net() ) } per year
+  % endif
+  
+  % if to_run['ALJob'] or to_run['all']:
   ## Regular job
   
   ${ job.source } gross: ${ currency( job.value ) } ${ job.period } times per year
+  % endif
   
-  ## One income
-  
-  ${ income.source } income: ${ currency( income.value ) } ${ income.period } times per year
-  
+  % if to_run['ALIncomeList'] or to_run['all']:
   ## List of incomes
   
   Other incomes:
@@ -324,4 +384,11 @@ comment: |
   % for one_income in incomes:
   * ${ one_income.source }: ${ currency( one_income.value ) } ${ one_income.period } times per year
   % endfor
+  % endif
+  
+  % if to_run['ALIncome'] or to_run['all']:
+  ## One income
+  
+  ${ income.source } income: ${ currency( income.value ) } ${ income.period } times per year
+  % endif
 ---
