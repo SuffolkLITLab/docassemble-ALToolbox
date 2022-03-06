@@ -46,6 +46,35 @@ code: |
   before_end_so_answers_are_saved
   end
 ---
+id: which to test
+question: |
+  Which functionality do you want to try?
+fields:
+  - no label: income_types_to_test
+    input type: checkboxes
+    choices:
+      #- ALSimpleValue: ALSimpleValue
+      #- ALValueList: ALValueList
+      - ALIncome: ALIncome
+      - ALIncomeList: ALIncomeList
+      - ALJob: ALJob
+      - ALJobList: ALJobList
+      - ALPaystub: ALPaystub
+      - ALPaystubList: ALPaystubList
+      #- ALLedger: ALLedger
+      #- ALVehicle: ALVehicle
+      #- ALVehicleList: ALVehicleList
+      #- ALAsset: ALAsset
+      #- ALAssetList: ALAssetList
+      #- flatten: flatten
+      #- income_period_list: income_period_list
+      #- income_period: income_period
+      #- recent_years: recent_years
+      #- asset_source_list: asset_source_list
+      #- income_source_list: income_source_list
+      #- non_wage_income_list: non_wage_income_list
+      #- expense_source_list: expense_source_list
+---
 code: |
   job_source_transaction_types = {
     'tips': 'payment',

@@ -1,10 +1,9 @@
 # Based on https://github.com/GBLS/docassemble-income/blob/master/docassemble/income/income.py
 
-from docassemble.base.util import DAObject, DAList, DADict, DAOrderedDict, Value, PeriodicValue, FinancialList, PeriodicFinancialList, DAEmpty, log
+from docassemble.base.util import DAObject, DAList, DAOrderedDict, PeriodicValue, DAEmpty, log
 from decimal import Decimal
 import datetime
 import docassemble.base.functions
-from collections import OrderedDict
 import json
 
 
@@ -424,9 +423,7 @@ class ALPaystub(ALIncomeList):
     def init(self, *pargs, **kwargs):
         # creating these `elements` and then can't use them directly?
         self.elements = list()
-        #self.object_type = ALJobLineItem
         self.object_type = PeriodicValue
-        #self.object_type = ALLineItem
         return super(ALPaystub, self).init(*pargs, **kwargs)
     
     # Q: Should `source` be `id`? That only makes sense for jobs, not
