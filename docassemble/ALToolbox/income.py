@@ -10,7 +10,7 @@ import json
 
 def flatten(listname,index=1):
     """Return just the nth item in an 2D list. Intended to use for multiple choice option lists in Docassemble.
-        e.g., flatten(asset_source_list()) will return ['Savings','Certificate of Deposit'...] """
+        e.g., flatten(asset_source_list()) will return ['Savings','Certificate of Deposit'...]"""
     return [item[index] for item in listname]
 
 def income_period_list():
@@ -235,15 +235,12 @@ class ALIncomeList(DAList):
                     owners.add(item.owner)
         return owners
 
-    def matching(self, source):
+    def matches(self, source):
         """
         Returns an ALIncomeList consisting only of elements matching the
         specified ALIncome source, assisting in filling PDFs with predefined
         spaces. `source` may be a list.
         """
-        if source is None:
-            return ALIncomeList(elements = [ self.elements ])
-
         # Always make sure we're working with a list
         sources = source
         if not isinstance(source, list):
@@ -257,13 +254,13 @@ class ALIncomeList(DAList):
         to only add entries of the matching source. If you specify the
         `source` you can also specify one `owner`.
         """
-        # TODO: can `owner` be a list? I see that `.owners()` returns a set
+        # Q: can `owner` be a list? I see that `.owners()` returns a set
         self._trigger_gather()
         result = 0
         if times_per_year == 0:
             return(result)
         if source is None:
-            # TODO: Should this allow the user to filter _just_ by the `owner`
+            # Q: Should this allow the user to filter _just_ by the `owner`
             # as well if they include just the `owner`?
             for item in self.elements:
                 result += Decimal(item.amount(times_per_year=times_per_year))
@@ -290,7 +287,7 @@ class ALIncomeList(DAList):
         result = 0
         for item in self.elements:
             if source is None:
-                # TODO: I don't see where ALIncome has a .market_value
+                # Q: I don't see where ALIncome has a .market_value
                 result += Decimal(item.market_value)
             elif isinstance(source, list): 
                 if item.source in source:
@@ -300,12 +297,13 @@ class ALIncomeList(DAList):
                     result += Decimal(item.market_value)
         return result
     
+    # Q: What is balance vs. total vs. market value?
     def balance(self, source=None):
         self._trigger_gather()
         result = 0
         for item in self.elements:
             if source is None:
-                # TODO: I don't see where ALIncome has a .balance
+                # Q: I don't see where ALIncome has a .balance
                 result += Decimal(item.balance)
             elif isinstance(source, list): 
                 if item.source in source:
@@ -330,6 +328,10 @@ class ALJob(ALIncome):
         """Gross amount is identical to value"""
         return self.amount(times_per_year = times_per_year)
     
+    # Q: Not sure of the name, but something like `net_value` or
+    # `net_amount` seems indistinguishable from `.net`. Maybe
+    # There should be `payment` and `deductions` and `.net()`
+    # like ALPaystub
     def net_for_period(self, times_per_year=1):
         """
         Returns the net amount provided by the user
@@ -395,29 +397,9 @@ class ALJobList(ALIncomeList):
         return result
 
 
-#class ALJobLineItem(ALIncome):
-#    """
-#    Represents one job payment or deduction that may be hourly
-#    or pay-period based. This is a less common way of reporting income.
-#    Ex: salary, tips, deduction
-#    """
-#    # TODO: pos/neg in here instead? (no because need to calc gross with only pos?)
-#    def absolute_period_value(self, times_per_year=1):
-#      """Returns the value of the job line item as a positive number."""
-#      return self.amount(times_per_year = times_per_year)
-#    
-#    def period_value(self, times_per_year=1):
-#      """
-#      Returns the value of the job line item. Payments are returned
-#      as positive values. Deductions are returned as negative values.
-#      """
-#      if self.transaction_type == 'deduction':
-#        return -1 * self.amount(times_per_year = times_per_year)
-#      else:
-#        return self.amount(times_per_year = times_per_year)
-
-
-class ALMultipartJob(ALIncomeList):
+# Q: Does `paystub.is_hourly` make sense?
+# Q: Does this really need to be an ALIncomeList
+class ALPaystub(ALIncomeList):
     """
     Represents a job that can have multiple sources of earned income
     and deductions. It may be hourly or pay-period based. If non-hourly,
@@ -439,43 +421,60 @@ class ALMultipartJob(ALIncomeList):
     .period {float}
     .employer (Person)
     """
-    # 
     def init(self, *pargs, **kwargs):
+        # creating these `elements` and then can't use them directly?
         self.elements = list()
         #self.object_type = ALJobLineItem
         self.object_type = PeriodicValue
-        return super(ALMultipartJob, self).init(*pargs, **kwargs)
+        #self.object_type = ALLineItem
+        return super(ALPaystub, self).init(*pargs, **kwargs)
     
-    # Too redundant?
-    def line_items(self):
-      return self.elements
-    
-    # Should `source` be `id`? That only makes sense for jobs, not
-    # incomes/assets. Maybe `name`? In what situations would there
-    # be income values from the same "type"/`source`?
-    def line_items_from_source(self, source=None):
+    # Q: Should `source` be `id`? That only makes sense for jobs, not
+    # incomes/assets, so they then won't share an interface.
+    # Maybe `name`? Or do we need categories, not `id`s? In what
+    # situations would there be income values from the same "type"/`source`?
+    # Names for transaction_type: in_or_out? delta?
+    # Q: allow filtering by `owners`?
+    def line_items(self, source=None, transaction_type=None):
       """
-      Returns the list of line items from a given source (e.g. 'tips')
-      or list of sources (e.g. [ 'tips', 'commissions' ]).
-      If no sources are specified, all line items will be returned.
-      """
-      line_items = []
+      Returns the list of line items filtered by source (e.g. 'tip')
+      or list of sources (e.g. [ 'tip', 'commission', 'deduction' ])
+      or by transaction_type or both.
       
+      If no filters are specified, returns all line items.
+      
+      Options for the `source` value come from the source names you create.
+      Options for the `transaction_type` value are 'payment' or 'deduction'.
+        (Do they have to be limited to that?)
+      """
+      self._trigger_gather()
+      all_items = self.elements
+      
+      # If no filters, return all items
+      if source is None and transaction_type is None:
+        return all_items
+      
+      # Filter by sources
       if source is None:
-        return self.elements
-      
-      # Ensure we're using a list no matter what
-      if isinstance(source, list):
-        sources = source
+        # By default, use all items. Don't mutate the original list.
+        source_items = all_items[:]
       else:
-        sources = [source]
-      # Put all matching items in a list
-      for line_item in self.elements:
-        if line_item.source in sources:
-          line_items.append( line_item )
-      return line_items
+        # Ensure we're using a list no matter what
+        if isinstance(source, list): sources = source
+        else: sources = [source]
+        # Put all matching items in a list
+        source_items = [item for item in all_items if item.source in sources]
+        
+      # Filter by transaction_type
+      if transaction_type is None:
+        filtered_items = source_items
+      else:
+        # Ensure we're using a list no matter what
+        filtered_items = [item for item in source_items if item.transaction_type == transaction_type]
+      
+      return filtered_items
     
-    def absolute_line_item_period_value(self, line_item, times_per_year=1):
+    def absolute_period_value(self, line_item, times_per_year=1):
         """
         Returns the amount earned or deducted over the specified period for
         the specified line item of the job.
@@ -488,25 +487,27 @@ class ALMultipartJob(ALIncomeList):
           return (Decimal(line_item.value) * Decimal(self.period)) / Decimal(times_per_year)
     
     # Q: Allow `line_item` to be a string (source/id name)?
-    def line_item_period_value(self, line_item, times_per_year=1):
+    # Names: line_item_period_value? item_period_value?
+    def period_value(self, line_item, times_per_year=1):
       """
       Returns the amount earned or deducted over the specified period for
-      the line item as a positive or negative value.
+      the given line item as a positive or negative value.
       
       Example:
       # Get the montly value of the job's tips
-      my_multipart_job.line_item_period_value( 'tips', times_per_year=12 )
+      my_multipart_job.period_value( 'tips', times_per_year=12 )
       # 424.44
       # Get the yearly value of the job's deductions
-      my_multipart_job.line_item_period_value( 'deductions', times_per_year=1 )
+      my_multipart_job.period_value( 'deductions', times_per_year=1 )
       # -202.65
       """
-      absolute_value = self.absolute_line_item_period_value( line_item, times_per_year=times_per_year )
-      if line_item.transaction_type == 'deduction':
+      absolute_value = self.absolute_period_value( line_item, times_per_year=times_per_year )
+      if line_item.transaction_type == 'deduction' or line_item.transaction_type == 'out':
         return -1 * absolute_value
       else:
         return absolute_value
     
+    # Also filter by `owners`?
     def gross(self, source=None, times_per_year=1):
         """
         Returns the sum of positive values (payments) for a given pay
@@ -517,13 +518,17 @@ class ALMultipartJob(ALIncomeList):
         if times_per_year == 0:
             return total
         # Filter result by source if desired
-        line_items = self.line_items_from_source( source=source )
+        line_items = self.line_items( source=source )
         # Add up positive values
         for line_item in line_items:
           if line_item.transaction_type != 'deduction':
-            total += Decimal(self.absolute_line_item_period_value( line_item, times_per_year=times_per_year ))
+            total += Decimal(self.absolute_period_value( line_item, times_per_year=times_per_year ))
         return total
     
+    def gross_for_period(self, times_per_year=1, source=None):
+      return self.gross(times_per_year=1, source=None)
+    
+    # Also filter by `owners`?
     def net(self, times_per_year=1, source=None):
         """
         Returns the net (payments minus deductions) value of the job
@@ -535,13 +540,15 @@ class ALMultipartJob(ALIncomeList):
         if times_per_year == 0:
             return total
         # Filter result by source if desired
-        line_items = self.line_items_from_source( source=source )
+        line_items = self.line_items( source=source )
         # Add up positive and negative values
         for line_item in line_items:
-          total += Decimal(self.line_item_period_value( line_item, times_per_year=times_per_year ))
+          total += Decimal(self.period_value( line_item, times_per_year=times_per_year ))
         return total
-
-    # Caroline: Do we need a job title/description?
+    
+    def net_for_period(self, times_per_year=1, source=None):
+      return self.net(times_per_year=1, source=None)
+    
     def name_address_phone(self):
         """Returns concatenation of name, address and phone number of employer"""
         return self.employer.name + ': ' + self.employer.address.on_one_line() + ', ' + self.employer.phone_number
@@ -551,15 +558,25 @@ class ALMultipartJob(ALIncomeList):
         return (float(self.hours_per_period) * int(self.period)) / int(times_per_year)
 
 
-class ALMultipartJobList(ALJobList):
+class ALPaystubList(ALJobList):
     """
     Represents a list of jobs that can have both payments and deductions.
     Adds the `.net()` and `.gross()` methods to the ALIncomeList class.
     This is a less common way of reporting income.
     """
+    # Super `.net_for_period()` only works if we include `.net_for_period`
+    # and `.gross_for_period`, as in `ALJob`s
     def init(self, *pargs, **kwargs):
-        super(ALMultipartJobList, self).init(*pargs, **kwargs)     
-        self.object_type = ALMultipartJob
+        super(ALPaystubList, self).init(*pargs, **kwargs)     
+        self.object_type = ALPaystub
+    
+    def gross(self, times_per_year=1):
+      """Alias for super `.gross_for_period()` to have same interface as paystub"""
+      return self.gross_for_period(times_per_year=1)
+    
+    def net(self, times_per_year=1):
+      """Alias for super `.net_for_period()` to have same interface as paystub"""
+      return self.net_for_period(times_per_year=1)
 
 
 class ALLedger(ALValueList):
