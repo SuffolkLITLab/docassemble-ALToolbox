@@ -204,7 +204,7 @@ class ALIncome(PeriodicValue):
     PeriodicFinancialList class. E.g, to express hours/week, use 52.
     """
     # Q: It's actually the value per period. "amount" isn't super clear. Change name?
-    # Name: times_per_year was period. maybe period_frequency?
+    # Name: times_per_year was period. maybe period_frequency? value_frequency?
     def amount(self, times_per_year=1):
         """Returns the income over the specified period."""
         if hasattr(self, 'is_hourly') and self.is_hourly:
@@ -349,13 +349,13 @@ class ALJob(ALIncome):
     non-hourly, may specify gross and net income amounts. This is a
     more common way of reporting income.
     """
-    def gross_for_period(self, times_per_year=1, exact=False):
+    def gross_for_period(self, times_per_year=1):
         """Gross amount is identical to value."""
         return self.amount(times_per_year = times_per_year)
     
     # Q: Not sure of the name, but something like `net_value` or
     # `net_amount` seems indistinguishable from `.net`. Maybe
-    # There should be `payment` and `deductions` and `.net()`
+    # there should be `payment` and `deductions` and `.net()`
     # like ALPaystub
     def net_for_period(self, times_per_year=1):
         """
@@ -502,44 +502,22 @@ class ALPaystub(ALIncomeList):
     # Q: Should `times_per_year` be a string that's the "name" of the period?
     # Calling it just `period` is a bit confusing when the value is a number.
     # e.g. `period = 12`, to me, doesn't shout out "monthly".
-    def absolute_period_value(self, line_item, times_per_year=1, exact=False):
+    def absolute_period_value(self, line_item, times_per_year=1):
         """
         Returns the amount earned or deducted over the specified period for
         the specified line item of the job.
         """
         if times_per_year == 0:
-          return 0
-        
-        #if exact:
-        #  num_func = Decimal
-        #else:
-        #  num_func = float
-        
-        #if exact:
-        #  value = float(value)
-        #  hours = float(self.hours_per_period)
-        #  period = float(self.period)
-        #  per_year = float(times_per_year)
-        #else:
-        #  value = Decimal(value)
-        #  hours = Decimal(self.hours_per_period)
-        #  period = Decimal(self.period)
-        #  per_year = Decimal(times_per_year)
-        
+          return Decimal(0)
+        # Use the appropriate cacluation
         if hasattr(self, 'is_hourly') and self.is_hourly:
-          if exact:
-            return (float(line_item.value) * float(self.hours_per_period) * float(self.period)) / float(times_per_year)
-          else:
-            return (Decimal(line_item.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
+          return (Decimal(line_item.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
         else:
-          if exact:
-            return (float(line_item.value) * float(self.period)) / float(times_per_year)
-          else:
-            return (Decimal(line_item.value) * Decimal(self.period)) / Decimal(times_per_year)
+          return (Decimal(line_item.value) * Decimal(self.period)) / Decimal(times_per_year)
     
     # Q: Allow `line_item` to be a string (source/id name)?
     # Names: line_item_period_value? item_period_value?
-    def period_value(self, line_item, times_per_year=1, exact=False):
+    def period_value(self, line_item, times_per_year=1):
       """
       Returns the amount earned or deducted over the specified period for
       the given line item as a positive or negative value.
@@ -552,20 +530,20 @@ class ALPaystub(ALIncomeList):
       my_multipart_job.period_value( 'deductions', times_per_year=1 )
       # -202.65
       """
-      absolute_value = self.absolute_period_value( line_item, times_per_year=times_per_year, exact=exact )
+      absolute_value = self.absolute_period_value( line_item, times_per_year=times_per_year )
       if line_item.transaction_type == 'deduction' or line_item.transaction_type == 'out':
-        return -1 * absolute_value
+        return Decimal(-1) * absolute_value
       else:
         return absolute_value
     
     # Also filter by `owners`?
-    def gross(self, source=None, times_per_year=1, exact=False):
+    def gross(self, source=None, times_per_year=1):
         """
         Returns the sum of positive values (payments) for a given pay
         period. Can be filtered by one line item source or a list of sources.
         """
         self._trigger_gather()
-        total = 0
+        total = Decimal(0)
         if times_per_year == 0:
             return total
         # Filter result by source if desired
@@ -573,33 +551,25 @@ class ALPaystub(ALIncomeList):
         # Add up positive values
         for line_item in line_items:
           if line_item.transaction_type != 'deduction':
-            if exact:
-              total += self.absolute_period_value( line_item, times_per_year=times_per_year, exact=exact )
-            else:
-              # Is this needed? Won't this already be a Decimal?
-              total += Decimal(self.absolute_period_value( line_item, times_per_year=times_per_year, exact=exact ))
+            total += self.period_value( line_item, times_per_year=times_per_year )
         return total
     
     # Also filter by `owners`?
-    def net(self, times_per_year=1, source=None, exact=False):
+    def net(self, times_per_year=1, source=None):
         """
         Returns the net (payments minus deductions) value of the job
         for a given pay period. Can be filtered by a line item source
         or a list of sources.
         """
         self._trigger_gather()
-        total = 0
+        total = Decimal(0)
         if times_per_year == 0:
             return total
         # Filter result by source if desired
         line_items = self.line_items( source=source )
         # Add up positive and negative values
         for line_item in line_items:
-          if exact:
-            total += self.period_value( line_item, times_per_year=times_per_year, exact=exact )
-          else:
-            # Would this already be a decimal?
-            total += Decimal(self.period_value( line_item, times_per_year=times_per_year, exact=exact ))
+          total += self.period_value( line_item, times_per_year=times_per_year )
         return total
     
     def employer_name_address_phone(self):
@@ -634,7 +604,7 @@ class ALPaystub(ALIncomeList):
           "frequency": float(self.period),
           # Should this be called just `value`? Does Legal Server API
           # call it `amount`?
-          "amount": float( self.period_value(item, times_per_year=self.period, exact=True))
+          "amount": float( self.period_value(item, times_per_year=self.period ))
         } for item in self.elements])
 
 
@@ -648,9 +618,9 @@ class ALPaystubList(ALIncomeList):
         super().init(*pargs, **kwargs)     
         self.object_type = ALPaystub
     
-    def gross(self, times_per_year=1, source=None, exact=False):
+    def gross(self, times_per_year=1, source=None):
         self._trigger_gather()
-        total = 0
+        total = Decimal(0)
         if times_per_year == 0:
             return total
         # Make sure we're always working with a list.
@@ -664,17 +634,12 @@ class ALPaystubList(ALIncomeList):
         filtered = [stub for stub in self.elements if stub.source in sources]
         # Add filtered grosses together
         for stub in filtered:
-          if exact:
-            # Will this already be a float?
-            total += float(stub.gross(times_per_year=times_per_year, exact=exact))
-          else:
-            # Will this already be a Decimal?
-            total += Decimal(stub.gross(times_per_year=times_per_year, exact=exact))
+          total += stub.gross(times_per_year=times_per_year)
         return total
     
-    def net(self, times_per_year=1, source=None, exact=False):
+    def net(self, times_per_year=1, source=None):
         self._trigger_gather()
-        total = 0
+        total = Decimal(0)
         if times_per_year == 0:
             return total
         # Make sure we're always working with a list.
@@ -688,29 +653,16 @@ class ALPaystubList(ALIncomeList):
         filtered = [stub for stub in self.elements if stub.source in sources]
         # Add filtered nets together
         for stub in filtered:
-          if exact:
-            # Will this already be a float?
-            total += float(stub.net(times_per_year=times_per_year, exact=exact))
-          else:
-            # Will this already be a Decimal?
-            total += Decimal(stub.net(times_per_year=times_per_year, exact=exact))
+          total += stub.net(times_per_year=times_per_year)
         return total
-    
-    #def gross(self, times_per_year=1, exact=False):
-    #  """Alias for super `.gross_for_period()` to have same interface as paystub."""
-    #  return self.gross_for_period(times_per_year=times_per_year, exact=exact)
-    #
-    #def net(self, times_per_year=1, exact=False):
-    #  """Alias for super `.net_for_period()` to have same interface as paystub."""
-    #  return self.net_for_period(times_per_year=times_per_year, exact=exact)
     
     def to_json(self):
         """Creates line item list suitable for Legal Server API."""
         return json.dumps([{
           "source": stub.source,
           "frequency": float(stub.period),
-          "gross": float(stub.gross(times_per_year=stub.period, exact=True)),
-          "net": float(stub.net(times_per_year=stub.period, exact=True)),
+          "gross": float(stub.gross(times_per_year=stub.period)),
+          "net": float(stub.net(times_per_year=stub.period)),
           "line_items": stub.to_json()
         } for stub in self.elements])
 
