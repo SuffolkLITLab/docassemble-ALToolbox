@@ -33,18 +33,16 @@ code: |
     paystub.gather()
   
   if to_run['ALJob'] or to_run['all']:
-    # Individual job
     job.source = 'Random Work'
+    job.employer
     job.value
   
   if to_run['ALIncomeList'] or to_run['all']:
-    # List of incomes
     income_sources
     get_income_sources
     incomes.gather()
   
   if to_run['ALIncome'] or to_run['all']:
-    # Individual income
     income.source = 'Random Income'
     income.value
   
@@ -140,6 +138,16 @@ fields:
   - Phone number: x.employer.phone_number
     required: False
 ---
+# SHARED BY PAYSTUBS
+---
+generic object: ALPaystub
+code: |
+  if x.line_item_sources.any_true():
+    for source in x.line_item_sources.true_values():
+      x.appendObject(source=source)
+      # Never put anything else in here
+  x.get_line_item_sources = True
+---
 # PAYSTUBS LIST
 ---
 code: |
@@ -147,6 +155,7 @@ code: |
   paystub_list[i].there_is_another=False
   paystub_list[i].there_are_any=True
   paystub_list[i].source
+  paystub_list[i].employer.name.first
   paystub_list[i].period
   paystub_list[i].line_item_sources
   paystub_list[i].get_line_item_sources
@@ -158,7 +167,7 @@ code: |
   if x.line_item_sources.any_true():
     for source in x.line_item_sources.true_values():
       x.appendObject(source=source)
-      x.employer.name.first
+      # Never put anything else in here
   x.get_line_item_sources = True
 ---
 generic object: ALPaystub
@@ -195,6 +204,7 @@ code: |
   if line_item_sources.any_true():
     for source in line_item_sources.true_values():
       paystub.appendObject(source=source)
+      # Never put anything else in here
   get_paystub_sources = True
 ---
 code: |
@@ -249,7 +259,7 @@ fields:
   - Amount: x[i].value
     datatype: currency
 ---
-# JOBS
+# ONE JOB
 ---
 id: single job value
 generic object: ALJob
@@ -263,12 +273,22 @@ fields:
     code: |
       income_period_list()
 ---
+id: single job employer
+generic object: ALJob
+question: |
+  Tell us about your employer
+fields:
+  - Name: x.employer
+  - Address: x.employer_address
+  - Phone: x.employer_phone
+---
 # INCOMES
 ---
 code: |
   if income_sources.any_true():
     for source in income_sources.true_values():
       one_income = incomes.appendObject(source=source)
+      # Never put anything else in here
   get_income_sources = True
 ---
 generic object: ALIncomeList
@@ -353,11 +373,15 @@ subquestion: |
   % endfor
   
   % endfor
+  
+  ## JSON
+  
+  ${ paystub_list.to_json() }
 
   % endif
   
   % if to_run['ALPaystub'] or to_run['all']:
-  ## One paystub
+  ## Paystub for ${ paystub.source }
   
   **Employer info:** ${ paystub.employer_name_address_phone() }
   
@@ -373,9 +397,16 @@ subquestion: |
   % endif
   
   % if to_run['ALJob'] or to_run['all']:
-  ## Regular job
+  ## Job: ${ job.source }
   
-  ${ job.source } gross: ${ currency( job.value ) } ${ job.period } times per year
+  **Employer info:**
+  
+  ${ job.name_address_phone() }
+  
+  * **gross:** ${ currency( job.gross_per_period() ) } per year
+  * **net:** ${ currency( job.net_per_period() ) } per year
+  
+  
   % endif
   
   % if to_run['ALIncomeList'] or to_run['all']:
