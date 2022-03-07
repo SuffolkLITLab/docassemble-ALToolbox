@@ -582,6 +582,9 @@ class ALPaystub(DAList):
           total += self.period_value( line_item, times_per_year=times_per_year )
         return total
     
+    def total(self, times_per_year=1, source=None):
+      return self.net(times_per_year=times_per_year, source=source)
+    
     def employer_name_address_phone(self):
         """
         Returns concatenation of employer name and, if they exist,
@@ -674,7 +677,7 @@ class ALPaystubList(DAList):
         return total
     
     def total(self, times_per_year=1, source=None):
-      return self.net(self, times_per_year=times_per_year, source=source)
+      return self.net(times_per_year=times_per_year, source=source)
     
     def to_json(self):
         """Creates line item list suitable for Legal Server API."""

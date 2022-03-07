@@ -309,6 +309,7 @@ subquestion: |
   
   * **gross:** ${ currency( paystub_list.gross() ) }
   * **net:** ${ currency( paystub_list.net() ) }
+  * **total:** ${ currency( paystub_list.total() ) }
   
   % for one_paystub in paystub_list:
   ### ${ one_paystub.source }
@@ -327,6 +328,7 @@ subquestion: |
   
   * **gross:** ${ currency( one_paystub.gross() ) }
   * **net:** ${ currency( one_paystub.net() ) }
+  * **total:** ${ currency( one_paystub.total() ) }
   
   #### Line items
   
@@ -363,9 +365,11 @@ subquestion: |
   The `normalized_hours()` function was excluded because it's only for hourly jobs.
   % endif
   
-  **paystub gross:** ${ currency( paystub.gross() ) } per year
+  Totals
   
-  **paystub net:** ${ currency( paystub.net() ) } per year
+  * **paystub gross:** ${ currency( paystub.gross() ) } per year
+  * **paystub net:** ${ currency( paystub.net() ) } per year
+  * **paystub total:** ${ currency( paystub.total() ) }
   
   Money coming in:
   
