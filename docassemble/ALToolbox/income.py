@@ -423,7 +423,7 @@ class ALJobList(ALIncomeList):
 
 # Q: Does `paystub.is_hourly` make sense? (not really)
 # Q: Does this really need to be an ALIncomeList
-class ALPaystub(ALIncomeList):
+class ALPaystub(DAList):
     """
     Represents a job that can have multiple sources of earned income
     and deductions. It may be hourly or pay-period based. If non-hourly,
@@ -453,6 +453,14 @@ class ALPaystub(ALIncomeList):
         self.object_type = PeriodicValue
         if not hasattr(self, 'employer'):
           self.initializeAttribute('employer', Individual)
+    
+    def sources(self):
+        """Returns a set of the unique sources of the elements."""
+        sources = set()
+        for item in self.elements:
+            if hasattr(item, 'source'):
+                sources.add(item.source)
+        return sources
     
     # Q: Should `source` be `id`? That only makes sense for jobs, not
     # incomes/assets, so they then won't share an interface.
@@ -499,6 +507,8 @@ class ALPaystub(ALIncomeList):
       
       return filtered_items
     
+    # Q: Should `times_per_year` default be the period of the paystub?
+    # (instead of 1)
     # Q: Should `times_per_year` be a string that's the "name" of the period?
     # Calling it just `period` is a bit confusing when the value is a number.
     # e.g. `period = 12`, to me, doesn't shout out "monthly".
@@ -536,7 +546,7 @@ class ALPaystub(ALIncomeList):
       else:
         return absolute_value
     
-    # Also filter by `owners`?
+    # Q: Also filter by `owners`?
     def gross(self, source=None, times_per_year=1):
         """
         Returns the sum of positive values (payments) for a given pay
@@ -554,7 +564,7 @@ class ALPaystub(ALIncomeList):
             total += self.period_value( line_item, times_per_year=times_per_year )
         return total
     
-    # Also filter by `owners`?
+    # Q: Also filter by `owners`?
     def net(self, times_per_year=1, source=None):
         """
         Returns the net (payments minus deductions) value of the job
@@ -608,15 +618,22 @@ class ALPaystub(ALIncomeList):
         } for item in self.elements])
 
 
-class ALPaystubList(ALIncomeList):
+class ALPaystubList(DAList):
     """
     Represents a list of jobs that can have both payments and deductions.
-    Adds the `.net()` and `.gross()` methods to the ALIncomeList class.
     This is a less common way of reporting income.
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)     
         self.object_type = ALPaystub
+    
+    def sources(self):
+        """Returns a set of the unique sources of the elements."""
+        sources = set()
+        for item in self.elements:
+            if hasattr(item, 'source'):
+                sources.add(item.source)
+        return sources
     
     def gross(self, times_per_year=1, source=None):
         self._trigger_gather()
@@ -655,6 +672,9 @@ class ALPaystubList(ALIncomeList):
         for stub in filtered:
           total += stub.net(times_per_year=times_per_year)
         return total
+    
+    def total(self, times_per_year=1, source=None):
+      return self.net(self, times_per_year=times_per_year, source=source)
     
     def to_json(self):
         """Creates line item list suitable for Legal Server API."""
