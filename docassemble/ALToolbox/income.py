@@ -421,7 +421,7 @@ class ALJobList(ALIncomeList):
         return result
 
 
-# Q: Does `paystub.is_hourly` make sense?
+# Q: Does `paystub.is_hourly` make sense? (not really)
 # Q: Does this really need to be an ALIncomeList
 class ALPaystub(ALIncomeList):
     """

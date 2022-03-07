@@ -29,7 +29,7 @@ code: |
     paystub.source
     paystub.employer.name.first
     paystub.period
-    get_paystub_sources
+    paystub.get_line_item_sources
     paystub.gather()
   
   if to_run['ALJob'] or to_run['all']:
@@ -55,10 +55,10 @@ question: |
 subquestion: |
   Before choosing what to test:
   
-  `ALPaystubList` tests all the same functionality as:
+  `ALPaystubList` covers all the same functionality as `ALPaystub`.
   
-    * `ALJobList`
-    * `ALPaystub`
+  `ALIncomeList` covers all the same functionality as `ALIncome`.
+  
   
 # Other classes are testing ALIncomeList's also needs to test
 #  √ sources
@@ -78,12 +78,12 @@ fields:
       - All of the them: all
       #- ALSimpleValue: ALSimpleValue
       #- ALValueList: ALValueList
-      - ALIncome: ALIncome
-      - ALIncomeList: ALIncomeList
-      - ALJob: ALJob
-      - ALJobList: ALJobList
-      - ALPaystub: ALPaystub
       - ALPaystubList: ALPaystubList
+      - ALPaystub: ALPaystub
+      - ALJobList: ALJobList
+      - ALJob: ALJob
+      - ALIncomeList: ALIncomeList
+      - ALIncome: ALIncome
       #- ALLedger: ALLedger
       #- ALVehicle: ALVehicle
       #- ALVehicleList: ALVehicleList
@@ -148,39 +148,11 @@ code: |
       # Never put anything else in here
   x.get_line_item_sources = True
 ---
-# PAYSTUBS LIST
----
-code: |
-  paystub_list[i].complete_attribute='complete'
-  paystub_list[i].there_is_another=False
-  paystub_list[i].there_are_any=True
-  paystub_list[i].source
-  paystub_list[i].employer.name.first
-  paystub_list[i].period
-  paystub_list[i].line_item_sources
-  paystub_list[i].get_line_item_sources
-  paystub_list[i].gather()
-  paystub_list[i].complete = True
----
-generic object: ALPaystub
-code: |
-  if x.line_item_sources.any_true():
-    for source in x.line_item_sources.true_values():
-      x.appendObject(source=source)
-      # Never put anything else in here
-  x.get_line_item_sources = True
----
 generic object: ALPaystub
 code: |
   x[i].transaction_type = job_source_transaction_types[x[i].source]
   x[i].value
-  x[i].complete = True
----
-id: how many jobs
-question: |
-  How many jobs do you have?
-fields:
-  - no label: paystub_list.target_number
+  x[i].gather_line_items = True
 ---
 id: job name for paystub
 generic object: ALPaystub
@@ -198,32 +170,10 @@ fields:
     datatype: checkboxes
     code: job_income_choices
 ---
-# PAYSTUB
----
-code: |
-  if line_item_sources.any_true():
-    for source in line_item_sources.true_values():
-      paystub.appendObject(source=source)
-      # Never put anything else in here
-  get_paystub_sources = True
----
-code: |
-  paystub[i].transaction_type = job_source_transaction_types[paystub[i].source]
-  paystub[i].value
-  paystub[i].gather_line_items = True
----
-id: list items
-question: |
-  Does your (paystub) job have any of the below?
-fields:
-  - no label: line_item_sources
-    datatype: checkboxes
-    code: job_income_choices
----
 id: paystub period
 generic object: ALPaystub
 question: |
-  Tell us about your (paystub) job hours
+  Tell us about your ${ x.source }'s job hours
 fields:
   - Hourly or salary?: x.is_hourly
     input type: radio
@@ -244,7 +194,7 @@ generic object: ALPaystub
 if: |
   x[i].transaction_type != 'deduction'
 question: |
-  What how much do you get paid for ${ x[i].source }?
+  What how much do you get paid for ${ x.source }'s ${ x[i].source }?
 fields:
   - Amount: x[i].value
     datatype: currency
@@ -254,10 +204,30 @@ generic object: ALPaystub
 if: |
   x[i].transaction_type == 'deduction'
 question: |
-  What is removed from your paycheck for the ${ x[i].source }?
+  What is removed from your paycheck for ${ x.source }'s ${ x[i].source }?
 fields:
   - Amount: x[i].value
     datatype: currency
+---
+# PAYSTUBS LIST (Unique items)
+---
+code: |
+  paystub_list[i].complete_attribute='gather_line_items'
+  paystub_list[i].there_is_another=False
+  paystub_list[i].there_are_any=True
+  paystub_list[i].source
+  paystub_list[i].employer.name.first
+  paystub_list[i].period
+  paystub_list[i].line_item_sources
+  paystub_list[i].get_line_item_sources
+  paystub_list[i].gather()
+  paystub_list[i].complete = True
+---
+id: how many jobs
+question: |
+  How many jobs do you have?
+fields:
+  - no label: paystub_list.target_number
 ---
 # ONE JOB
 ---
@@ -358,7 +328,7 @@ subquestion: |
   * **gross:** ${ currency( one_paystub.gross() ) }
   * **net:** ${ currency( one_paystub.net() ) }
   
-  ## Line items
+  #### Line items
   
   Money coming in:
   
@@ -374,14 +344,16 @@ subquestion: |
   
   % endfor
   
-  ## JSON
+  #### `paystub_list` JSON
   
   ${ paystub_list.to_json() }
+  
+  ---
 
   % endif
   
   % if to_run['ALPaystub'] or to_run['all']:
-  ## Paystub for ${ paystub.source }
+  ## Sinble paystub for ${ paystub.source }
   
   **Employer info:** ${ paystub.employer_name_address_phone() }
   
@@ -394,6 +366,25 @@ subquestion: |
   **paystub gross:** ${ currency( paystub.gross() ) } per year
   
   **paystub net:** ${ currency( paystub.net() ) } per year
+  
+  Money coming in:
+  
+  % for item in paystub.line_items(transaction_type='payment'):
+  * ${ item.source }: ${currency( paystub.period_value( item, times_per_year=1 ))}
+  % endfor
+  
+  Money going out:
+  
+  % for item in paystub.line_items(transaction_type='deduction'):
+  * ${ item.source }: ${currency( paystub.absolute_period_value( item, times_per_year=1 ))}
+  % endfor
+  
+  #### `paystub` JSON
+  
+  ${ paystub.to_json() }
+  
+  ---
+  
   % endif
   
   % if to_run['ALJob'] or to_run['all']:
@@ -406,22 +397,27 @@ subquestion: |
   * **gross:** ${ currency( job.gross_per_period() ) } per year
   * **net:** ${ currency( job.net_per_period() ) } per year
   
+  ---
   
   % endif
   
   % if to_run['ALIncomeList'] or to_run['all']:
   ## List of incomes
   
-  Other incomes:
-  
   % for one_income in incomes:
   * ${ one_income.source }: ${ currency( one_income.value ) } ${ one_income.period } times per year
   % endfor
+  
+  ---
+  
   % endif
   
   % if to_run['ALIncome'] or to_run['all']:
   ## One income
   
   ${ income.source } income: ${ currency( income.value ) } ${ income.period } times per year
+  
+  ---
+  
   % endif
 ---
