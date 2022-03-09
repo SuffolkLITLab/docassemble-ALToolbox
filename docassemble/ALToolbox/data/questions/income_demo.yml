@@ -5,12 +5,12 @@ modules:
   - .income
 ---
 objects:
-  - paystub_list: ALPaystubList.using(
+  - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
       ask_number=True)
-  - paystub: ALPaystub.using(
-      complete_attribute='gather_line_items',
-      there_is_another=False)
+  - itemized_job: ALItemizedJob.using(
+      auto_gather=False,
+      gathered=True)
   - jobs: ALJobList.using(
       complete_attribute='complete',
       there_is_another=False)
@@ -22,15 +22,18 @@ objects:
 ---
 mandatory: True
 code: |
-  if to_run['ALPaystubList'] or to_run['all']:
-    paystub_list.gather()
+  if to_run['ALItemizedJobList'] or to_run['all']:
+    itemized_job_list.gather()
   
-  if to_run['ALPaystub'] or to_run['all']:
-    paystub.source
-    paystub.employer.name.first
-    paystub.period
-    paystub.get_line_item_sources
-    paystub.gather()
+  if to_run['ALItemizedJob'] or to_run['all']:
+    itemized_job.source
+    itemized_job.in_values.there_are_any = True
+    itemized_job.out_values.there_are_any = True
+    itemized_job.in_values["wages"]
+    #itemized_job.employer.name.first
+    #itemized_job.period
+    #itemized_job.get_line_item_sources
+    #itemized_job.gather()
   
   if to_run['ALJob'] or to_run['all']:
     job.source = 'Random Work'
@@ -55,7 +58,7 @@ question: |
 subquestion: |
   Before choosing what to test:
   
-  `ALPaystubList` covers all the same functionality as `ALPaystub`.
+  `ALItemizedJobList` covers all the same functionality as `ALItemizedJob`.
   
   `ALIncomeList` covers all the same functionality as `ALIncome`.
   
@@ -78,8 +81,8 @@ fields:
       - All of the them: all
       #- ALSimpleValue: ALSimpleValue
       #- ALValueList: ALValueList
-      - ALPaystubList: ALPaystubList
-      - ALPaystub: ALPaystub
+      - ALItemizedJobList: ALItemizedJobList
+      - ALItemizedJob: ALItemizedJob
       - ALJobList: ALJobList
       - ALJob: ALJob
       - ALIncomeList: ALIncomeList
@@ -117,7 +120,7 @@ code: |
     ('garnishments', 'Garnishments')
   ]
 ---
-# JOB/PAYSTUB SHARED QUESTIONS
+# JOB/ITEMIZED_JOB SHARED QUESTIONS
 ---
 id: employer
 generic object: DAObject
@@ -138,9 +141,19 @@ fields:
   - Phone number: x.employer.phone_number
     required: False
 ---
-# SHARED BY PAYSTUBS
+# SHARED BY ITEMIZED_JOB-RELATED OBJECTS
 ---
-generic object: ALPaystub
+#code: |
+#  in_sources = [
+#    ('tips', 'Tips'),
+#    ('bonuses', 'Bonuses')
+#  ]
+#  out_sources = [
+#    ('deductions', 'Deductions'),
+#    ('garnishments', 'Garnishments')
+#  ]
+---
+generic object: ALItemizedJob
 code: |
   if x.line_item_sources.any_true():
     for source in x.line_item_sources.true_values():
@@ -148,21 +161,38 @@ code: |
       # Never put anything else in here
   x.get_line_item_sources = True
 ---
-generic object: ALPaystub
+generic object: ALItemizedJob
 code: |
   x[i].transaction_type = job_source_transaction_types[x[i].source]
   x[i].value
   x[i].gather_line_items = True
 ---
-id: job name for paystub
-generic object: ALPaystub
+id: job name for itemized_job
+generic object: ALItemizedJob
 question: |
   What is the name of this job?
 fields:
   - Job name: x.source
 ---
-id: list items
-generic object: ALPaystub
+id: line items for objs
+generic object: ALItemizedJob
+question: |
+    Enter info from your paystub for your ${ x.source } job
+fields:
+    - What are your wages for this job?: x.in_values["wages"]
+      datatype: currency
+    - What are your tips for this job?: x.in_values["tips"]
+      datatype: currency
+      required: False
+    - What is your federal tax amount?: x.out_values["taxes"]
+      datatype: currency
+      required: False
+    - What do you pay for insurance?: x.out_values["insurance"]
+      datatype: currency
+      required: False
+---
+id: line items
+generic object: ALItemizedJob
 question: |
   Does your ${ x.source } job have any of the below?
 fields:
@@ -170,8 +200,30 @@ fields:
     datatype: checkboxes
     code: job_income_choices
 ---
-id: paystub period
-generic object: ALPaystub
+#id: itemized job sources
+#generic object: ALItemizedJob
+#question: |
+#  What kind of money is coming in and going out?
+#fields:
+#  - Coming in: x.in_sources
+#    datatype: checkboxes
+#    code: in_sources
+#  - Going out: x.out_sources
+#    datatype: checkboxes
+#    code: out_sources
+---
+#generic object: ALItemizedJob
+#question: |
+#  What does your paystub say?
+#fields:
+#  - code: |
+#    [{
+#      item: f"x[i].in[{index}]",
+#      "datatype": "currency"
+#    } for index, item in enumerate(user.paystubs.line_types_present.true_values())]
+---
+id: itemized_job period
+generic object: ALItemizedJob
 question: |
   Tell us about your ${ x.source }'s job hours
 fields:
@@ -190,7 +242,7 @@ fields:
 ---
 #  - How much do you get paid per hour?: 
 id: payment value
-generic object: ALPaystub
+generic object: ALItemizedJob
 if: |
   x[i].transaction_type != 'deduction'
 question: |
@@ -200,7 +252,7 @@ fields:
     datatype: currency
 ---
 id: deduction value
-generic object: ALPaystub
+generic object: ALItemizedJob
 if: |
   x[i].transaction_type == 'deduction'
 question: |
@@ -209,25 +261,30 @@ fields:
   - Amount: x[i].value
     datatype: currency
 ---
-# PAYSTUBS LIST (Unique items)
+# ITEMIZED_JOB LIST (Unique items)
 ---
 code: |
-  paystub_list[i].complete_attribute='gather_line_items'
-  paystub_list[i].there_is_another=False
-  paystub_list[i].there_are_any=True
-  paystub_list[i].source
-  paystub_list[i].employer.name.first
-  paystub_list[i].period
-  paystub_list[i].line_item_sources
-  paystub_list[i].get_line_item_sources
-  paystub_list[i].gather()
-  paystub_list[i].complete = True
+  #itemized_job_list[i].complete_attribute='gather_line_items'
+  #itemized_job_list[i].there_is_another=False
+  #itemized_job_list[i].there_are_any=True
+  ########
+  itemized_job_list[i].source
+  itemized_job_list[i].in_values["wages"]
+  #itemized_job_list[i].employer.name.first
+  #itemized_job_list[i].period
+  ########
+  #itemized_job_list[i].in_sources
+  #itemized_job_list[i].out_sources
+  #itemized_job_list[i].line_item_sources
+  #itemized_job_list[i].get_line_item_sources
+  #itemized_job_list[i].gather()
+  itemized_job_list[i].complete = True
 ---
 id: how many jobs
 question: |
   How many jobs do you have?
 fields:
-  - no label: paystub_list.target_number
+  - no label: itemized_job_list.target_number
 ---
 # ONE JOB
 ---
@@ -301,91 +358,114 @@ event: end
 question: |
   Your answers
 subquestion: |
+  
+  % if to_run['ALItemizedJob'] or to_run['all']:
+  ## Single itemized_job for ${ itemized_job.source }
+  
+  ---
+  
+  % endif
 
-  % if to_run['ALPaystubList'] or to_run['all']:
-  ## List of paystubs (jobs)
+  % if to_run['ALItemizedJobList'] or to_run['all']:
+  ## Itemized jobs list
+  
+  % for one_itemized_job in itemized_job_list:
+  ### ${ one_itemized_job.source }
+  
+  **Employer info:**[BR]
+  ${ one_itemized_job.employer_name_address_phone() }
+  
+  % endfor
+  
+  ---
+  
+  % endif
+
+comment: |
+  % if to_run['ALItemizedJobList'] or to_run['all']:
+  ## List of itemized jobs
   
   All jobs together:
   
-  * **gross:** ${ currency( paystub_list.gross() ) }
-  * **net:** ${ currency( paystub_list.net() ) }
-  * **total:** ${ currency( paystub_list.total() ) }
+  * **gross:** ${ currency( itemized_job_list.gross() ) }
+  * **net:** ${ currency( itemized_job_list.net() ) }
+  * **total:** ${ currency( itemized_job_list.total() ) }
   
-  % for one_paystub in paystub_list:
-  ### ${ one_paystub.source }
+  % for one_itemized_job in itemized_job_list:
+  ### ${ one_itemized_job.source }
   
-  **Employer info:**
+  **Employer info:**[BR]
+  ${ one_itemized_job.employer_name_address_phone() }
   
-  ${ one_paystub.employer_name_address_phone() }
-  
-  % if one_paystub.is_hourly:
-  **Hours:** ${ one_paystub.normalized_hours(12) } per month
+  % if one_itemized_job.is_hourly:
+  **Hours:** ${ one_itemized_job.normalized_hours(12) } per month
   % else:
   The `normalized_hours()` function was excluded because it's only for hourly jobs.
   % endif
   
   Totals
   
-  * **gross:** ${ currency( one_paystub.gross() ) }
-  * **net:** ${ currency( one_paystub.net() ) }
-  * **total:** ${ currency( one_paystub.total() ) }
+  * **gross:** ${ currency( one_itemized_job.gross() ) }
+  * **net:** ${ currency( one_itemized_job.net() ) }
+  * **total:** ${ currency( one_itemized_job.total() ) }
   
   #### Line items
   
   Money coming in:
   
-  % for line_item in one_paystub.line_items(transaction_type='payment'):
-  * ${ line_item.source }: ${currency( one_paystub.period_value( line_item, times_per_year=1 ))}
+  % for line_item in one_itemized_job.line_items(transaction_type='payment'):
+  * ${ line_item.source }: ${currency( one_itemized_job.period_value( line_item, times_per_year=1 ))}
   % endfor
   
   Money going out:
   
-  % for line_item in one_paystub.line_items(transaction_type='deduction'):
-  * ${ line_item.source }: ${currency( one_paystub.absolute_period_value( line_item, times_per_year=1 ))}
+  % for line_item in one_itemized_job.line_items(transaction_type='deduction'):
+  * ${ line_item.source }: ${currency( one_itemized_job.absolute_period_value( line_item, times_per_year=1 ))}
   % endfor
   
   % endfor
   
-  #### `paystub_list` JSON
+  #### `itemized_job_list` JSON
   
-  ${ paystub_list.to_json() }
+  ${ itemized_job_list.to_json() }
   
   ---
 
   % endif
   
-  % if to_run['ALPaystub'] or to_run['all']:
-  ## Sinble paystub for ${ paystub.source }
+  % if to_run['ALItemizedJob'] or to_run['all']:
+  ## Sinble itemized_job for ${ itemized_job.source }
   
-  **Employer info:** ${ paystub.employer_name_address_phone() }
+  **Employer info:**[BR]
+  ${ itemized_job.employer_name_address_phone() }
   
-  % if paystub.is_hourly:
-  **Hours:** ${ paystub.normalized_hours(12) } per month
+  % if itemized_job.is_hourly:
+  **Hours:** ${ itemized_job.normalized_hours(12) } per month
   % else:
   The `normalized_hours()` function was excluded because it's only for hourly jobs.
   % endif
   
   Totals
   
-  * **paystub gross:** ${ currency( paystub.gross() ) } per year
-  * **paystub net:** ${ currency( paystub.net() ) } per year
-  * **paystub total:** ${ currency( paystub.total() ) }
+  * **itemized_job gross:** ${ currency( itemized_job.gross() ) } per year
+  * **itemized_job net:** ${ currency( itemized_job.net() ) } per year
+  * **itemized_job total:** ${ currency( itemized_job.total() ) }
   
   Money coming in:
   
-  % for item in paystub.line_items(transaction_type='payment'):
-  * ${ item.source }: ${currency( paystub.period_value( item, times_per_year=1 ))}
+  % for item in itemized_job.line_items(transaction_type='payment'):
+  * ${ item.source }: ${currency( itemized_job.period_value( item, times_per_year=1 ))}
   % endfor
   
   Money going out:
   
-  % for item in paystub.line_items(transaction_type='deduction'):
-  * ${ item.source }: ${currency( paystub.absolute_period_value( item, times_per_year=1 ))}
+  % for item in itemized_job.line_items(transaction_type='deduction'):
+  * ${ item.source }: ${currency( itemized_job.absolute_period_value( item, times_per_year=1 ))}
   % endfor
   
-  #### `paystub` JSON
+  #### `itemized_job` JSON
   
-  ${ paystub.to_json() }
+  ${ itemized_job.to_json() }
   
   ---
   

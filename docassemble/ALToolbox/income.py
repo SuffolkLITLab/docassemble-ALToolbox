@@ -133,69 +133,6 @@ def expense_source_list() :
     return source_list
 
 
-class ALSimpleValue(DAObject):
-    """
-    Like a Value object, but no fiddling around with .exists attribute
-    because it's designed to store in a list, not a dictionary.
-    """
-    # Q: "it's designed to store" means "because this is a dictionary instead
-    # of a list?
-    # Q: add a `.delta()` that just returns positive or negative 1 depending on item?
-    
-    def amount(self):
-        """
-        If desired, to use as a ledger, values can be signed. Setting
-        transaction_type = 'expense' makes the value negative. Use min=0
-        in that case.
-        """
-        if hasattr(self, 'transaction_type'):
-            return (self.value * -1) if (self.transaction_type == 'expense') else self.value
-        else:
-            return self.value
-
-    def __str__(self):
-        return str(self.amount())
-
-
-class ALValueList(DAList):
-    """Represents a filterable DAList of ALSimpleValues."""
-    def init(self, *pargs, **kwargs):
-        super().init(*pargs, **kwargs)
-        self.object_type = ALSimpleValue        
-
-    def sources(self):
-        """
-        Returns a set of the unique sources of values stored in the list.
-        Will fail if any items in the list leave the source field unspecified.
-        """
-        sources = set()
-        for item in self.elements:
-            if hasattr(item, 'source'):
-                sources.add(item.source)
-        return sources
-        
-    def total(self, source=None):
-        """
-        Returns the total value in the list, gathering the list items if
-        necessary. You can specify source, which may be a list, to coalesce
-        multiple entries of the same source.
-        """
-        self._trigger_gather()
-        result = 0
-        if source is None:
-            for item in self.elements:
-                result += Decimal(item.amount())
-        elif isinstance(source, list):
-            for item in self.elements:
-                if item.source in source:
-                    result += Decimal(item.amount())
-        else:
-            for item in self.elements:
-                if item.source == source:
-                    result += Decimal(item.amount())
-        return result
-
-
 class ALIncome(PeriodicValue):
     """
     Represents an income which may have an hourly rate or a salary.
@@ -207,6 +144,9 @@ class ALIncome(PeriodicValue):
     # Name: times_per_year was period. maybe period_frequency? value_frequency?
     def amount(self, times_per_year=1):
         """Returns the income over the specified period."""
+        ## Q: Conform to behavior of docassemble PeriodicValue?
+        #if not hasattr(self, 'value'):
+        #  return Decimal(0)
         if hasattr(self, 'is_hourly') and self.is_hourly:
             return Decimal(self.hourly_rate * self.hours_per_period * self.period) / Decimal(times_per_year)
         else:
@@ -235,27 +175,6 @@ class ALIncomeList(DAList):
     # Q: Instead require `source` to always be a list? They just have
     # to put brackets around the item at worst. Same question for all
     # other locations.
-    def owners(self, source=None):
-        """
-        Returns a set of the unique owners for the specified source of
-        income stored in the list. If source is None, returns all unique
-        owners in the ALIncomeList.
-        """
-        owners=set()
-        if source is None:
-            for item in self.elements:
-                if hasattr(item, 'owner'):
-                    owners.add(item.owner)
-        elif isinstance(source, list):
-            for item in self.elements:
-                if hasattr(item, 'owner') and hasattr(item, 'source') and item.source in source:
-                    owners.add(item.owner)
-        else:
-            for item in self.elements:
-                if hasattr(item,'owner') and item.source == source:
-                    owners.add(item.owner)
-        return owners
-
     def matches(self, source):
         """
         Returns an ALIncomeList consisting only of elements matching the
@@ -277,9 +196,9 @@ class ALIncomeList(DAList):
         """
         # Q: can `owner` be a list? I see that `.owners()` returns a set
         self._trigger_gather()
-        result = 0
+        result = Decimal(0)
         if times_per_year == 0:
-            return(result)
+            return result
         if source is None:
             # Q: Should this allow the user to filter _just_ by the `owner`
             # as well if they include just the `owner`?
@@ -303,43 +222,14 @@ class ALIncomeList(DAList):
                             result += Decimal(item.amount(times_per_year=times_per_year))
         return result
     
-    def market_value(self, source=None):
-        """Returns the total market value of values in the list."""
-        result = 0
-        for item in self.elements:
-            if source is None:
-                # Q: I don't see where ALIncome has a .market_value
-                result += Decimal(item.market_value)
-            elif isinstance(source, list): 
-                if item.source in source:
-                    result += Decimal(item.market_value)
-            else:
-                if item.source == source:
-                    result += Decimal(item.market_value)
-        return result
-    
-    # Q: What is balance vs. total vs. market value?
-    def balance(self, source=None):
-        self._trigger_gather()
-        result = 0
-        for item in self.elements:
-            if source is None:
-                # Q: I don't see where ALIncome has a .balance
-                result += Decimal(item.balance)
-            elif isinstance(source, list): 
-                if item.source in source:
-                    result += Decimal(item.balance)
-            else:
-                if item.source == source:
-                    result += Decimal(item.balance)
-        return result
-    
     def to_json(self):
         """Creates income list suitable for Legal Server API."""
         return json.dumps([{
           "source": income.source,
           "frequency": float(income.period),
-          "amount": income.value
+          # Q: shouldn't this use `amount()`? [what does this second question mean? ->] Is this why times_per_year needs to default to 1?
+          # Q: Actually, in docassemble, `.amount()` always defaults to a period of 1, so if this is `amount`, it would use a year as a period, so maybe this really should be called `value` instead.
+          "value": income.value
         } for income in self.elements])
 
 
@@ -347,16 +237,16 @@ class ALJob(ALIncome):
     """
     Represents a job that may be hourly or pay-period based. If
     non-hourly, may specify gross and net income amounts. This is a
-    more common way of reporting income.
+    more common way of reporting income as opposed to ALItemizedJob.
     """
     def gross_for_period(self, times_per_year=1):
-        """Gross amount is identical to value."""
+        """Gross amount is identical to ALIncome amount."""
         return self.amount(times_per_year = times_per_year)
     
     # Q: Not sure of the name, but something like `net_value` or
     # `net_amount` seems indistinguishable from `.net`. Maybe
     # there should be `payment` and `deductions` and `.net()`
-    # like ALPaystub
+    # like ALItemizedJob
     def net_for_period(self, times_per_year=1):
         """
         Returns the net amount provided by the user
@@ -365,7 +255,7 @@ class ALJob(ALIncome):
         """
         return (Decimal(self.net) * Decimal(self.period)) / Decimal(times_per_year)
     
-    def name_address_phone(self):
+    def employer_name_address_phone(self):
         """Returns name, address and phone number of employer."""
         return self.employer + ': ' + self.employer_address + ', ' + self.employer_phone
     
@@ -378,7 +268,7 @@ class ALJobList(ALIncomeList):
     """
     Represents a list of jobs. Adds the `.net_for_period()` and
     `.gross_for_period()` methods to the ALIncomeList class. It's a
-    more common way of reporting income.
+    more common way of reporting income as opposed to ALItemizedJobList.
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)     
@@ -421,9 +311,35 @@ class ALJobList(ALIncomeList):
         return result
 
 
-# Q: Does `paystub.is_hourly` make sense? (not really)
-# Q: Does this really need to be an ALIncomeList
-class ALPaystub(DAList):
+# Q: Does `ItemizedJob.is_hourly` make sense? (not really)
+class ALItemizedJob(DAObject):
+    """
+    Notes:
+    # ~Add assets, add jobs, all in same way?~ they have different stuff
+    # ~ALIncomeList should be able to use ALItemizedJob in the same way that it uses all its other members?~ see below about `in` and `out`
+    # What do we need to share?
+    # ALItemizedJob {DAObject, DADict}
+    # .in/incomes/payments {DAList? ALIncomeList? DADict? depending on development}
+    # .out/deductions {DAList? ALIncomeList? DADict depending on development}
+    # Look at needs in SSI interview (https://github.com/nonprofittechy/docassemble-ssioverpaymentwaiver)
+    # .sources will have to take into account the two lists
+    # `amount` is in docassemble
+    # How do I allow this to be in an ALIncomeList if interview developers
+    # are going to say ALIncomeList.market_value() - these items will error
+    # when they are looped through. ALItemizedJobList will as well.
+    
+    # in: commission, bonus, hourly wage (wages?), non-hourly wages (salary?), overtime, tips
+    # out: deductions, garnishments, dues, insurance
+
+    # https://fingercheck.com/the-difference-between-a-paycheck-and-a-pay-stub/
+    #Deductions are the amounts subtracted or withheld from the total pay, including the income tax percentage of an employee’s gross wages.
+    #Social security and Medicare are deducted based on the income over the set threshold.
+    #Other deductions can include state and local income taxes, employee 401K contributions, insurance payments, profit sharing, union dues, garnishments and unemployment insurance etc.
+    job_income_choices = [
+    ('tips', 'Tips'),
+    ('deductions', 'Deductions'),
+    ('garnishments', 'Garnishments')
+    """
     """
     Represents a job that can have multiple sources of earned income
     and deductions. It may be hourly or pay-period based. If non-hourly,
@@ -438,36 +354,33 @@ class ALPaystub(DAList):
     Every line item's `.transaction_type` must be defined to get net and gross
     for a job.
     
-    WARNING: Each source can only have one line item associated with it.
+    WARNING: Each `source` can only have one line item associated with it.
     
     attribs:
     .is_hourly {Bool}
-    .hourly_rate {float}
     .hours_per_period {int}
-    .period {float}
+    .period {str}
     .employer {Individual}
     """
     def init(self, *pargs, **kwargs):
-        super().init(*pargs, **kwargs)
-        self.elements = list()
-        self.object_type = PeriodicValue
-        if not hasattr(self, 'employer'):
-          self.initializeAttribute('employer', Individual)
-    
-    def sources(self):
-        """Returns a set of the unique sources of the elements."""
-        sources = set()
-        for item in self.elements:
-            if hasattr(item, 'source'):
-                sources.add(item.source)
-        return sources
+      super().init(*pargs, **kwargs)
+      #self.elements = list()
+      #self.object_type = PeriodicValue
+      if not hasattr(self, 'employer'):
+        self.initializeAttribute('employer', Individual)
+      # Money coming in
+      if not hasattr(self, 'in_values'):
+        self.initializeAttribute('in_values', DAOrderedDict)
+      # Money being taken out
+      if not hasattr(self, 'out_values'):
+        self.initializeAttribute('out_values', DAOrderedDict)
+      log( 'initialized', 'console' )
     
     # Q: Should `source` be `id`? That only makes sense for jobs, not
     # incomes/assets, so they then won't share an interface.
     # Maybe `name`? Or do we need categories, not `id`s? In what
     # situations would there be income values from the same "type"/`source`?
     # Names for transaction_type: in_or_out? delta?
-    # Q: allow filtering by `owners`?
     def line_items(self, source=None, transaction_type=None):
       """
       Returns the list of line items filtered by source (e.g. 'tip')
@@ -507,7 +420,7 @@ class ALPaystub(DAList):
       
       return filtered_items
     
-    # Q: Should `times_per_year` default be the period of the paystub?
+    # Q: Should `times_per_year` default be the period of the ItemizedJob?
     # (instead of 1)
     # Q: Should `times_per_year` be a string that's the "name" of the period?
     # Calling it just `period` is a bit confusing when the value is a number.
@@ -520,6 +433,7 @@ class ALPaystub(DAList):
         if times_per_year == 0:
           return Decimal(0)
         # Use the appropriate cacluation
+        # Q: not deducted per hour, though.
         if hasattr(self, 'is_hourly') and self.is_hourly:
           return (Decimal(line_item.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
         else:
@@ -533,7 +447,7 @@ class ALPaystub(DAList):
       the given line item as a positive or negative value.
       
       Example:
-      # Get the montly value of the job's tips
+      # Get the monthly value of the job's tips
       my_multipart_job.period_value( 'tips', times_per_year=12 )
       # 424.44
       # Get the yearly value of the job's deductions
@@ -546,7 +460,6 @@ class ALPaystub(DAList):
       else:
         return absolute_value
     
-    # Q: Also filter by `owners`?
     def gross(self, source=None, times_per_year=1):
         """
         Returns the sum of positive values (payments) for a given pay
@@ -564,7 +477,6 @@ class ALPaystub(DAList):
             total += self.period_value( line_item, times_per_year=times_per_year )
         return total
     
-    # Q: Also filter by `owners`?
     def net(self, times_per_year=1, source=None):
         """
         Returns the net (payments minus deductions) value of the job
@@ -582,8 +494,15 @@ class ALPaystub(DAList):
           total += self.period_value( line_item, times_per_year=times_per_year )
         return total
     
+    # Avoid errors in ALIncomeList loops
     def total(self, times_per_year=1, source=None):
       return self.net(times_per_year=times_per_year, source=source)
+    
+    def balance(self, times_per_year=1, source=None):
+      return self.net(times_per_year=times_per_year, source=source)
+    
+    def market_value(self):
+      return Decimal(0)
     
     def employer_name_address_phone(self):
         """
@@ -615,20 +534,20 @@ class ALPaystub(DAList):
         return json.dumps([{
           "source": item.source,
           "frequency": float(self.period),
-          # Should this be called just `value`? Does Legal Server API
+          # Q: Should this be called just `value`? Does Legal Server API
           # call it `amount`?
-          "amount": float( self.period_value(item, times_per_year=self.period ))
+          "value": float( self.period_value(item, times_per_year=self.period ))
         } for item in self.elements])
 
 
-class ALPaystubList(DAList):
+class ALItemizedJobList(DAList):
     """
     Represents a list of jobs that can have both payments and deductions.
     This is a less common way of reporting income.
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)     
-        self.object_type = ALPaystub
+        self.object_type = ALItemizedJob
     
     def sources(self):
         """Returns a set of the unique sources of the elements."""
@@ -690,6 +609,153 @@ class ALPaystubList(DAList):
         } for stub in self.elements])
 
 
+class ALAsset(ALIncome):
+  """Like income but the `value` attribute is optional."""
+  def amount(self, times_per_year=1):
+    if not hasattr(self, 'value'):
+      return 0
+    else:
+      return super(ALAsset, self).amount(times_per_year=times_per_year)
+
+
+class ALAssetList(ALIncomeList):
+    def init(self, *pargs, **kwargs):
+      super().init(*pargs, **kwargs)  
+      self.object_type = ALAsset
+    
+    def market_value(self, source=None):
+        """Returns the total market value of values in the list."""
+        result = Decimal(0)
+        for item in self.elements:
+            if source is None:
+                result += Decimal(item.market_value)
+            elif isinstance(source, list): 
+                if item.source in source:
+                    result += Decimal(item.market_value)
+            else:
+                if item.source == source:
+                    result += Decimal(item.market_value)
+        return result
+    
+    # Q: Does this need to work per period?
+    def balance(self, source=None):
+        self._trigger_gather()
+        result = Decimal(0)
+        for item in self.elements:
+            if source is None:
+                result += Decimal(item.balance)
+            elif isinstance(source, list): 
+                if item.source in source:
+                    result += Decimal(item.balance)
+            else:
+                if item.source == source:
+                    result += Decimal(item.balance)
+        return result
+    
+    def owners(self, source=None):
+        """
+        Returns a set of the unique owners for the specified source of
+        asset stored in the list. If source is None, returns all unique
+        owners in the ALAssetList.
+        """
+        owners=set()
+        if source is None:
+            for item in self.elements:
+                if hasattr(item, 'owner'):
+                    owners.add(item.owner)
+        elif isinstance(source, list):
+            for item in self.elements:
+                if hasattr(item, 'owner') and hasattr(item, 'source') and item.source in source:
+                    owners.add(item.owner)
+        else:
+            for item in self.elements:
+                if hasattr(item,'owner') and item.source == source:
+                    owners.add(item.owner)
+        return owners
+
+
+class ALVehicle(ALAsset):
+    """Extends ALAsset. Vehicles have a .year_make_model() method."""
+    def year_make_model(self):
+        return self.year + ' / ' + self.make + ' / ' + self.model
+
+
+class ALVehicleList(ALAssetList):
+    """
+    List of vehicles. Extends ALAssetList. Vehicles have
+    a .year_make_model() method.
+    """
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        self.object_type = ALVehicle
+
+
+class ALSimpleValue(DAObject):
+    """
+    Like a Value object, but no fiddling around with .exists attribute
+    because it's designed to store in a list, not a dictionary.
+    """
+    # Q: "it's designed to store" means "because ALSimpleValue is a list instead
+    # of a dictionary? Or because ALSimpleValueList is? Maybe "to be stored"?
+    # Q: add a `.delta()` that just returns positive or negative 1 depending on item?
+    
+    # Q: da `period` is not necessarily a yearly values while ours are yearly values, so maybe we can take the opportunity to come up with a more appropriate way to refer to ours
+    # Q: da `amount` is not based on a yearly period, but an undetermined period, so maybe this is a similar opportunity to use our own name.
+    def amount(self):
+        """
+        If desired, to use as a ledger, values can be signed. Setting
+        transaction_type = 'expense' makes the value negative. Use min=0
+        in that case.
+        """
+        # Q: Why does `ALSimpleValue.amount()` not use Decimal?
+        if hasattr(self, 'transaction_type'):
+            return (self.value * -1) if (self.transaction_type == 'expense') else self.value
+        else:
+            return self.value
+
+    def __str__(self):
+        return str(self.amount())
+
+
+class ALValueList(DAList):
+    """Represents a filterable DAList of ALSimpleValues."""
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        self.object_type = ALSimpleValue        
+
+    def sources(self):
+        """
+        Returns a set of the unique sources of values stored in the list.
+        Will fail if any items in the list leave the source field unspecified.
+        """
+        sources = set()
+        for item in self.elements:
+            if hasattr(item, 'source'):
+                sources.add(item.source)
+        return sources
+        
+    def total(self, source=None):
+        """
+        Returns the total value in the list, gathering the list items if
+        necessary. You can specify source, which may be a list, to coalesce
+        multiple entries of the same source.
+        """
+        self._trigger_gather()
+        result = Decimal(0)
+        if source is None:
+            for item in self.elements:
+                result += Decimal(item.amount())
+        elif isinstance(source, list):
+            for item in self.elements:
+                if item.source in source:
+                    result += Decimal(item.amount())
+        else:
+            for item in self.elements:
+                if item.source == source:
+                    result += Decimal(item.amount())
+        return result
+
+
 class ALLedger(ALValueList):
     """
     Represents an account ledger. Adds calculate method which adds
@@ -705,31 +771,3 @@ class ALLedger(ALValueList):
         for entry in self.elements:
             running_total += entry.amount()
             entry.running_total = running_total
-
-
-class ALVehicle(ALSimpleValue):
-    """Vehicles have a method year_make_model()."""
-    def year_make_model(self):
-        return self.year + ' / ' + self.make + ' / ' + self.model
-
-
-class ALVehicleList(ALValueList):
-    """List of vehicles, extends ALValueList. Vehicles have a method year_make_model()."""
-    def init(self, *pargs, **kwargs):
-        super().init(*pargs, **kwargs)
-        self.object_type = ALVehicle
-
-
-class ALAsset(ALIncome):
-  """Like income but with the `value` attribute is optional."""
-  def amount(self, times_per_year=1):
-    if not hasattr(self, 'value'):
-      return 0
-    else:
-      return super(ALAsset, self).amount(times_per_year=times_per_year)
-
-
-class ALAssetList(ALIncomeList):
-      def init(self, *pargs, **kwargs):
-        super().init(*pargs, **kwargs)  
-        self.object_type = ALAsset
