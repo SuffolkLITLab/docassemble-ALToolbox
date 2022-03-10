@@ -310,8 +310,29 @@ class ALJobList(ALIncomeList):
                     result += Decimal(item.net_for_period(times_per_year=times_per_year))
         return result
 
+def ValueForFrequency():
+  def __init__(self, *pargs, **kwargs):
+      super().init(*pargs, **kwargs)
+      self.is_hourly = kwargs.is_hourly
+      self.period = kwargs.period
+      self.hours_per_period = kwargs.hours_per_period
+      self.value = kwargs.value
+  
+  def for_frequency(self, times_per_year=1):
+      """
+      Returns the amount earned or deducted over the specified period for
+      the specified line item of the job.
+      """
+      if times_per_year == 0:
+        return Decimal(0)
+      # Use the appropriate cacluation
+      # Q: not deducted per hour, though.
+      if hasattr(self, 'is_hourly') and self.is_hourly:
+        return (Decimal(self.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
+      else:
+        return (Decimal(self.value) * Decimal(self.period)) / Decimal(times_per_year)
 
-# Q: Does `ItemizedJob.is_hourly` make sense? (not really)
+
 class ALItemizedJob(DAObject):
     """
     Notes:
@@ -342,30 +363,22 @@ class ALItemizedJob(DAObject):
     """
     """
     Represents a job that can have multiple sources of earned income
-    and deductions. It may be hourly or pay-period based. If non-hourly,
-    it may specify gross and net income amounts. The amounts gotten can
-    be filtered by the source of the income. This is a less common way
-    of reporting income.
+    and deductions. It may be hourly or pay-period based. This is a less
+    common way of reporting income than a plain ALJob.
     
-    The `.elements` attribute of this object are plain `PeriodicValue`s.
-    
-    There is one period per job for tips, wages, deductions, etc.
-    
-    Every line item's `.transaction_type` must be defined to get net and gross
-    for a job.
-    
-    WARNING: Each `source` can only have one line item associated with it.
+    There is one period per itemized job.
+    Caroline: Except maybe not. For deductions, etc.
     
     attribs:
-    .is_hourly {Bool}
+    .is_hourly {bool}
     .hours_per_period {int}
     .period {str}
     .employer {Individual}
+    .in_values {DADict}
+    .out_values {DADict}
     """
     def init(self, *pargs, **kwargs):
       super().init(*pargs, **kwargs)
-      #self.elements = list()
-      #self.object_type = PeriodicValue
       if not hasattr(self, 'employer'):
         self.initializeAttribute('employer', Individual)
       # Money coming in
@@ -374,135 +387,207 @@ class ALItemizedJob(DAObject):
       # Money being taken out
       if not hasattr(self, 'out_values'):
         self.initializeAttribute('out_values', DAOrderedDict)
-      log( 'initialized', 'console' )
     
-    # Q: Should `source` be `id`? That only makes sense for jobs, not
-    # incomes/assets, so they then won't share an interface.
-    # Maybe `name`? Or do we need categories, not `id`s? In what
-    # situations would there be income values from the same "type"/`source`?
-    # Names for transaction_type: in_or_out? delta?
-    def line_items(self, source=None, transaction_type=None):
+    """
+    interface:
+    
+    for_frequency, for_freq_per_year, per_year_frequency, value_for_times_per_year, value_for/per_annual_frequency/by_annual_frequency/by_yearly_frequency
+    .net_per_frequency/net_for_frequency
+    .gross_per_frequency/gross_for_frequency
+    .line_items?
+    .item_value_per_frequency/item_value_for_frequency
+    
+    No filtering necessary?
+    """
+    
+    def item_value_for_period(self, item_value, times_per_year=1):
       """
-      Returns the list of line items filtered by source (e.g. 'tip')
-      or list of sources (e.g. [ 'tip', 'commission', 'deduction' ])
-      or by transaction_type or both.
-      
-      If no filters are specified, returns all line items.
-      
-      Options for the `source` value come from the source names you create.
-      Options for the `transaction_type` value are 'payment' or 'deduction'.
-      # Q: Do they have to be limited to that?
+      Frequency default is annual: `times_per_year=1`
       """
-      self._trigger_gather()
-      all_items = self.elements
-      
-      # If no filters, return all items
-      if source is None and transaction_type is None:
-        return all_items
-      
-      # Filter by sources
-      if source is None:
-        # By default, use all items. Don't mutate the original list.
-        source_items = all_items[:]
+      # Q: change .period to .frequency or .times_per_year?
+      if times_per_year == 0:
+        return Decimal(0)
+      frequency = self.period
+      #if hasattr(item, 'period'):
+      #  frequency = item.period
+      #if hasattr(item, 'frequency'):
+      #  frequency = item.frequency
+      # Use the appropriate cacluation
+      if hasattr(self, 'is_hourly') and self.is_hourly:
+        #return (Decimal(value) * Decimal(self.hours_per_frequency) * Decimal(self.yearly_frequency)) / Decimal(times_per_year)
+        return (Decimal(value) * Decimal(self.hours_per_period) * Decimal(frequency)) / Decimal(times_per_year)
       else:
-        # Ensure we're using a list no matter what
-        if isinstance(source, list): sources = source
-        else: sources = [source]
-        # Put all matching items in a list
-        source_items = [item for item in all_items if item.source in sources]
-        
-      # Filter by transaction_type
-      if transaction_type is None:
-        filtered_items = source_items
-      else:
-        # Ensure we're using a list no matter what
-        filtered_items = [item for item in source_items if item.transaction_type == transaction_type]
-      
-      return filtered_items
+        return (Decimal(value) * Decimal(frequency)) / Decimal(times_per_year)
     
-    # Q: Should `times_per_year` default be the period of the ItemizedJob?
-    # (instead of 1)
-    # Q: Should `times_per_year` be a string that's the "name" of the period?
-    # Calling it just `period` is a bit confusing when the value is a number.
-    # e.g. `period = 12`, to me, doesn't shout out "monthly".
-    def absolute_period_value(self, line_item, times_per_year=1):
-        """
-        Returns the amount earned or deducted over the specified period for
-        the specified line item of the job.
-        """
-        if times_per_year == 0:
-          return Decimal(0)
-        # Use the appropriate cacluation
-        # Q: not deducted per hour, though.
-        if hasattr(self, 'is_hourly') and self.is_hourly:
-          return (Decimal(line_item.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
-        else:
-          return (Decimal(line_item.value) * Decimal(self.period)) / Decimal(times_per_year)
-    
-    # Q: Allow `line_item` to be a string (source/id name)?
-    # Names: line_item_period_value? item_period_value?
-    def period_value(self, line_item, times_per_year=1):
-      """
-      Returns the amount earned or deducted over the specified period for
-      the given line item as a positive or negative value.
-      
-      Example:
-      # Get the monthly value of the job's tips
-      my_multipart_job.period_value( 'tips', times_per_year=12 )
-      # 424.44
-      # Get the yearly value of the job's deductions
-      my_multipart_job.period_value( 'deductions', times_per_year=1 )
-      # -202.65
-      """
-      absolute_value = self.absolute_period_value( line_item, times_per_year=times_per_year )
-      if line_item.transaction_type == 'deduction' or line_item.transaction_type == 'out':
-        return Decimal(-1) * absolute_value
-      else:
-        return absolute_value
-    
-    def gross(self, source=None, times_per_year=1):
-        """
-        Returns the sum of positive values (payments) for a given pay
-        period. Can be filtered by one line item source or a list of sources.
-        """
-        self._trigger_gather()
-        total = Decimal(0)
-        if times_per_year == 0:
-            return total
-        # Filter result by source if desired
-        line_items = self.line_items( source=source )
-        # Add up positive values
-        for line_item in line_items:
-          if line_item.transaction_type != 'deduction':
-            total += self.period_value( line_item, times_per_year=times_per_year )
+    def gross_for_period(self, times_per_year=1):
+      """Default value of 1 so jobs can be normalized."""
+      total = Decimal(0)
+      if times_per_year == 0:
         return total
+      # Add up all money coming in
+      for key in self.in_values.true_values():
+        value = self.in_values[ key ]
+        total += self.item_value_for_period(self, value, times_per_year=times_per_year)
+      return total
     
-    def net(self, times_per_year=1, source=None):
-        """
-        Returns the net (payments minus deductions) value of the job
-        for a given pay period. Can be filtered by a line item source
-        or a list of sources.
-        """
-        self._trigger_gather()
-        total = Decimal(0)
-        if times_per_year == 0:
-            return total
-        # Filter result by source if desired
-        line_items = self.line_items( source=source )
-        # Add up positive and negative values
-        for line_item in line_items:
-          total += self.period_value( line_item, times_per_year=times_per_year )
+    def net_for_period(self, times_per_year=1):
+      """Default value of 1 so all jobs can be normalized."""
+      total = Decimal(0)
+      if times_per_year == 0:
         return total
+      # Add up all money coming in
+      for key in self.in_values.true_values():
+        value = self.in_values[ key ]
+        total += self.item_value_for_period(self, value, times_per_year=times_per_year)
+      # Subtract the money going out
+      for key in self.out_values.true_values():
+        value = self.out_values[ key ]
+        total -= self.item_value_for_period(self, value, times_per_year=times_per_year)
+      return total
     
-    # Avoid errors in ALIncomeList loops
-    def total(self, times_per_year=1, source=None):
-      return self.net(times_per_year=times_per_year, source=source)
+    def total(self, times_per_year=1):
+      return self.net_per_period(times_per_year=times_per_year)
     
-    def balance(self, times_per_year=1, source=None):
-      return self.net(times_per_year=times_per_year, source=source)
+    ## Q: Should `source` be `id`? That only makes sense for jobs, not
+    ## incomes/assets, so they then won't share an interface.
+    ## Maybe `name`? Or do we need categories, not `id`s? In what
+    ## situations would there be income values from the same "type"/`source`?
+    ## Names for transaction_type: in_or_out? delta?
+    #def line_items(self, source=None, transaction_type=None):
+    #  """
+    #  Returns the list of line items filtered by source (e.g. 'tip')
+    #  or list of sources (e.g. [ 'tip', 'commission', 'deduction' ])
+    #  or by transaction_type or both.
+    #  
+    #  If no filters are specified, returns all line items.
+    #  
+    #  Options for the `source` value come from the source names you create.
+    #  Options for the `transaction_type` value are 'payment' or 'deduction'.
+    #  # Q: Do they have to be limited to that?
+    #  """
+    #  self._trigger_gather()
+    #  all_items = self.elements
+    #  
+    #  # If no filters, return all items
+    #  if source is None and transaction_type is None:
+    #    return all_items
+    #  
+    #  # Filter by sources
+    #  if source is None:
+    #    # By default, use all items. Don't mutate the original list.
+    #    source_items = all_items[:]
+    #  else:
+    #    # Ensure we're using a list no matter what
+    #    if isinstance(source, list): sources = source
+    #    else: sources = [source]
+    #    # Put all matching items in a list
+    #    source_items = [item for item in all_items if item.source in sources]
+    #    
+    #  # Filter by transaction_type
+    #  if transaction_type is None:
+    #    filtered_items = source_items
+    #  else:
+    #    # Ensure we're using a list no matter what
+    #    filtered_items = [item for item in source_items if item.transaction_type == transaction_type]
+    #  
+    #  return filtered_items
     
-    def market_value(self):
-      return Decimal(0)
+    #def value_of(self, value ):
+    #  """
+    #  Use:
+    #  for key in a_dict:
+    #    ${ a_dict.value_of( a_dict[key] ).for_frequency( times_per_year=12 ) }
+    #  Cons: Would give an object that wouldn't stay up to date
+    #  """
+    #  return (ValueForFrequency(is_hourly = self.is_hourly,
+    #    period = self.period,
+    #    hours_per_period = self.hours_per_period,
+    #    value = value))
+    #  
+    #
+    ## Q: Should `times_per_year` default be the period of the ItemizedJob?
+    ## (instead of 1)
+    ## Q: Should `times_per_year` be a string that's the "name" of the period?
+    ## Calling it just `period` is a bit confusing when the value is a number.
+    ## e.g. `period = 12`, to me, doesn't shout out "monthly".
+    #def absolute_period_value(self, line_item, times_per_year=1):
+    #    """
+    #    Returns the amount earned or deducted over the specified period for
+    #    the specified line item of the job.
+    #    """
+    #    if times_per_year == 0:
+    #      return Decimal(0)
+    #    # Use the appropriate cacluation
+    #    # Q: not deducted per hour, though.
+    #    if hasattr(self, 'is_hourly') and self.is_hourly:
+    #      return (Decimal(line_item.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
+    #    else:
+    #      return (Decimal(line_item.value) * Decimal(self.period)) / Decimal(times_per_year)
+    #
+    ## Q: Allow `line_item` to be a string (source/id name)?
+    ## Names: line_item_period_value? item_period_value?
+    #def period_value(self, line_item, times_per_year=1):
+    #  """
+    #  Returns the amount earned or deducted over the specified period for
+    #  the given line item as a positive or negative value.
+    #  
+    #  Example:
+    #  # Get the monthly value of the job's tips
+    #  my_multipart_job.period_value( 'tips', times_per_year=12 )
+    #  # 424.44
+    #  # Get the yearly value of the job's deductions
+    #  my_multipart_job.period_value( 'deductions', times_per_year=1 )
+    #  # -202.65
+    #  """
+    #  absolute_value = self.absolute_period_value( line_item, times_per_year=times_per_year )
+    #  if line_item.transaction_type == 'deduction' or line_item.transaction_type == 'out':
+    #    return Decimal(-1) * absolute_value
+    #  else:
+    #    return absolute_value
+    #
+    #def gross(self, source=None, times_per_year=1):
+    #    """
+    #    Returns the sum of positive values (payments) for a given pay
+    #    period. Can be filtered by one line item source or a list of sources.
+    #    """
+    #    self._trigger_gather()
+    #    total = Decimal(0)
+    #    if times_per_year == 0:
+    #        return total
+    #    # Filter result by source if desired
+    #    line_items = self.line_items( source=source )
+    #    # Add up positive values
+    #    for line_item in line_items:
+    #      if line_item.transaction_type != 'deduction':
+    #        total += self.period_value( line_item, times_per_year=times_per_year )
+    #    return total
+    #
+    #def net(self, times_per_year=1, source=None):
+    #    """
+    #    Returns the net (payments minus deductions) value of the job
+    #    for a given pay period. Can be filtered by a line item source
+    #    or a list of sources.
+    #    """
+    #    self._trigger_gather()
+    #    total = Decimal(0)
+    #    if times_per_year == 0:
+    #        return total
+    #    # Filter result by source if desired
+    #    line_items = self.line_items( source=source )
+    #    # Add up positive and negative values
+    #    for line_item in line_items:
+    #      total += self.period_value( line_item, times_per_year=times_per_year )
+    #    return total
+    #
+    ## Avoid errors in ALIncomeList loops
+    #def total(self, times_per_year=1, source=None):
+    #  return self.net(times_per_year=times_per_year, source=source)
+    #
+    #def balance(self, times_per_year=1, source=None):
+    #  return self.net(times_per_year=times_per_year, source=source)
+    #
+    #def market_value(self):
+    #  return Decimal(0)
     
     def employer_name_address_phone(self):
         """
@@ -527,17 +612,19 @@ class ALItemizedJob(DAObject):
     def normalized_hours(self, times_per_year):
         """Returns the number of hours worked in a given period for an hourly job."""
         # Q: Is there a safe value to return if it's not hourly?
-        return round((float(self.hours_per_period) * float(self.period)) / int(times_per_year))
+        return round((float(self.hours_per_period) * float(self.period)) / float(times_per_year))
     
     def to_json(self):
         """Creates line item list suitable for Legal Server API."""
-        return json.dumps([{
-          "source": item.source,
+        return json.dumps({
+          "name": self.name,
           "frequency": float(self.period),
           # Q: Should this be called just `value`? Does Legal Server API
           # call it `amount`?
-          "value": float( self.period_value(item, times_per_year=self.period ))
-        } for item in self.elements])
+          "value": float( self.net_per_period(times_per_year=self.period )),
+          "in_values": json.dumps(self.in_values),
+          "out_values": json.dumps(self.out_values)
+        })
 
 
 class ALItemizedJobList(DAList):

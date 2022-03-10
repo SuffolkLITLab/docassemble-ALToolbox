@@ -26,17 +26,19 @@ code: |
     itemized_job_list.gather()
   
   if to_run['ALItemizedJob'] or to_run['all']:
-    itemized_job.source
+    itemized_job.name
     itemized_job.in_values.there_are_any = True
     itemized_job.out_values.there_are_any = True
     itemized_job.in_values["wages"]
+    itemized_job.in_values.there_is_another = False
+    itemized_job.out_values.there_is_another = False
     #itemized_job.employer.name.first
     #itemized_job.period
     #itemized_job.get_line_item_sources
     #itemized_job.gather()
   
   if to_run['ALJob'] or to_run['all']:
-    job.source = 'Random Work'
+    job.name = 'Random Work'
     job.employer
     job.value
   
@@ -125,7 +127,7 @@ code: |
 id: employer
 generic object: DAObject
 question: |
-  Tell us about your employer for ${ x.source }
+  Tell us about your employer for ${ x.name }
 fields:
   - Name: x.employer.name.first
   - street: x.employer.address.address
@@ -172,12 +174,12 @@ generic object: ALItemizedJob
 question: |
   What is the name of this job?
 fields:
-  - Job name: x.source
+  - Job name: x.name
 ---
 id: line items for objs
 generic object: ALItemizedJob
 question: |
-    Enter info from your paystub for your ${ x.source } job
+    Enter info from your paystub for your ${ x.name } job
 fields:
     - What are your wages for this job?: x.in_values["wages"]
       datatype: currency
@@ -194,7 +196,7 @@ fields:
 id: line items
 generic object: ALItemizedJob
 question: |
-  Does your ${ x.source } job have any of the below?
+  Does your ${ x.name } job have any of the below?
 fields:
   - no label: x.line_item_sources
     datatype: checkboxes
@@ -225,7 +227,7 @@ fields:
 id: itemized_job period
 generic object: ALItemizedJob
 question: |
-  Tell us about your ${ x.source }'s job hours
+  Tell us about your ${ x.name }'s job hours
 fields:
   - Hourly or salary?: x.is_hourly
     input type: radio
@@ -246,7 +248,7 @@ generic object: ALItemizedJob
 if: |
   x[i].transaction_type != 'deduction'
 question: |
-  What how much do you get paid for ${ x.source }'s ${ x[i].source }?
+  What how much do you get paid for ${ x.name }'s ${ x[i].source }?
 fields:
   - Amount: x[i].value
     datatype: currency
@@ -256,7 +258,7 @@ generic object: ALItemizedJob
 if: |
   x[i].transaction_type == 'deduction'
 question: |
-  What is removed from your paycheck for ${ x.source }'s ${ x[i].source }?
+  What is removed from your paycheck for ${ x.name }'s ${ x[i].source }?
 fields:
   - Amount: x[i].value
     datatype: currency
@@ -268,7 +270,7 @@ code: |
   #itemized_job_list[i].there_is_another=False
   #itemized_job_list[i].there_are_any=True
   ########
-  itemized_job_list[i].source
+  itemized_job_list[i].name
   itemized_job_list[i].in_values["wages"]
   #itemized_job_list[i].employer.name.first
   #itemized_job_list[i].period
@@ -291,7 +293,7 @@ fields:
 id: single job value
 generic object: ALJob
 question: |
-  What how much do you get paid for ${ x.source }?
+  What how much do you get paid for ${ x.name }?
 fields:
   - Amount: x.value
     datatype: currency
@@ -360,7 +362,11 @@ question: |
 subquestion: |
   
   % if to_run['ALItemizedJob'] or to_run['all']:
-  ## Single itemized_job for ${ itemized_job.source }
+  ## Single itemized_job for ${ itemized_job.name }
+  
+  % for key in itemized_job.in_values.true_values():
+  * ${ key }: ${ currency( itemized_job.in_values[ key ] )}
+  % endfor
   
   ---
   
@@ -370,7 +376,7 @@ subquestion: |
   ## Itemized jobs list
   
   % for one_itemized_job in itemized_job_list:
-  ### ${ one_itemized_job.source }
+  ### ${ one_itemized_job.name }
   
   **Employer info:**[BR]
   ${ one_itemized_job.employer_name_address_phone() }
@@ -392,7 +398,7 @@ comment: |
   * **total:** ${ currency( itemized_job_list.total() ) }
   
   % for one_itemized_job in itemized_job_list:
-  ### ${ one_itemized_job.source }
+  ### ${ one_itemized_job.name }
   
   **Employer info:**[BR]
   ${ one_itemized_job.employer_name_address_phone() }
@@ -434,7 +440,7 @@ comment: |
   % endif
   
   % if to_run['ALItemizedJob'] or to_run['all']:
-  ## Sinble itemized_job for ${ itemized_job.source }
+  ## Sinble itemized_job for ${ itemized_job.name }
   
   **Employer info:**[BR]
   ${ itemized_job.employer_name_address_phone() }
@@ -472,7 +478,7 @@ comment: |
   % endif
   
   % if to_run['ALJob'] or to_run['all']:
-  ## Job: ${ job.source }
+  ## Job: ${ job.name }
   
   **Employer info:**
   
