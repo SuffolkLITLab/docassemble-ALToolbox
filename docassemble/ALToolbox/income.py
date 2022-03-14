@@ -310,27 +310,27 @@ class ALJobList(ALIncomeList):
                     result += Decimal(item.net_for_period(times_per_year=times_per_year))
         return result
 
-def ValueForFrequency():
-  def __init__(self, *pargs, **kwargs):
-      super().init(*pargs, **kwargs)
-      self.is_hourly = kwargs.is_hourly
-      self.period = kwargs.period
-      self.hours_per_period = kwargs.hours_per_period
-      self.value = kwargs.value
-  
-  def for_frequency(self, times_per_year=1):
-      """
-      Returns the amount earned or deducted over the specified period for
-      the specified line item of the job.
-      """
-      if times_per_year == 0:
-        return Decimal(0)
-      # Use the appropriate cacluation
-      # Q: not deducted per hour, though.
-      if hasattr(self, 'is_hourly') and self.is_hourly:
-        return (Decimal(self.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
-      else:
-        return (Decimal(self.value) * Decimal(self.period)) / Decimal(times_per_year)
+#def ValueForFrequency():
+#  def __init__(self, *pargs, **kwargs):
+#      super().init(*pargs, **kwargs)
+#      self.is_hourly = kwargs.is_hourly
+#      self.period = kwargs.period
+#      self.hours_per_period = kwargs.hours_per_period
+#      self.value = kwargs.value
+#  
+#  def for_frequency(self, times_per_year=1):
+#      """
+#      Returns the amount earned or deducted over the specified period for
+#      the specified line item of the job.
+#      """
+#      if times_per_year == 0:
+#        return Decimal(0)
+#      # Use the appropriate cacluation
+#      # Q: not deducted per hour, though.
+#      if hasattr(self, 'is_hourly') and self.is_hourly:
+#        return (Decimal(self.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
+#      else:
+#        return (Decimal(self.value) * Decimal(self.period)) / Decimal(times_per_year)
 
 
 class ALItemizedJob(DAObject):
@@ -362,6 +362,18 @@ class ALItemizedJob(DAObject):
     ('garnishments', 'Garnishments')
     """
     """
+    Facts:
+    - √ A job can be hourly
+    - √ Despite an hourly job, some individual items must be calcuated for
+      using the whole period
+    - Some items will have their own periods
+    - Devs need to be able to have different types of job base_pay (e.g.
+      full time, part time) that they must total separately
+    - Users must be able to add arbitrary in/out items for a job
+    - Devs may need to add same names across different jobs (e.g. tips
+      for all jobs, etc.)
+    """
+    """
     Represents a job that can have multiple sources of earned income
     and deductions. It may be hourly or pay-period based. This is a less
     common way of reporting income than a plain ALJob.
@@ -383,10 +395,10 @@ class ALItemizedJob(DAObject):
         self.initializeAttribute('employer', Individual)
       # Money coming in
       if not hasattr(self, 'in_values'):
-        self.initializeAttribute('in_values', DAOrderedDict)
+        self.initializeAttribute('in_values', DAOrderedDict.using(object_type=DAObject))
       # Money being taken out
       if not hasattr(self, 'out_values'):
-        self.initializeAttribute('out_values', DAOrderedDict)
+        self.initializeAttribute('out_values', DAOrderedDict.using(object_type=DAObject))
     
     """
     interface:
@@ -397,56 +409,142 @@ class ALItemizedJob(DAObject):
     .line_items?
     .item_value_per_frequency/item_value_for_frequency
     
-    No filtering necessary?
+    ~No filtering necessary?~ Filtering for an item or multiple items is necessary
     """
     
-    def item_value_for_period(self, item_value, times_per_year=1):
+    """
+    getting "amount"s
+    if not hasattr(line_item, 'value') or frequency == 0:
+      return Decimal(0)
+    
+    if hasattr(line_item, 'period'):
+      line_item.period
+    else:
+      self.period
+    
+    if hasattr(line_item, 'is_hourly'):
+      is_hourly = line_item.is_hourly
+    else:
+      is_hourly = False
+    """
+    
+    """
+    Job has a period while asking for `amount` has a frequency?
+    """
+    
+    """
+    Interface
+    job.money_in["wages"].value
+    job.money_in["wages"].is_hourly = True
+    job.money_in["commisions"].period = 12
+    # divided_by = 52, annual_frequency=52
+    all_jobs.total(["commissions", "bonuses"], frequency=52)
+    if job.has_other and job.in_values.there_is_another and not job.others_gathered:
+      job.get_other
+      # OR
+      job.others.gather()  # How to make this a different type of object?
+      # OR
+      job.money_in.other.gather()
+      #job.money_out.other.gather()  # same structure for job.out_values?
+      # OR
+      # How would this work?
+      job.money_in.gather()
+      #job.money_out.gather()  # same structure for job.out_values?
+      # OR?
+      job.there_is_another = True
+    else:
+      job.there_is_another = False
+      job.others_gathered = True
+      job.gathered = True  # ??
+    """
+    
+    def item_amount(self, item, annual_frequency=1):
       """
       Frequency default is annual: `times_per_year=1`
       """
-      # Q: change .period to .frequency or .times_per_year?
-      if times_per_year == 0:
+      if annual_frequency == 0:
         return Decimal(0)
-      frequency = self.period
-      #if hasattr(item, 'period'):
-      #  frequency = item.period
-      #if hasattr(item, 'frequency'):
-      #  frequency = item.frequency
+      
+      period = self.period
+      if hasattr(item, 'period') and item.period:
+        period = item.period
+      
+      is_hourly = False
+      # Override if item should be calculated hourly (like wages)
+      if self.is_hourly and hasattr(item, 'is_hourly'):
+        is_hourly = item.is_hourly
+      
+      value = Decimal(0)
+      if hasattr(item, 'value'):
+        value = Decimal(item.value)
+      
       # Use the appropriate cacluation
-      if hasattr(self, 'is_hourly') and self.is_hourly:
-        #return (Decimal(value) * Decimal(self.hours_per_frequency) * Decimal(self.yearly_frequency)) / Decimal(times_per_year)
-        return (Decimal(value) * Decimal(self.hours_per_period) * Decimal(frequency)) / Decimal(times_per_year)
+      if is_hourly:
+        return (value * Decimal(self.hours_per_period) * Decimal(period)) / Decimal(annual_frequency)
       else:
-        return (Decimal(value) * Decimal(frequency)) / Decimal(times_per_year)
+        return (value * Decimal(period)) / Decimal(annual_frequency)  
     
-    def gross_for_period(self, times_per_year=1):
-      """Default value of 1 so jobs can be normalized."""
+    #def item_value_for_period(self, item_value, times_per_year=1):
+    #  """
+    #  Frequency default is annual: `times_per_year=1`
+    #  """
+    #  # Q: change .period to .frequency or .times_per_year?
+    #  if times_per_year == 0:
+    #    return Decimal(0)
+    #  frequency = self.period
+    #  #if hasattr(item, 'period'):
+    #  #  frequency = item.period
+    #  #if hasattr(item, 'frequency'):
+    #  #  frequency = item.frequency
+    #  # Use the appropriate cacluation
+    #  if hasattr(self, 'is_hourly') and self.is_hourly:
+    #    #return (Decimal(value) * Decimal(self.hours_per_frequency) * Decimal(self.yearly_frequency)) / Decimal(times_per_year)
+    #    return (Decimal(value) * Decimal(self.hours_per_period) * Decimal(frequency)) / Decimal(times_per_year)
+    #  else:
+    #    return (Decimal(value) * Decimal(frequency)) / Decimal(times_per_year)
+    
+    def gross_amount(self, times_per_year=1):
+      """Default frequency value of 1 so jobs can be normalized."""
       total = Decimal(0)
       if times_per_year == 0:
         return total
       # Add up all money coming in
-      for key in self.in_values.true_values():
-        value = self.in_values[ key ]
-        total += self.item_value_for_period(self, value, times_per_year=times_per_year)
+      for key, item in self.in_values.elements.items():
+        #value = self.in_values[ key ]
+        #total += self.item_value_for_period(value, times_per_year=times_per_year)
+        #item = self.in_values[ key ]
+        total += self.item_amount(item, annual_frequency=times_per_year)
       return total
     
-    def net_for_period(self, times_per_year=1):
-      """Default value of 1 so all jobs can be normalized."""
+    def net_amount(self, times_per_year=1):
+      """Default frequency value of 1 so all jobs can be normalized."""
       total = Decimal(0)
       if times_per_year == 0:
         return total
       # Add up all money coming in
-      for key in self.in_values.true_values():
-        value = self.in_values[ key ]
-        total += self.item_value_for_period(self, value, times_per_year=times_per_year)
+      #gathered_money_in = [self.in_values[key] for key in self.in_values if self.in_values.get(key).exists()]
+      for key, item in self.in_values.elements.items():
+        #value = self.in_values[ key ]
+        #total += self.item_value_for_period(value, times_per_year=times_per_year)
+        #item = self.in_values[ key ]
+        total += self.item_amount(item, annual_frequency=times_per_year)
       # Subtract the money going out
-      for key in self.out_values.true_values():
-        value = self.out_values[ key ]
-        total -= self.item_value_for_period(self, value, times_per_year=times_per_year)
+      for key, item in self.out_values.elements.items():
+        #value = self.out_values[ key ]
+        #total -= self.item_value_for_period(value, times_per_year=times_per_year)
+        #item = self.in_values[ key ]
+        total -= self.item_amount(item, annual_frequency=times_per_year)
       return total
     
     def total(self, times_per_year=1):
-      return self.net_per_period(times_per_year=times_per_year)
+      return self.net_amount(times_per_year=times_per_year)
+    
+    # Q: Would total in/out methods be useful?
+    def total_in(self, times_per_year=1):
+      pass
+    
+    def total_out(self, times_per_year=1):
+      pass
     
     ## Q: Should `source` be `id`? That only makes sense for jobs, not
     ## incomes/assets, so they then won't share an interface.
@@ -491,7 +589,7 @@ class ALItemizedJob(DAObject):
     #    filtered_items = [item for item in source_items if item.transaction_type == transaction_type]
     #  
     #  return filtered_items
-    
+    #
     #def value_of(self, value ):
     #  """
     #  Use:
@@ -614,6 +712,8 @@ class ALItemizedJob(DAObject):
         # Q: Is there a safe value to return if it's not hourly?
         return round((float(self.hours_per_period) * float(self.period)) / float(times_per_year))
     
+    # to_json string? json.dumps returns str right? Don't we want to
+    # let them prety print it their own way?
     def to_json(self):
         """Creates line item list suitable for Legal Server API."""
         return json.dumps({
@@ -621,11 +721,24 @@ class ALItemizedJob(DAObject):
           "frequency": float(self.period),
           # Q: Should this be called just `value`? Does Legal Server API
           # call it `amount`?
-          "value": float( self.net_per_period(times_per_year=self.period )),
-          "in_values": json.dumps(self.in_values),
-          "out_values": json.dumps(self.out_values)
+          "value": float(self.net_amount(times_per_year=self.period)),
+          "in_values": self.items_json(self.in_values),
+          "out_values": self.items_json(self.out_values)
         })
-
+    
+    def items_json(self, item_dict):
+      """A python ordered dict won't translate to json, right?"""
+      result = {}
+      for key in item_dict.true_values():
+        item = item_dict[ key ]
+        result[ key ] = {}
+        result[ key ][ 'value' ] = item.value
+        # Q: Include defaults for all attributes?
+        if hasattr(item, 'is_hourly'):
+          result[ key ][ 'is_hourly' ] = item.is_hourly
+        if hasattr(item, 'period'):
+          result[ key ][ 'period' ] = item.period
+      return result
 
 class ALItemizedJobList(DAList):
     """
@@ -660,7 +773,7 @@ class ALItemizedJobList(DAList):
         filtered = [stub for stub in self.elements if stub.source in sources]
         # Add filtered grosses together
         for stub in filtered:
-          total += stub.gross(times_per_year=times_per_year)
+          total += stub.gross_per_period(times_per_year=times_per_year)
         return total
     
     def net(self, times_per_year=1, source=None):
@@ -679,7 +792,7 @@ class ALItemizedJobList(DAList):
         filtered = [stub for stub in self.elements if stub.source in sources]
         # Add filtered nets together
         for stub in filtered:
-          total += stub.net(times_per_year=times_per_year)
+          total += stub.net_per_period(times_per_year=times_per_year)
         return total
     
     def total(self, times_per_year=1, source=None):
@@ -692,7 +805,7 @@ class ALItemizedJobList(DAList):
           "frequency": float(stub.period),
           "gross": float(stub.gross(times_per_year=stub.period)),
           "net": float(stub.net(times_per_year=stub.period)),
-          "line_items": stub.to_json()
+          "items": stub.to_json()
         } for stub in self.elements])
 
 

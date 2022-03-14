@@ -27,9 +27,11 @@ code: |
   
   if to_run['ALItemizedJob'] or to_run['all']:
     itemized_job.name
+    itemized_job.period
     itemized_job.in_values.there_are_any = True
     itemized_job.out_values.there_are_any = True
-    itemized_job.in_values["wages"]
+    itemized_job.in_values["wages"].is_hourly = True
+    itemized_job.in_values["wages"].value
     itemized_job.in_values.there_is_another = False
     itemized_job.out_values.there_is_another = False
     #itemized_job.employer.name.first
@@ -181,15 +183,15 @@ generic object: ALItemizedJob
 question: |
     Enter info from your paystub for your ${ x.name } job
 fields:
-    - What are your wages for this job?: x.in_values["wages"]
+    - What are your wages for this job?: x.in_values["wages"].value
       datatype: currency
-    - What are your tips for this job?: x.in_values["tips"]
-      datatype: currency
-      required: False
-    - What is your federal tax amount?: x.out_values["taxes"]
+    - What are your tips for this job?: x.in_values["tips"].value
       datatype: currency
       required: False
-    - What do you pay for insurance?: x.out_values["insurance"]
+    - What is your federal tax amount?: x.out_values["federal_taxes"].value
+      datatype: currency
+      required: False
+    - What do you pay for insurance?: x.out_values["insurance"].value
       datatype: currency
       required: False
 ---
@@ -362,11 +364,29 @@ question: |
 subquestion: |
   
   % if to_run['ALItemizedJob'] or to_run['all']:
-  ## Single itemized_job for ${ itemized_job.name }
+  ## Single itemized_job called ${ itemized_job.name }
   
-  % for key in itemized_job.in_values.true_values():
-  * ${ key }: ${ currency( itemized_job.in_values[ key ] )}
+  **In:**
+  
+  % for name, line_item in itemized_job.in_values.elements.items():
+  * ${ name }: ${ currency( line_item.value )}
   % endfor
+  
+  **Out:**
+  
+  % for name, line_item in itemized_job.out_values.elements.items():
+  * ${ name }: ${ currency( line_item.value )}
+  % endfor
+  
+  **gross per year:** ${currency(itemized_job.gross_amount())}[BR]
+  **net per year:** ${currency(itemized_job.net_amount())}[BR]
+  **total (net) per year:** ${currency(itemized_job.total())}
+  
+  **total per month:** ${currency(itemized_job.total(12))}
+  
+  **${itemized_job.name} json:**
+  
+  ${ itemized_job.to_json() }
   
   ---
   
