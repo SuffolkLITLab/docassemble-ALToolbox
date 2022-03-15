@@ -337,22 +337,24 @@ class ALJobList(ALIncomeList):
 class ALItemizedJob(DAObject):
     """
     Notes:
-    # ~Add assets, add jobs, all in same way?~ they have different stuff
-    # ~ALIncomeList should be able to use ALItemizedJob in the same way that it uses all its other members?~ see below about `in` and `out`
-    # What do we need to share?
+    # Q: Create method to add all income types?
+    # Q: ~Add assets, add jobs, all in same way?~ they have different stuff
+    # Q: ~ALIncomeList should be able to use ALItemizedJob in the same way that it uses all its other members?~ see below about `in` and `out`
+    # Q: What do we need to share? From what I can see, they only share the method .total()
+    Brainstorms
     # ALItemizedJob {DAObject, DADict}
     # .in/incomes/payments {DAList? ALIncomeList? DADict? depending on development}
     # .out/deductions {DAList? ALIncomeList? DADict depending on development}
     # Look at needs in SSI interview (https://github.com/nonprofittechy/docassemble-ssioverpaymentwaiver)
-    # .sources will have to take into account the two lists
-    # `amount` is in docassemble
-    # How do I allow this to be in an ALIncomeList if interview developers
-    # are going to say ALIncomeList.market_value() - these items will error
-    # when they are looped through. ALItemizedJobList will as well.
+    # .sources will have to take into account the two lists (in and out) (done)
+    # `amount` is in docassemble. not sure it means quite the same thing. period doesn't quite either.
+    # ~How do I allow this to be in an ALIncomeList if interview developers~
+    # ~are going to say ALIncomeList.market_value() - these items will error~
+    # ~when they are looped through. ALItemizedJobList will as well.~ No longer an income list
     
+    Names and explanations of job in/out sources
     # in: commission, bonus, hourly wage (wages?), non-hourly wages (salary?), overtime, tips
-    # out: deductions, garnishments, dues, insurance
-
+    # out: deductions, garnishments, dues, insurance, federal taxes, state taxes
     # https://fingercheck.com/the-difference-between-a-paycheck-and-a-pay-stub/
     #Deductions are the amounts subtracted or withheld from the total pay, including the income tax percentage of an employee’s gross wages.
     #Social security and Medicare are deducted based on the income over the set threshold.
@@ -363,23 +365,25 @@ class ALItemizedJob(DAObject):
     ('garnishments', 'Garnishments')
     """
     """
-    Requirements:
+    Requirements, requirements:
+    Implemented:
     - A job can be hourly
     - Despite an hourly job, some individual items must be calcuated
       using the whole period
     - Some items will have their own periods
     - Devs need to be able to have different types of job base_pay (e.g.
       full time, part time) that they must be able to access separately
-    - Users must be able to add arbitrary in/out items for a job
     - Devs may need to total amounts same names across different jobs (e.g.
       tips for all jobs, etc.)
+    To implement:
+    - Users must be able to add arbitrary in/out items for a job
     New:
     - need total in/income and total out/deductions
     - get jobs by attributes, total by job attribute
         da filter by attribute (raises exception)
         list comprehension
-    12:03 Q describes something about attributes or methods or something (end time: 12:57)
-    so an hour before the end, aprox
+    # Q: Allow multiple "sources" per item, so an item can be both "taxes" and "federal taxes"?
+    #    Devs can always filter the names themselves, so maybe not MVP
     """
     """
     Represents a job that can have multiple sources of earned income
@@ -394,8 +398,8 @@ class ALItemizedJob(DAObject):
     .hours_per_period {int}
     .period {str}
     .employer {Individual}
-    .in_values {DADict}
-    .out_values {DADict}
+    .in_values {DADict} Dict of DAObjects
+    .out_values {DADict} Dict of DAObjects
     """
     def init(self, *pargs, **kwargs):
       super().init(*pargs, **kwargs)
@@ -411,7 +415,6 @@ class ALItemizedJob(DAObject):
     
     """
     interface:
-    
     for_frequency, for_freq_per_year, per_year_frequency, value_for_times_per_year, value_for/per_annual_frequency/by_annual_frequency/by_yearly_frequency
     .net_per_frequency/net_for_frequency
     .gross_per_frequency/gross_for_frequency
@@ -419,35 +422,13 @@ class ALItemizedJob(DAObject):
     .item_value_per_frequency/item_value_for_frequency
     
     ~No filtering necessary?~ Filtering for an item or multiple items is necessary
-    """
     
-    """
-    getting "amount"s
-    if not hasattr(line_item, 'value') or frequency == 0:
-      return Decimal(0)
-    
-    if hasattr(line_item, 'period'):
-      line_item.period
-    else:
-      self.period
-    
-    if hasattr(line_item, 'is_hourly'):
-      is_hourly = line_item.is_hourly
-    else:
-      is_hourly = False
-    """
-    
-    """
-    Job has a period while asking for `amount` has a frequency?
-    """
-    
-    """
-    Interface
     job.money_in["wages"].value
     job.money_in["wages"].is_hourly = True
     job.money_in["commisions"].period = 12
-    # divided_by = 52, annual_frequency=52
     all_jobs.total(["commissions", "bonuses"], frequency=52)
+    
+    Custom job line item names:
     if job.has_other and job.in_values.there_is_another and not job.others_gathered:
       job.get_other
       # OR
@@ -467,6 +448,10 @@ class ALItemizedJob(DAObject):
       job.gathered = True  # ??
     """
     
+    # Names: change .period to .frequency or .times_per_year? Or job has a period while asking for `amount` has a frequency?
+    # Names: divided_by = 52, annual_frequency=52/desired_frequency
+    # Q: Allow `line_item`/`item` to be a string (source/id name)?
+    # Names: line_item_period_value? item_period_value?
     def item_amount(self, item, annual_frequency=1):
       """
       Frequency default is annual (1)
@@ -492,44 +477,7 @@ class ALItemizedJob(DAObject):
       if is_hourly:
         return (value * Decimal(self.hours_per_period) * Decimal(period)) / Decimal(annual_frequency)
       else:
-        return (value * Decimal(period)) / Decimal(annual_frequency)  
-    
-    ## Is it worth getting multiple items? Should we just return one item?
-    ## Do we return a dict instead? What is needed here?
-    ## We need a way to add up values with certain names.
-    #def get_items_named(self, names):
-    #  """Returns a list of items with the name `name`, which can be a str or a list."""
-    #  # Ensure we're using a list
-    #  if not isinstance(names, list):
-    #    names = [names]
-    #  # Collect all those items
-    #  all_items = []
-    #  for name in names:
-    #    if self.in_values.elements.get(name, None):
-    #      all_items.append(self.in_values.get(name))
-    #    else:
-    #      # Return out value or None
-    #      all_items.append(self.out_values.get(name, None))
-    #  return all_items
-    
-    #def item_value_amount(self, item_value, times_per_year=1):
-    #  """
-    #  Frequency default is annual: `times_per_year=1`
-    #  """
-    #  # Q: change .period to .frequency or .times_per_year?
-    #  if times_per_year == 0:
-    #    return Decimal(0)
-    #  frequency = self.period
-    #  #if hasattr(item, 'period'):
-    #  #  frequency = item.period
-    #  #if hasattr(item, 'frequency'):
-    #  #  frequency = item.frequency
-    #  # Use the appropriate cacluation
-    #  if hasattr(self, 'is_hourly') and self.is_hourly:
-    #    #return (Decimal(value) * Decimal(self.hours_per_frequency) * Decimal(self.yearly_frequency)) / Decimal(times_per_year)
-    #    return (Decimal(value) * Decimal(self.hours_per_period) * Decimal(frequency)) / Decimal(times_per_year)
-    #  else:
-    #    return (Decimal(value) * Decimal(frequency)) / Decimal(times_per_year)
+        return (value * Decimal(period)) / Decimal(annual_frequency)
     
     # Q: Would total in/out methods be useful?
     # Q: What aliases would be useful? We need gross and incomes, apparently. What else?
@@ -602,6 +550,7 @@ class ALItemizedJob(DAObject):
       for a given pay period (1 for yearly, 12 for monthly, etc).
       Default frequency value of 1 so all jobs can be normalized.
       """
+      # Cannot trigger gather for DAObject?
       #self._trigger_gather()
       #self.in_values._trigger_gather()
       #self.out_values._trigger_gather()
@@ -637,57 +586,9 @@ class ALItemizedJob(DAObject):
         sources = [source]
       return sources
     
-    ## Q: Should `source` be `id`? That only makes sense for jobs, not
-    ## incomes/assets, so they then won't share an interface.
-    ## Maybe `name`? Or do we need categories, not `id`s? In what
-    ## situations would there be income values from the same "type"/`source`?
-    ## Names for transaction_type: in_or_out? delta?
-    #def line_items(self, source=None, transaction_type=None):
-    #  """
-    #  Returns the list of line items filtered by source (e.g. 'tip')
-    #  or list of sources (e.g. [ 'tip', 'commission', 'deduction' ])
-    #  or by transaction_type or both.
-    #  
-    #  If no filters are specified, returns all line items.
-    #  
-    #  Options for the `source` value come from the source names you create.
-    #  Options for the `transaction_type` value are 'payment' or 'deduction'.
-    #  # Q: Do they have to be limited to that?
-    #  """
-    #  self._trigger_gather()
-    #  all_items = self.elements
-    #  
-    #  # If no filters, return all items
-    #  if source is None and transaction_type is None:
-    #    return all_items
-    #  
-    #  # Filter by sources
-    #  if source is None:
-    #    # By default, use all items. Don't mutate the original list.
-    #    source_items = all_items[:]
-    #  else:
-    #    # Ensure we're using a list no matter what
-    #    if isinstance(source, list): sources = source
-    #    else: sources = [source]
-    #    # Put all matching items in a list
-    #    source_items = [item for item in all_items if item.source in sources]
-    #    
-    #  # Filter by transaction_type
-    #  if transaction_type is None:
-    #    filtered_items = source_items
-    #  else:
-    #    # Ensure we're using a list no matter what
-    #    filtered_items = [item for item in source_items if item.transaction_type == transaction_type]
-    #  
-    #  return filtered_items
-    #  
-    ## Q: Should `times_per_year` default be the period of the ItemizedJob?
-    ## (instead of 1). Probably not so they're all normalized when there's no arg.
-    ## Q: Should `times_per_year` be a string that's the "name" of the period?
-    ## Calling it just `period` is a bit confusing when the value is a number.
-    ## e.g. `period = 12`, to me, doesn't shout out "monthly".
-    ## Q: Allow `line_item` to be a string (source/id name)?
-    ## Names: line_item_period_value? item_period_value?
+    ## Names: Should `source` be `id`? That only makes sense for jobs, not incomes/assets, so they then won't share an interface. Maybe `name`? Or do we need categories, not `id`s? In what situations would there be income values from the same "type"/`source`?
+    # Q: Should `times_per_year` default be the period of the ItemizedJob? (instead of 1). Probably not so they're all normalized when there's no arg.
+    # Q/Names: Should `times_per_year` be a string that's the "name" of the period? Calling it just `period` is a bit confusing when the value is a number. e.g. `period = 12`, to me, doesn't shout out "monthly".
     
     def employer_name_address_phone(self):
         """
@@ -714,8 +615,7 @@ class ALItemizedJob(DAObject):
         # Q: Is there a safe value to return if it's not hourly?
         return round((float(self.hours_per_period) * float(self.period)) / float(times_per_year))
     
-    # to_json string? json.dumps returns str right? Don't we want to
-    # let them prety print it their own way?
+    # Name: to_json_string? json.dumps returns str right? Don't we want to just give them a JSON-compatible dict and let them prety print it their own way?
     def to_json(self):
       """Creates line item list suitable for Legal Server API."""
       return json.dumps({
@@ -755,38 +655,6 @@ class ALItemizedJobList(DAList):
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)     
         self.object_type = ALItemizedJob
-    
-    #def gross_amount_for(self, source, times_per_year=1):
-    #  self._trigger_gather()
-    #  total = Decimal(0)
-    #  if times_per_year == 0:
-    #      return total
-    #  # Make sure we're always working with a list.
-    #  if source is None:
-    #    sources = self.sources()
-    #  elif isinstance(source, list):
-    #    sources = source
-    #  else:
-    #    sources = [source]
-    #  for one_source in sources
-    #  pass
-    
-    #def filter_items_by(self, source=None):
-    #  """
-    #  Return the items matching the filter. Currently can only filter by `source`.
-    #  
-    #  @params
-    #  `source` {str, [str]} - String or list of strings of the names of itemized
-    #      job items. E.g. ['tips', 'taxes']
-    #  """
-    #  self._trigger_gather()
-    #  all_items = []
-    #  # If not filtering by anything
-    #  if source is None:
-    #    for job in self.elements:
-    #      for in_item in job.in_values.elements:
-    #        all_items.
-    #  return 
     
     # Q: Do we want some way to have a running total?
     # ---
@@ -876,59 +744,10 @@ class ALItemizedJobList(DAList):
       total = Decimal(0)
       if times_per_year == 0:
           return total
-      # Total all the totals in all the jobs from particular sources
+      # Combine all the net amounts in all the jobs from particular sources
       for job in self.elements:
         total += job.net_amount(times_per_year=times_per_year, source=source)
       return total
-    
-    #def sources(self):
-    #    """Returns a set of the unique sources of the elements."""
-    #    sources = set()
-    #    for item in self.elements:
-    #        if hasattr(item, 'source'):
-    #            sources.add(item.source)
-    #    return sources
-    #
-    #def gross_old(self, times_per_year=1, source=None):
-    #    self._trigger_gather()
-    #    total = Decimal(0)
-    #    if times_per_year == 0:
-    #        return total
-    #    # Make sure we're always working with a list.
-    #    if source is None:
-    #      sources = self.sources()
-    #    elif isinstance(source, list):
-    #      sources = source
-    #    else:
-    #      sources = [source]
-    #    # Filter by source.
-    #    filtered = [stub for stub in self.elements if stub.source in sources]
-    #    # Add filtered grosses together
-    #    for stub in filtered:
-    #      total += stub.gross_amount(times_per_year=times_per_year)
-    #    return total
-    #
-    #def net_old(self, times_per_year=1, source=None):
-    #    self._trigger_gather()
-    #    total = Decimal(0)
-    #    if times_per_year == 0:
-    #        return total
-    #    # Make sure we're always working with a list.
-    #    if source is None:
-    #      sources = self.sources()
-    #    elif isinstance(source, list):
-    #      sources = source
-    #    else:
-    #      sources = [source]
-    #    # Filter by source.
-    #    filtered = [stub for stub in self.elements if stub.source in sources]
-    #    # Add filtered nets together
-    #    for stub in filtered:
-    #      total += stub.net_amount(times_per_year=times_per_year)
-    #    return total
-    #
-    #def total(self, times_per_year=1, source=None):
-    #  return self.net_old(times_per_year=times_per_year, source=source)
     
     def to_json(self):
         """Creates line item list suitable for Legal Server API."""
