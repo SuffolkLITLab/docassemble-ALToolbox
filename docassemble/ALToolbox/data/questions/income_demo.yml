@@ -22,11 +22,8 @@ objects:
 ---
 mandatory: True
 code: |
-  if to_run['ALItemizedJobList'] or to_run['all']:
-    itemized_job_list.gather()
-  
   if to_run['ALItemizedJob'] or to_run['all']:
-    itemized_job.name
+    itemized_job.name = 'AnItemizedJob'
     itemized_job.period
     itemized_job.in_values.there_are_any = True
     itemized_job.out_values.there_are_any = True
@@ -38,6 +35,9 @@ code: |
     #itemized_job.period
     #itemized_job.get_line_item_sources
     #itemized_job.gather()
+  
+  if to_run['ALItemizedJobList'] or to_run['all']:
+    itemized_job_list.gather()
   
   if to_run['ALJob'] or to_run['all']:
     job.name = 'Random Work'
@@ -183,15 +183,15 @@ generic object: ALItemizedJob
 question: |
     Enter info from your paystub for your ${ x.name } job
 fields:
-    - What are your wages for this job?: x.in_values["wages"].value
+    - What are your wages for this job?: x.in_values['wages'].value
       datatype: currency
-    - What are your tips for this job?: x.in_values["tips"].value
-      datatype: currency
-      required: False
-    - What is your federal tax amount?: x.out_values["federal_taxes"].value
+    - What are your tips for this job?: x.in_values['tips'].value
       datatype: currency
       required: False
-    - What do you pay for insurance?: x.out_values["insurance"].value
+    - What is your federal tax amount?: x.out_values['federal_taxes'].value
+      datatype: currency
+      required: False
+    - What do you pay for insurance?: x.out_values['insurance'].value
       datatype: currency
       required: False
 ---
@@ -273,9 +273,10 @@ code: |
   #itemized_job_list[i].there_are_any=True
   ########
   itemized_job_list[i].name
-  itemized_job_list[i].in_values["wages"]
   #itemized_job_list[i].employer.name.first
-  #itemized_job_list[i].period
+  itemized_job_list[i].period
+  itemized_job_list[i].in_values["wages"].value
+  itemized_job_list[i].in_values["wages"].is_hourly = True
   ########
   #itemized_job_list[i].in_sources
   #itemized_job_list[i].out_sources
@@ -289,6 +290,7 @@ question: |
   How many jobs do you have?
 fields:
   - no label: itemized_job_list.target_number
+    datatype: number
 ---
 # ONE JOB
 ---
@@ -380,7 +382,8 @@ subquestion: |
   
   **gross per year:** ${currency(itemized_job.gross_amount())}[BR]
   **net per year:** ${currency(itemized_job.net_amount())}[BR]
-  **total (net) per year:** ${currency(itemized_job.total())}
+  **total (net) per year:** ${currency(itemized_job.total())}[BR]
+  **money out:** ${currency(itemized_job.total_out())}
   
   **total per month:** ${currency(itemized_job.total(12))}
   
@@ -395,11 +398,29 @@ subquestion: |
   % if to_run['ALItemizedJobList'] or to_run['all']:
   ## Itemized jobs list
   
+  Amounts totals:
+  
+  * **gross per year:** ${currency( itemized_job_list.gross_amount() )}
+  * **gross per month:** ${currency( itemized_job_list.gross_amount(times_per_year=12) )}
+  * **net per year:** ${currency( itemized_job_list.net_amount() )}
+  * **net per week:** ${currency( itemized_job_list.net_amount(times_per_year=52) )}
+  * **money out per year:** ${currency(itemized_job_list.total_out())}
+  
+  The below only shows useful amounts when both "wages" and "federal_taxes" have amounts:
+  
+  * **wages gross:** ${currency( itemized_job_list.gross_amount(source=['wages']) )}
+  * **wages and federal_taxes gross:** (same) ${currency( itemized_job_list.gross_amount(source=['wages', 'federal_taxes']) )} per year
+  * **wages net:** (same) ${currency( itemized_job_list.net_amount(source=['wages']) )} per year
+  * **wages and federal_taxes net:** ${currency( itemized_job_list.net_amount(source=['wages', 'federal_taxes']) )} per year
+  
   % for one_itemized_job in itemized_job_list:
   ### ${ one_itemized_job.name }
   
-  **Employer info:**[BR]
-  ${ one_itemized_job.employer_name_address_phone() }
+  * **gross:** ${ currency( one_itemized_job.gross_amount() ) }
+  * **gross:** ${ currency( one_itemized_job.gross_amount(times_per_year=12) ) } per month
+  * **net:** ${currency( one_itemized_job.net_amount() )} per year
+  * **net:** ${currency( one_itemized_job.net_amount(times_per_year=52) )} per week
+  * **money out per year:** ${currency(one_itemized_job.total_out())}
   
   % endfor
   
@@ -408,6 +429,7 @@ subquestion: |
   % endif
 
 comment: |
+  
   % if to_run['ALItemizedJobList'] or to_run['all']:
   ## List of itemized jobs
   
@@ -504,8 +526,8 @@ comment: |
   
   ${ job.name_address_phone() }
   
-  * **gross:** ${ currency( job.gross_per_period() ) } per year
-  * **net:** ${ currency( job.net_per_period() ) } per year
+  * **gross:** ${ currency( job.gross_amount() ) } per year
+  * **net:** ${ currency( job.net_amount() ) } per year
   
   ---
   
