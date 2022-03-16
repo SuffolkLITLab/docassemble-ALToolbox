@@ -225,13 +225,13 @@ class ALIncomeList(DAList):
     
     def to_json(self):
         """Returns an income list suitable for Legal Server API."""
-        return json.dumps([{
+        return [{
           "source": income.source,
           "frequency": float(income.period),
           # Q: shouldn't this use `amount()`? [what does this second question mean? ->] Is this why times_per_year needs to default to 1?
           # Q: Actually, in docassemble, `.amount()` always defaults to a period of 1, so if this is `amount`, it would use a year as a period, so maybe this really should be called `value` instead.
           "value": income.value
-        } for income in self.elements])
+        } for income in self.elements]
 
 
 class ALJob(ALIncome):
@@ -311,30 +311,21 @@ class ALJobList(ALIncomeList):
                     result += Decimal(item.net_amount(times_per_year=times_per_year))
         return result
 
-#def ValueForFrequency():
-#  def __init__(self, *pargs, **kwargs):
-#      super().init(*pargs, **kwargs)
-#      self.is_hourly = kwargs.is_hourly
-#      self.period = kwargs.period
-#      self.hours_per_period = kwargs.hours_per_period
-#      self.value = kwargs.value
-#  
-#  def for_frequency(self, times_per_year=1):
-#      """
-#      Returns the amount earned or deducted over the specified period for
-#      the specified line item of the job.
-#      """
-#      if times_per_year == 0:
-#        return Decimal(0)
-#      # Use the appropriate cacluation
-#      # Q: not deducted per hour, though.
-#      if hasattr(self, 'is_hourly') and self.is_hourly:
-#        return (Decimal(self.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(times_per_year)
-#      else:
-#        return (Decimal(self.value) * Decimal(self.period)) / Decimal(times_per_year)
-
 
 class ALItemizedJob(DAObject):
+    """
+    Represents a job that can have multiple sources of earned income
+    and deductions. It may be hourly or pay-period based. This is a less
+    common way of reporting income than a plain ALJob.
+    
+    attribs:
+    .is_hourly {bool}
+    .hours_per_period {int}
+    .period {str}
+    .employer {Individual}
+    .in_values {DADict} Dict of DAObjects
+    .out_values {DADict} Dict of DAObjects
+    """
     """
     Notes:
     # Q: Create method to add all income types?
@@ -375,31 +366,16 @@ class ALItemizedJob(DAObject):
       full time, part time) that they must be able to access separately
     - Devs may need to total amounts same names across different jobs (e.g.
       tips for all jobs, etc.)
+    - need total in/income and total out/deductions
     To implement:
     - Users must be able to add arbitrary in/out items for a job
     New:
-    - need total in/income and total out/deductions
     - get jobs by attributes, total by job attribute
         da filter by attribute (raises exception)
         list comprehension
+        Unclear if this is to get line_item in all jobs or to get jobs themselves by attribute. Think this was one of the "part time" vs. "full time" conversations.
     # Q: Allow multiple "sources" per item, so an item can be both "taxes" and "federal taxes"?
     #    Devs can always filter the names themselves, so maybe not MVP
-    """
-    """
-    Represents a job that can have multiple sources of earned income
-    and deductions. It may be hourly or pay-period based. This is a less
-    common way of reporting income than a plain ALJob.
-    
-    There is one period per itemized job.
-    Caroline: Except maybe not. For deductions, etc.
-    
-    attribs:
-    .is_hourly {bool}
-    .hours_per_period {int}
-    .period {str}
-    .employer {Individual}
-    .in_values {DADict} Dict of DAObjects
-    .out_values {DADict} Dict of DAObjects
     """
     def init(self, *pargs, **kwargs):
       super().init(*pargs, **kwargs)
@@ -618,15 +594,14 @@ class ALItemizedJob(DAObject):
     # Name: to_json_string? json.dumps returns str right? Don't we want to just give them a JSON-compatible dict and let them prety print it their own way?
     def to_json(self):
       """Creates line item list suitable for Legal Server API."""
-      return json.dumps({
+      return {
         "name": self.name,
         "frequency": float(self.period),
-        # Q: Should this be called just `value`? Does Legal Server API
-        # call it `amount`?
-        "value": float(self.net_amount(times_per_year=self.period)),
+        "gross": float(self.gross_amount(times_per_year=self.period)),
+        "net": float(self.net_amount(times_per_year=self.period)),
         "in_values": self.items_json(self.in_values),
         "out_values": self.items_json(self.out_values)
-      })
+      }
     
     # Q: A python ordered dict won't translate to json, right?
     def items_json(self, item_dict):
@@ -751,13 +726,7 @@ class ALItemizedJobList(DAList):
     
     def to_json(self):
         """Creates line item list suitable for Legal Server API."""
-        return json.dumps([{
-          "source": stub.source,
-          "frequency": float(stub.period),
-          "gross": float(stub.gross(times_per_year=stub.period)),
-          "net": float(stub.net(times_per_year=stub.period)),
-          "items": stub.to_json()
-        } for stub in self.elements])
+        return [job.to_json() for job in self.elements]
 
 
 class ALAsset(ALIncome):

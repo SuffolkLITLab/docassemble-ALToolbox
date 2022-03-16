@@ -8,9 +8,9 @@ objects:
   - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
       ask_number=True)
-  - itemized_job: ALItemizedJob.using(
-      auto_gather=False,
-      gathered=True)
+  - itemized_job: ALItemizedJob.using()
+  #  auto_gather=False,
+  #  gathered=True)
   - jobs: ALJobList.using(
       complete_attribute='complete',
       there_is_another=False)
@@ -24,17 +24,15 @@ mandatory: True
 code: |
   if to_run['ALItemizedJob'] or to_run['all']:
     itemized_job.name = 'AnItemizedJob'
-    itemized_job.period
-    itemized_job.in_values.there_are_any = True
-    itemized_job.out_values.there_are_any = True
-    itemized_job.in_values["wages"].is_hourly = True
-    itemized_job.in_values["wages"].value
-    itemized_job.in_values.there_is_another = False
-    itemized_job.out_values.there_is_another = False
-    #itemized_job.employer.name.first
+    itemized_job.complete
     #itemized_job.period
-    #itemized_job.get_line_item_sources
-    #itemized_job.gather()
+    #itemized_job.in_values.there_are_any = True
+    #itemized_job.out_values.there_are_any = True
+    #itemized_job.in_values["wages"].is_hourly = True
+    #itemized_job.in_values["wages"].value
+    #itemized_job.in_values.there_is_another = False
+    #itemized_job.out_values.there_is_another = False
+    #itemized_job.employer.name.first
   
   if to_run['ALItemizedJobList'] or to_run['all']:
     itemized_job_list.gather()
@@ -87,10 +85,10 @@ fields:
       #- ALValueList: ALValueList
       - ALItemizedJobList: ALItemizedJobList
       - ALItemizedJob: ALItemizedJob
-      - ALJobList: ALJobList
-      - ALJob: ALJob
-      - ALIncomeList: ALIncomeList
-      - ALIncome: ALIncome
+      #- ALJobList: ALJobList
+      #- ALJob: ALJob
+      #- ALIncomeList: ALIncomeList
+      #- ALIncome: ALIncome
       #- ALLedger: ALLedger
       #- ALVehicle: ALVehicle
       #- ALVehicleList: ALVehicleList
@@ -145,31 +143,26 @@ fields:
   - Phone number: x.employer.phone_number
     required: False
 ---
-# SHARED BY ITEMIZED_JOB-RELATED OBJECTS
----
-#code: |
-#  in_sources = [
-#    ('tips', 'Tips'),
-#    ('bonuses', 'Bonuses')
-#  ]
-#  out_sources = [
-#    ('deductions', 'Deductions'),
-#    ('garnishments', 'Garnishments')
-#  ]
+# SHARED BY ITEMIZED JOB-RELATED OBJECTS
 ---
 generic object: ALItemizedJob
 code: |
-  if x.line_item_sources.any_true():
-    for source in x.line_item_sources.true_values():
-      x.appendObject(source=source)
-      # Never put anything else in here
-  x.get_line_item_sources = True
+  x.name
+  #x.employer.name.first
+  x.period
+  x.in_values.complete_attribute = 'complete'
+  x.in_values["wages"].value
+  x.in_values["wages"].is_hourly = True
+  x.in_values.gather()
+  x.out_values.gather()
+  x.complete = True
+  ## Why are these necessary for one itemized job, while not for a list of them?
+  #x.there_is_another = False
 ---
 generic object: ALItemizedJob
 code: |
-  x[i].transaction_type = job_source_transaction_types[x[i].source]
-  x[i].value
-  x[i].gather_line_items = True
+  x.in_values[i].value
+  x.in_values[i].complete = True
 ---
 id: job name for itemized_job
 generic object: ALItemizedJob
@@ -194,37 +187,10 @@ fields:
     - What do you pay for insurance?: x.out_values['insurance'].value
       datatype: currency
       required: False
----
-id: line items
-generic object: ALItemizedJob
-question: |
-  Does your ${ x.name } job have any of the below?
-fields:
-  - no label: x.line_item_sources
-    datatype: checkboxes
-    code: job_income_choices
----
-#id: itemized job sources
-#generic object: ALItemizedJob
-#question: |
-#  What kind of money is coming in and going out?
-#fields:
-#  - Coming in: x.in_sources
-#    datatype: checkboxes
-#    code: in_sources
-#  - Going out: x.out_sources
-#    datatype: checkboxes
-#    code: out_sources
----
-#generic object: ALItemizedJob
-#question: |
-#  What does your paystub say?
-#fields:
-#  - code: |
-#    [{
-#      item: f"x[i].in[{index}]",
-#      "datatype": "currency"
-#    } for index, item in enumerate(user.paystubs.line_types_present.true_values())]
+    - Does the job have other incomes?: x.in_values.there_is_another
+      datatype: yesnoradio
+    - Does the job have other deductions?: x.out_values.there_is_another
+      datatype: yesnoradio
 ---
 id: itemized_job period
 generic object: ALItemizedJob
@@ -244,46 +210,24 @@ fields:
     input type: number
     show if: x.is_hourly
 ---
-#  - How much do you get paid per hour?: 
-id: payment value
+id: other income name
 generic object: ALItemizedJob
-if: |
-  x[i].transaction_type != 'deduction'
 question: |
-  What how much do you get paid for ${ x.name }'s ${ x[i].source }?
+  Other incomes
 fields:
-  - Amount: x[i].value
-    datatype: currency
+  - Income name: x.in_values.new_item_name
 ---
-id: deduction value
+id: other income value
 generic object: ALItemizedJob
-if: |
-  x[i].transaction_type == 'deduction'
 question: |
-  What is removed from your paycheck for ${ x.name }'s ${ x[i].source }?
+  What do you get paid for ${ x.in_values[i] } in your ${ x.name } job?
 fields:
-  - Amount: x[i].value
+  - Amount: x.in_values[i].value
     datatype: currency
+  - Do you have another source of income?: x.in_values.there_is_another
+    datatype: yesnoradio
 ---
 # ITEMIZED_JOB LIST (Unique items)
----
-code: |
-  #itemized_job_list[i].complete_attribute='gather_line_items'
-  #itemized_job_list[i].there_is_another=False
-  #itemized_job_list[i].there_are_any=True
-  ########
-  itemized_job_list[i].name
-  #itemized_job_list[i].employer.name.first
-  itemized_job_list[i].period
-  itemized_job_list[i].in_values["wages"].value
-  itemized_job_list[i].in_values["wages"].is_hourly = True
-  ########
-  #itemized_job_list[i].in_sources
-  #itemized_job_list[i].out_sources
-  #itemized_job_list[i].line_item_sources
-  #itemized_job_list[i].get_line_item_sources
-  #itemized_job_list[i].gather()
-  itemized_job_list[i].complete = True
 ---
 id: how many jobs
 question: |
@@ -292,7 +236,7 @@ fields:
   - no label: itemized_job_list.target_number
     datatype: number
 ---
-# ONE JOB
+# ONE REGULAR JOB
 ---
 id: single job value
 generic object: ALJob
@@ -387,9 +331,18 @@ subquestion: |
   
   **total per month:** ${currency(itemized_job.total(12))}
   
+  Two different ways of printing money coming in:
+  
+  % for name, item in itemized_job.in_values.complete_elements().items():
+  * **${ name } per month:** ${ currency(itemized_job.total( source=name, times_per_year=12 )) }
+  * **${ name } per week:** ${ currency(itemized_job.item_amount( item, annual_frequency=52 )) }
+  % endfor
+  
   **${itemized_job.name} json:**
   
-  ${ itemized_job.to_json() }
+  ```
+  ${ json.dumps(itemized_job.to_json()) }
+  ```
   
   ---
   
@@ -414,7 +367,7 @@ subquestion: |
   * **wages and federal_taxes net:** ${currency( itemized_job_list.net_amount(source=['wages', 'federal_taxes']) )} per year
   
   % for one_itemized_job in itemized_job_list:
-  ### ${ one_itemized_job.name }
+  #### ${ one_itemized_job.name }
   
   * **gross:** ${ currency( one_itemized_job.gross_amount() ) }
   * **gross:** ${ currency( one_itemized_job.gross_amount(times_per_year=12) ) } per month
@@ -422,7 +375,26 @@ subquestion: |
   * **net:** ${currency( one_itemized_job.net_amount(times_per_year=52) )} per week
   * **money out per year:** ${currency(one_itemized_job.total_out())}
   
+  Two different ways of printing money coming in:
+  
+  % for name, item in one_itemized_job.in_values.complete_elements().items():
+  * **${ name } per month:** ${ currency(one_itemized_job.total( source=name, times_per_year=12 )) }
+  * **${ name } per week:** ${ currency(one_itemized_job.item_amount( item, annual_frequency=52 )) }
   % endfor
+  
+  **${one_itemized_job.name} json:**
+  
+  ```
+  ${ json.dumps(one_itemized_job.to_json()) }
+  ```
+  
+  % endfor
+  
+  **JSON for itemized job list**
+  
+  ```
+  ${ json.dumps(itemized_job_list.to_json()) }
+  ```
   
   ---
   
