@@ -312,6 +312,16 @@ class ALJobList(ALIncomeList):
         return result
 
 
+class _ALItemizedValue(DAObject):
+    def init(self, *pargs, **kwargs):
+      super().init(*pargs, **kwargs)
+    
+    def __str__(self):
+      orig_name = self.object_name()
+      new_name = orig_name.replace( 'out values in the itemized job', '' )
+      new_name = new_name.replace( 'in values in the itemized job', '' )
+      return new_name
+
 class ALItemizedJob(DAObject):
     """
     Represents a job that can have multiple sources of earned income
@@ -384,10 +394,10 @@ class ALItemizedJob(DAObject):
       # Q: Use complete_attribute = "value" for in/out items?
       # Money coming in
       if not hasattr(self, 'in_values'):
-        self.initializeAttribute('in_values', DAOrderedDict.using(object_type=DAObject))
+        self.initializeAttribute('in_values', DAOrderedDict.using(object_type=_ALItemizedValue))
       # Money being taken out
       if not hasattr(self, 'out_values'):
-        self.initializeAttribute('out_values', DAOrderedDict.using(object_type=DAObject))
+        self.initializeAttribute('out_values', DAOrderedDict.using(object_type=_ALItemizedValue))
     
     """
     interface:
@@ -545,6 +555,7 @@ class ALItemizedJob(DAObject):
           total -= self.item_amount(item, annual_frequency=times_per_year)
       return total
     
+    # Different signature to ALIncomeList `sources`
     def to_source_list(self, source=None):
       """
       Given a string or list of strings, return a list of strings. If no strings given,

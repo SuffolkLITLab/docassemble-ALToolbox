@@ -23,33 +23,25 @@ objects:
 mandatory: True
 code: |
   if to_run['ALItemizedJob'] or to_run['all']:
-    itemized_job.name = 'AnItemizedJob'
+    itemized_job.name = 'Some Itemized Job'
     itemized_job.complete
-    #itemized_job.period
-    #itemized_job.in_values.there_are_any = True
-    #itemized_job.out_values.there_are_any = True
-    #itemized_job.in_values["wages"].is_hourly = True
-    #itemized_job.in_values["wages"].value
-    #itemized_job.in_values.there_is_another = False
-    #itemized_job.out_values.there_is_another = False
-    #itemized_job.employer.name.first
   
   if to_run['ALItemizedJobList'] or to_run['all']:
     itemized_job_list.gather()
   
-  if to_run['ALJob'] or to_run['all']:
-    job.name = 'Random Work'
-    job.employer
-    job.value
-  
-  if to_run['ALIncomeList'] or to_run['all']:
-    income_sources
-    get_income_sources
-    incomes.gather()
-  
-  if to_run['ALIncome'] or to_run['all']:
-    income.source = 'Random Income'
-    income.value
+  #if to_run['ALJob'] or to_run['all']:
+  #  job.name = 'Random Work'
+  #  job.employer
+  #  job.value
+  #
+  #if to_run['ALIncomeList'] or to_run['all']:
+  #  income_sources
+  #  get_income_sources
+  #  incomes.gather()
+  #
+  #if to_run['ALIncome'] or to_run['all']:
+  #  income.source = 'Random Income'
+  #  income.value
   
   before_end_so_answers_are_saved
   end
@@ -79,6 +71,7 @@ subquestion: |
 fields:
   - no label: to_run
     datatype: checkboxes
+    none of the above: False
     choices:
       - All of the them: all
       #- ALSimpleValue: ALSimpleValue
@@ -216,6 +209,9 @@ question: |
   Other incomes
 fields:
   - Income name: x.in_values.new_item_name
+#validation code: |
+#  if x.in_values.new_item_name in x.in_values.complete_elements().keys():
+#    validation_error("There's already an income called that. Use a different name.")
 ---
 id: other income value
 generic object: ALItemizedJob
@@ -225,6 +221,23 @@ fields:
   - Amount: x.in_values[i].value
     datatype: currency
   - Do you have another source of income?: x.in_values.there_is_another
+    datatype: yesnoradio
+---
+id: other deduction name
+generic object: ALItemizedJob
+question: |
+  Other incomes
+fields:
+  - Income name: x.out_values.new_item_name
+---
+id: other deduction value
+generic object: ALItemizedJob
+question: |
+  What do you get paid for ${ x.out_values[i] } in your ${ x.name } job?
+fields:
+  - Amount: x.out_values[i].value
+    datatype: currency
+  - Do you have another source of income?: x.out_values.there_is_another
     datatype: yesnoradio
 ---
 # ITEMIZED_JOB LIST (Unique items)
