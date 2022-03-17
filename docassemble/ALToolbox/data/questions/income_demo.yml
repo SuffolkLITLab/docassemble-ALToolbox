@@ -207,11 +207,13 @@ id: other income name
 generic object: ALItemizedJob
 question: |
   Other incomes
+subquestion: |
+  You've already told us about your income from **${comma_and_list( x.in_values.complete_elements() )}**.
 fields:
   - Income name: x.in_values.new_item_name
-#validation code: |
-#  if x.in_values.new_item_name in x.in_values.complete_elements().keys():
-#    validation_error("There's already an income called that. Use a different name.")
+validation code: |
+  if x.in_values.new_item_name in x.in_values.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ x.in_values.new_item_name }</strong> that pay { currency( x.in_values[ x.in_values.new_item_name ].value )}. Pick a different name.')
 ---
 id: other income value
 generic object: ALItemizedJob
@@ -226,9 +228,14 @@ fields:
 id: other deduction name
 generic object: ALItemizedJob
 question: |
-  Other incomes
+  Other deductions
+subquestion: |
+  You've already told us about your income from **${comma_and_list( x.out_values.complete_elements() )}**.
 fields:
-  - Income name: x.out_values.new_item_name
+  - Deduction name: x.out_values.new_item_name
+validation code: |
+  if x.out_values.new_item_name in x.out_values.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ x.out_values.new_item_name }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
 ---
 id: other deduction value
 generic object: ALItemizedJob

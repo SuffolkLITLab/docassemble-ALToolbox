@@ -172,7 +172,7 @@ class ALIncomeList(DAList):
                 sources.add(item.source)
         return sources
 
-    # Q: Instead require `source` to always be a list? They just have
+    # Q: Instead, require `source` to always be a list? They just have
     # to put brackets around the item at worst. Same question for all
     # other locations.
     def matches(self, source):
@@ -393,9 +393,11 @@ class ALItemizedJob(DAObject):
         self.initializeAttribute('employer', Individual)
       # Q: Use complete_attribute = "value" for in/out items?
       # Money coming in
+      # Names: in_values -> values_in, money_in, income, incomes
       if not hasattr(self, 'in_values'):
         self.initializeAttribute('in_values', DAOrderedDict.using(object_type=_ALItemizedValue))
       # Money being taken out
+      # Names: in_values -> values_out, money_out, deductions ("an amount that you can use to reduce your income-tax liability")
       if not hasattr(self, 'out_values'):
         self.initializeAttribute('out_values', DAOrderedDict.using(object_type=_ALItemizedValue))
     
