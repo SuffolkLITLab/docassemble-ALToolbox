@@ -23,7 +23,7 @@ subquestion: |
   When it comes to display a markdown template on the screen, you can use the **display_template()** function for the following features. 
     
   1. **scrollable** (default=True) 
-      - The default is to display the template with a stroll bar. This is helpful if your markdown template content is long.
+      - The default is to display the template with a scroll bar. This is helpful if your markdown template content is long.
       - If your markdown template has a subject line, it will be displayed automatically. The subject line is not required for this feature.
   1. **collapse** (default=False) 
       - Change it to True to collapse/show youre template in order to save screen space. Template subject line is required.
