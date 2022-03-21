@@ -61,7 +61,7 @@ code: |
     "Bells and whistles": ['Add icons; open a phone dialer; format currency', 'misc.py'],
     "collapse_template_demo": ['Collapse/open text display on the screen', 'collapse_template.yml'],
     "copy_button_demo": ['Add a copy button with tooltip', 'copy_button.yml'],
-    "display_template_demo": ['Display the subject and content of a markdown template with/without scroll bar; optional css class', 'display_template.yml'], 
+    "display_template_demo": ['Display the subject and content of a markdown template with/without a scroll bar; add a copy button; make it collapsible; optional css class', 'display_template.yml'], 
     "phone_number_validation_demo": ['Validate international phone number input', 'phone-number-validation.yml'],
     "Shorten a url": ['Shorten a long url for neater display on the screen', 'misc.py'],
     "TextCounter": ['Text input with a counter', 'TextCounter.js'], 
