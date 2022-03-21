@@ -13,3 +13,7 @@ a.collapsed .pdcaretopen {
 a.collapsed .pdcaretclosed {
     display: inline;
 }
+
+.collapse {
+    margin-bottom: 1rem;
+}

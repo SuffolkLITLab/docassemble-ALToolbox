@@ -4,11 +4,8 @@
 metadata:
   title: ALToolbox - Progressive disclosure
 ---
-modules:
-  - .misc
----
-features:
-  css: collapse_template.css
+include:
+  - collapse_template.yml
 ---
 template: fruit_explanation
 subject: |
@@ -32,9 +29,14 @@ content: |
   nature.
 ---
 question: |
-  What is your favorite fruit?
+  Progressive disclosure of template content  
 subquestion: |
-  Everybody has a favorite fruit.
+  This demo calls the **collapse_template()** function to collapse/open template contents when the user clicks the template subject line link. This is useful to shorten a long screen.
+  
+  &#128276 To add a copy button for users to copy your template content, simply switch to the **display_template()** function and turn on its **copy** feature, see [Display template demo](${interview_url(i=user_info().package + ":display_template_demo.yml")}).
+  
+  ---
+  What is your favorite fruit? Everybody has a favorite fruit.
   
   ${ collapse_template(fruit_explanation) }
   Don't you have a favorite fruit?

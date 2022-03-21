@@ -84,24 +84,6 @@ def collapse_template(template, classname=None):
 <a class="collapsed" data-bs-toggle="collapse" href="#{}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="pdcaretclosed"><i class="fas fa-caret-right"></i></span> {}</a>
 <div class="collapse" id="{}"><div class="card card-body{} pb-1">{}</div></div>\
 """.format(the_id, template.subject_as_html(trim=True), the_id, classname, template.content_as_html())
-
-def display_template(template, scrollable=True, class_name=None):
-  """
-  Display the subject and content of a markdown template in a scrollable way.
-  """
-  if scrollable:
-    scroll_class = 'scrollable-panel'
-  else:
-    scroll_class = ''
-
-  if class_name is None:
-      class_name = ' bg-light'
-  else:
-      class_name = ' ' + class_name.strip()
-  the_id = re.sub(r'[^A-Za-z0-9]', '', template.instanceName)
-  return """\
-<div class="{} card card-body{} pb-1" id="{}"><div class="panel-heading"><h3>{}</h3></div>{}</div>\
-""".format(scroll_class, class_name, the_id, template.subject_as_html(trim=True), template.content_as_html())
   
 def tabbed_templates_html(tab_group_name:str, *pargs)->str:
   """
