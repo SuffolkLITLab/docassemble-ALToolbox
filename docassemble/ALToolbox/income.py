@@ -143,16 +143,15 @@ class ALIncome(PeriodicValue):
     hours/week, use 52.
     """
     # Q: It's actually the value per period. "amount" isn't super clear. Change name?
-    # Name: times_per_year was period. maybe period_frequency? value_frequency? desired_frequency? annual_frequency?
-    def amount(self, times_per_year=1):
+    def amount(self, period=1):
         """Returns the income over the specified period."""
         ## Q: Conform to behavior of docassemble PeriodicValue?
         #if not hasattr(self, 'value'):
         #  return Decimal(0)
         if hasattr(self, 'is_hourly') and self.is_hourly:
-            return Decimal(self.hourly_rate * self.hours_per_period * self.period) / Decimal(times_per_year)
+            return Decimal(self.hourly_rate * self.hours_per_period * self.period) / Decimal(period)
         else:
-          return (Decimal(self.value) * Decimal(self.period)) / Decimal(times_per_year)
+          return (Decimal(self.value) * Decimal(self.period)) / Decimal(period)
 
 
 # Q: Make income list so it can add up all income sources (jobs, assets, etc?)
@@ -160,6 +159,7 @@ class ALIncomeList(DAList):
     """
     Represents a filterable DAList of income items, each of which has an
     associated period or hourly wages.
+    # Q: Give everything (inc. jobs) an `.amount()`. For jobs, it would be equivalent to .net_amount()
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -191,7 +191,7 @@ class ALIncomeList(DAList):
         return ALIncomeList(elements = [item for item in self.elements if item.source in sources])
     
     # Names: .total() -> .total_amount() since it uses an annual frequency (unlike ValueList)?
-    def total(self, times_per_year=1, source=None, owner=None):
+    def total(self, period=1, source=None, owner=None):
         """
         Returns the total periodic value in the list, gathering the list items
         if necessary. You can specify a `source`, which may be a list, to only
@@ -201,29 +201,29 @@ class ALIncomeList(DAList):
         # Q: can `owner` be a list? I see that `.owners()` returns a set
         self._trigger_gather()
         result = Decimal(0)
-        if times_per_year == 0:
+        if period == 0:
             return result
         if source is None:
             # Q: Should this allow the user to filter _just_ by the `owner`
             # as well if they include just the `owner`?
             for item in self.elements:
-                result += Decimal(item.amount(times_per_year=times_per_year))
+                result += Decimal(item.amount(period=period))
         elif isinstance(source, list):
             for item in self.elements:
                 if item.source in source:
                     if owner is None: # if we don't care who the owner is
-                        result += Decimal(item.amount(times_per_year=times_per_year))
+                        result += Decimal(item.amount(period=period))
                     else:
                         if not (isinstance(owner, DAEmpty)) and item.owner == owner:
-                            result += Decimal(item.amount(times_per_year=times_per_year))
+                            result += Decimal(item.amount(period=period))
         else:
             for item in self.elements:
                 if item.source == source:
                     if owner is None:
-                        result += Decimal(item.amount(times_per_year=times_per_year))
+                        result += Decimal(item.amount(period=period))
                     else:
                         if not (isinstance(owner, DAEmpty)) and item.owner == owner:
-                            result += Decimal(item.amount(times_per_year=times_per_year))
+                            result += Decimal(item.amount(period=period))
         return result
     
     def to_json(self):
@@ -232,7 +232,7 @@ class ALIncomeList(DAList):
           "source": income.source,
           # Q: Should `frequency` be `period`?
           "frequency": float(income.period),
-          # Q: shouldn't this use `amount()`? [what does this second question mean? ->] Is this why times_per_year needs to default to 1?
+          # Q: shouldn't this use `amount()`? [what does this second question mean? ->] Is this why period needs to default to 1?
           # Q: Actually, in docassemble, `.amount()` always defaults to a period of 1, so if this is `amount`, it would use a year as a period, so maybe this really should be called `value` instead.
           "value": income.value
         } for income in self.elements]
@@ -244,30 +244,30 @@ class ALJob(ALIncome):
     specify gross and net income amounts. This is a more common way of reporting
     income than ALItemizedJob.
     """
-    def gross_amount(self, times_per_year=1):
+    def gross_amount(self, period=1):
       """Gross amount is identical to ALIncome amount."""
-      return self.amount(times_per_year = times_per_year)
+      return self.amount(period=period)
     
     # Q: Not sure of the name, but something like `net_value` or
     # `net_amount` seems indistinguishable from `.net`. Maybe
     # there should be `payment` and `deductions` and `.net()`
     # like ALItemizedJob
-    def net_amount(self, times_per_year=1):
+    def net_amount(self, period=1):
       """
       Returns the net amount provided by the user (e.g. money in minus money
       out) for the time period given. Only applies if value is non-hourly.
       Period is some demoninator of a year for compatibility with
       PeriodicFinancialList class. E.g, to express hours/week, use 52.
       """
-      return (Decimal(self.net) * Decimal(self.period)) / Decimal(times_per_year)
+      return (Decimal(self.net) * Decimal(self.period)) / Decimal(period)
 
     def employer_name_address_phone(self):
         """Returns name, address and phone number of employer."""
         return self.employer + ': ' + self.employer_address + ', ' + self.employer_phone
 
-    def normalized_hours(self, times_per_year):
+    def normalized_hours(self, period):
         """Returns the number of hours worked in a given period."""
-        return (float(self.hours_per_period) * int(self.period)) / int(times_per_year)
+        return (float(self.hours_per_period) * int(self.period)) / int(period)
 
 
 class ALJobList(ALIncomeList):
@@ -280,7 +280,7 @@ class ALJobList(ALIncomeList):
         super().init(*pargs, **kwargs)     
         self.object_type = ALJob
     
-    def gross_amount(self, times_per_year=1, source=None):
+    def gross_amount(self, period=1, source=None):
         """
         Gross amount is identical to ALIncome amount, except it adds up all
         ALJobs it contains and filters them by `source`, which can be a string
@@ -288,22 +288,22 @@ class ALJobList(ALIncomeList):
         """
         self._trigger_gather()
         result = 0
-        if times_per_year == 0:
+        if period == 0:
             return(result)
         if source is None:
             for item in self.elements:
-                result += Decimal(item.gross_amount(times_per_year=times_per_year))
+                result += Decimal(item.gross_amount(period=period))
         elif isinstance(source, list):
             for item in self.elements:
                 if item.source in source:
-                    result += Decimal(item.gross_amount(times_per_year=times_per_year))
+                    result += Decimal(item.gross_amount(period=period))
         else:
             for item in self.elements:
                 if item.source == source:
-                    result += Decimal(item.gross_amount(times_per_year=times_per_year))
+                    result += Decimal(item.gross_amount(period=period))
         return result
     
-    def net_amount(self, times_per_year=1, source=None):
+    def net_amount(self, period=1, source=None):
         """
         Returns the net amount provided by the user (e.g. money in minus money
         out) for the time period given for all jobs of the given `source` which
@@ -313,19 +313,19 @@ class ALJobList(ALIncomeList):
         """
         self._trigger_gather()
         result = 0
-        if times_per_year == 0:
+        if period == 0:
             return(result)
         if source is None:
             for item in self.elements:
-                result += Decimal(item.net_amount(times_per_year=times_per_year))
+                result += Decimal(item.net_amount(period=period))
         elif isinstance(source, list):
             for item in self.elements:
                 if item.source in source:
-                    result += Decimal(item.net_amount(times_per_year=times_per_year))
+                    result += Decimal(item.net_amount(period=period))
         else:
             for item in self.elements:
                 if item.source == source:
-                    result += Decimal(item.net_amount(times_per_year=times_per_year))
+                    result += Decimal(item.net_amount(period=period))
         return result
 
 
@@ -416,28 +416,28 @@ class ALItemizedJob(DAObject):
         if not hasattr(self, 'out_values'):
           self.initializeAttribute('out_values', DAOrderedDict.using(object_type=_ALItemizedValue))
     
-    # Names: change .period to .frequency or .times_per_year? Or job has a period while asking for `amount` has a frequency?
+    # Names: change .period to .frequency or .annual_frequency? Or job has a period while asking for `amount` has a frequency?
     # Names: divided_by = 52, annual_frequency=52/desired_frequency
     # Q: Allow `line_item`/`item` to be a string (source/id name)?
     # Names: line_item_period_value? item_period_value?
-    def item_amount(self, item, annual_frequency=1):
+    def item_amount(self, item, period=1):
         """
-        Given an item and an annual_frequency, returns the value accumulated
-        by the item for that annual_frequency.
+        Given an item and an period, returns the value accumulated
+        by the item for that period.
         
         params
         arg item {_ALItemizedValue} Object containing the value and other props
             for an "in" or "out" ALItemizedJob item.
-        kwarg annul_frequency {str | num}  Default is 1. Some demoninator of a
+        kwarg period {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
         """
-        if annual_frequency == 0:
+        if period == 0:
           return Decimal(0)
 
-        period = self.period
+        own_period = self.period
         if hasattr(item, 'period') and item.period:
-          period = item.period
+          own_period = item.period
 
         is_hourly = False
         # Override if item should be calculated hourly (like wages)
@@ -452,53 +452,53 @@ class ALItemizedJob(DAObject):
 
         # Use the appropriate cacluation
         if is_hourly:
-          return (value * Decimal(self.hours_per_period) * Decimal(period)) / Decimal(annual_frequency)
+          return (value * Decimal(self.hours_per_period) * Decimal(own_period)) / Decimal(period)
         else:
-          return (value * Decimal(period)) / Decimal(annual_frequency)
+          return (value * Decimal(own_period)) / Decimal(period)
     
     # Q: What aliases would be useful? We need gross and incomes, apparently. What else?
     # ---
     # In amount aliases
     # ---
-    def total_in(self, times_per_year=1, source=None):
+    def total_in(self, period=1, source=None):
         """Alias for ALItemizedJob.gross_amount."""
-        return self.gross_amount(times_per_year=times_per_year, source=source)
-    def in_amount(self, times_per_year=1, source=None):
+        return self.gross_amount(period=period, source=source)
+    def in_amount(self, period=1, source=None):
         """Alias for ALItemizedJob.gross_amount."""
-        return self.gross_amount(times_per_year=times_per_year, source=source)
-    def incomes(self, times_per_year=1, source=None):
+        return self.gross_amount(period=period, source=source)
+    def incomes(self, period=1, source=None):
         """Alias for ALItemizedJob.gross_amount."""
-        return self.gross_amount(times_per_year=times_per_year, source=source)
+        return self.gross_amount(period=period, source=source)
     
     # ---
     # Out amount aliases
     # ---
-    def out_amount(self, times_per_year=1, source=None):
+    def out_amount(self, period=1, source=None):
         """Alias for ALItemizedJob.total_out()."""
-        return self.total_out(times_per_year=times_per_year, source=source)
-    def deductions(self, times_per_year=1, source=None):
+        return self.total_out(period=period, source=source)
+    def deductions(self, period=1, source=None):
         """
         Alias for ALItemizedJob.total_out()
         "Deductions" in the wrong word. In financial vocabulary, it technically
         means amounts you can use to reduce your income-tax liability.
         """
-        return self.total_out(times_per_year=times_per_year, source=source)
+        return self.total_out(period=period, source=source)
     
     # ---
     # Net aliases
     # ---
-    def total(self, times_per_year=1, source=None):
+    def total(self, period=1, source=None):
         """Alias for ALItemizedJob.net_amount()."""
-        return self.net_amount(times_per_year=times_per_year, source=source)
-    def total_amount(self, times_per_year=1, source=None):
+        return self.net_amount(period=period, source=source)
+    def total_amount(self, period=1, source=None):
         """Alias for ALItemizedJob.net_amount()."""
-        return self.net_amount(times_per_year=times_per_year, source=source)
+        return self.net_amount(period=period, source=source)
     
     # ---
     # Actual calculations
     # ---
     # Include filtering by name? So confused.
-    def gross_amount(self, times_per_year=1, source=None):
+    def gross_amount(self, period=1, source=None):
         """
         Returns the sum of positive values (payments) for a given pay period (1
         for yearly, 12 for monthly, etc). Default frequency value of 1 (yearly)
@@ -506,7 +506,7 @@ class ALItemizedJob(DAObject):
         their own periods by default).
         
         params
-        kwarg annul_frequency {str | num}  Default is 1. Some demoninator of a
+        kwarg period {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
         kwarg source {str or [str]} Name or list of names of desired item(s).
@@ -514,17 +514,17 @@ class ALItemizedJob(DAObject):
         #self._trigger_gather()
         #self.in_values._trigger_gather()
         total = Decimal(0)
-        if times_per_year == 0:
+        if period == 0:
           return total
         # Make sure we're always working with a list of sources (names?)
         sources = self.source_to_list(source=source)
         # Add up all money coming in from a source
         for key, item in self.in_values.elements.items():
           if key in sources:
-            total += self.item_amount(item, annual_frequency=times_per_year)
+            total += self.item_amount(item, period=period)
         return total
     
-    def total_out(self, times_per_year=1, source=None):
+    def total_out(self, period=1, source=None):
         """
         Returns the sum of negative values for a given pay period (1 for yearly,
         12 for monthly, etc). Default frequency value of 1 (yearly) so
@@ -532,30 +532,30 @@ class ALItemizedJob(DAObject):
         their own periods by default).
         
         params
-        kwarg annul_frequency {str | num}  Default is 1. Some demoninator of a
+        kwarg period {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
         kwarg source {str or [str]} Name or list of names of desired item(s).
         """
         total = Decimal(0)
-        if times_per_year == 0:
+        if period == 0:
           return total
         # Make sure we're always working with a list of sources (names?)
         sources = self.source_to_list(source=source)
         # Add all the money going out
         for key, item in self.out_values.elements.items():
           if key in sources:
-            total += self.item_amount(item, annual_frequency=times_per_year)
+            total += self.item_amount(item, period=period)
         return total
     
-    def net_amount(self, times_per_year=1, source=None):
+    def net_amount(self, period=1, source=None):
         """
         Returns the net (payments minus deductions) value of the job for a given
         pay period (1 for yearly, 12 for monthly, etc). Default frequency value
         of 1 so all jobs can be normalized.
         
         params
-        kwarg annul_frequency {str | num}  Default is 1. Some demoninator of a
+        kwarg period {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
         kwarg source {str or [str]} Name or list of names of desired item(s).
@@ -565,18 +565,18 @@ class ALItemizedJob(DAObject):
         #self.in_values._trigger_gather()
         #self.out_values._trigger_gather()
         total = Decimal(0)
-        if times_per_year == 0:
+        if period == 0:
           return total
         # Make sure we're always working with a list of sources (names?)
         sources = self.source_to_list(source=source)
         # Add up all money coming in
         for key, item in self.in_values.elements.items():
           if key in sources:
-            total += self.item_amount(item, annual_frequency=times_per_year)
+            total += self.item_amount(item, period=period)
         # Subtract the money going out
         for key, item in self.out_values.elements.items():
           if key in sources:
-            total -= self.item_amount(item, annual_frequency=times_per_year)
+            total -= self.item_amount(item, period=period)
         return total
     
     # Q: Should this be `name`, like an itemized job's name?
@@ -599,7 +599,7 @@ class ALItemizedJob(DAObject):
         return sources
     
     ## Names: Should `source` be `id`? That only makes sense for jobs, not incomes/assets, so they then won't share an interface. Maybe `name`? Or do we need categories, not `id`s? In what situations would there be income values from the same "type"/`source`?
-    # Q/Names: Should `times_per_year` be a string that's the "name" of the period? Calling it just `period` is a bit confusing when the value is a number. e.g. `period = 12`, to me, doesn't shout out "monthly".
+    # Q/Names: Should `period` be a string that's the "name" of the period? Calling it just `period` is a bit confusing when the value is a number. e.g. `period = 12`, to me, doesn't shout out "monthly".
     
     def employer_name_address_phone(self):
         """
@@ -621,12 +621,12 @@ class ALItemizedJob(DAObject):
           employer_str = f'{ employer_str }: {comma_list( info_list )}'
         return employer_str
     
-    def normalized_hours(self, times_per_year):
+    def normalized_hours(self, period):
         """
         Returns the number of hours worked in a given period for an hourly job.
         """
         # Q: Is there a safe value to return if it's not hourly?
-        return round((float(self.hours_per_period) * float(self.period)) / float(times_per_year))
+        return round((float(self.hours_per_period) * float(self.period)) / float(period))
     
     # Name: to_json_string? json.dumps returns str right? Don't we want to just give them a JSON-compatible dict and let them prety print it their own way?
     def to_json(self):
@@ -637,8 +637,8 @@ class ALItemizedJob(DAObject):
         return {
           "name": self.name,
           "frequency": float(self.period),
-          "gross": float(self.gross_amount(times_per_year=self.period)),
-          "net": float(self.net_amount(times_per_year=self.period)),
+          "gross": float(self.gross_amount(period=self.period)),
+          "net": float(self.net_amount(period=self.period)),
           "in_values": self.items_json(self.in_values),
           "out_values": self.items_json(self.out_values)
         }
@@ -674,44 +674,44 @@ class ALItemizedJobList(DAList):
     # ---
     # In amount aliases
     # ---
-    def total_in(self, times_per_year=1, source=None):
+    def total_in(self, period=1, source=None):
         """Alias for ALItemizedJobList.gross_amount()."""
-        return self.gross_amount(times_per_year=times_per_year, source=source)
-    def in_amount(self, times_per_year=1, source=None):
+        return self.gross_amount(period=period, source=source)
+    def in_amount(self, period=1, source=None):
         """Alias for ALItemizedJobList.gross_amount()."""
-        return self.gross_amount(times_per_year=times_per_year, source=source)
-    def incomes(self, times_per_year=1, source=None):
+        return self.gross_amount(period=period, source=source)
+    def incomes(self, period=1, source=None):
         """Alias for ALItemizedJobList.gross_amount()."""
-        return self.gross_amount(times_per_year=times_per_year, source=source)
+        return self.gross_amount(period=period, source=source)
       
     # ---
     # Out amount aliases
     # ---
-    def out_amount(self, times_per_year=1, source=None):
+    def out_amount(self, period=1, source=None):
         """Alias for ALItemizedJobList.total_out()."""
-        return self.total_out(times_per_year=times_per_year, source=source)
-    def deductions(self, times_per_year=1, source=None):
+        return self.total_out(period=period, source=source)
+    def deductions(self, period=1, source=None):
         """
         Alias for ALItemizedJobList.total_out()
         "Deductions" in the wrong word. In financial vocabulary, it technically
         means amounts you can use to reduce your income-tax liability.
         """
-        return self.total_out(times_per_year=times_per_year, source=source)
+        return self.total_out(period=period, source=source)
     
     # ---
     # Net aliases
     # ---
-    def total(self, times_per_year=1, source=None):
+    def total(self, period=1, source=None):
         """Alias for ALItemizedJobList.net_amount()."""
-        return self.net_amount(times_per_year=times_per_year, source=source)
-    def total_amount(self, times_per_year=1, source=None):
+        return self.net_amount(period=period, source=source)
+    def total_amount(self, period=1, source=None):
         """Alias for ALItemizedJobList.net_amount()."""
-        return self.net_amount(times_per_year=times_per_year, source=source)
+        return self.net_amount(period=period, source=source)
     
     # ---
     # Actual calculations
     # ---
-    def gross_amount(self, times_per_year=1, source=None):
+    def gross_amount(self, period=1, source=None):
         """
         Return amount totals of money coming in for a specific source or sources
         calculated using the desired annual frequency (monthly = 12 times per
@@ -720,20 +720,20 @@ class ALItemizedJobList(DAList):
         @params
         kwarg: source {str, [str]} - Name or list of names of desired item(s) to
             sum from every itemized job. E.g. ['tips', 'taxes']
-        kwarg: times_per_year {str | num}  Default is 1. Some demoninator of a
+        kwarg: period {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
         """
         self._trigger_gather()
         total = Decimal(0)
-        if times_per_year == 0:
+        if period == 0:
             return total
         # Add all job gross amounts from particular sources
         for job in self.elements:
-          total += job.gross_amount(times_per_year=times_per_year, source=source)
+          total += job.gross_amount(period=period, source=source)
         return total
     
-    def total_out(self, times_per_year=1, source=None):
+    def total_out(self, period=1, source=None):
         """
         Return amount totals of money going out for a specific source or sources
         calculated using the desired annual frequency (monthly = 12 times per
@@ -742,20 +742,20 @@ class ALItemizedJobList(DAList):
         @params
         kwarg: source {str, [str]} - Name or list of names of desired item(s) to
             sum from every itemized job. E.g. ['tips', 'taxes']
-        kwarg: times_per_year {str | num}  Default is 1. Some demoninator of a
+        kwarg: period {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
         """
         self._trigger_gather()
         total = Decimal(0)
-        if times_per_year == 0:
+        if period == 0:
           return total
         # Add all the money going out for all jobs
         for job in self.elements:
-          total += job.total_out(times_per_year=times_per_year, source=source)
+          total += job.total_out(period=period, source=source)
         return total
     
-    def net_amount(self, times_per_year=1, source=None):
+    def net_amount(self, period=1, source=None):
         """
         Return amount totals of all money for a specific source or sources
         calculated using the desired annual frequency (monthly = 12 times per
@@ -764,17 +764,17 @@ class ALItemizedJobList(DAList):
         @params
         kwarg: source {str, [str]} - Name or list of names of desired item(s) to
             sum from every itemized job. E.g. ['tips', 'taxes']
-        kwarg: times_per_year {str | num}  Default is 1. Some demoninator of a
+        kwarg: period {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
         """
         self._trigger_gather()
         total = Decimal(0)
-        if times_per_year == 0:
+        if period == 0:
             return total
         # Combine all the net amounts in all the jobs from particular sources
         for job in self.elements:
-          total += job.net_amount(times_per_year=times_per_year, source=source)
+          total += job.net_amount(period=period, source=source)
         return total
     
     def to_json(self):
@@ -784,11 +784,11 @@ class ALItemizedJobList(DAList):
 
 class ALAsset(ALIncome):
     """Like income but the `value` attribute is optional."""
-    def amount(self, times_per_year=1):
+    def amount(self, period=1):
       if not hasattr(self, 'value'):
         return 0
       else:
-        return super(ALAsset, self).amount(times_per_year=times_per_year)
+        return super(ALAsset, self).amount(period=period)
 
 
 class ALAssetList(ALIncomeList):

@@ -144,6 +144,7 @@ code: |
   #x.employer.name.first
   x.period
   x.in_values.complete_attribute = 'complete'
+  x.out_values.complete_attribute = 'complete'
   x.in_values["wages"].value
   x.in_values["wages"].is_hourly = True
   x.in_values.gather()
@@ -156,6 +157,11 @@ generic object: ALItemizedJob
 code: |
   x.in_values[i].value
   x.in_values[i].complete = True
+---
+generic object: ALItemizedJob
+code: |
+  x.out_values[i].value
+  x.out_values[i].complete = True
 ---
 id: job name for itemized_job
 generic object: ALItemizedJob
@@ -237,14 +243,24 @@ validation code: |
   if x.out_values.new_item_name in x.out_values.complete_elements().keys():
     validation_error(f'You already told us about your <strong>{ x.out_values.new_item_name }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
 ---
-id: other deduction value
+id: other income value
+generic object: ALItemizedJob
+question: |
+  What do you get paid for ${ x.in_values[i] } in your ${ x.name } job?
+fields:
+  - Amount: x.in_values[i].value
+    datatype: currency
+  - Do you have another source of income?: x.in_values.there_is_another
+    datatype: yesnoradio
+---
+id: other reduction value
 generic object: ALItemizedJob
 question: |
   What do you get paid for ${ x.out_values[i] } in your ${ x.name } job?
 fields:
   - Amount: x.out_values[i].value
     datatype: currency
-  - Do you have another source of income?: x.out_values.there_is_another
+  - Do other money being taken out of your job?: x.out_values.there_is_another
     datatype: yesnoradio
 ---
 # ITEMIZED_JOB LIST (Unique items)
@@ -354,8 +370,8 @@ subquestion: |
   Two different ways of printing money coming in:
   
   % for name, item in itemized_job.in_values.complete_elements().items():
-  * **${ name } per month:** ${ currency(itemized_job.total( source=name, times_per_year=12 )) }
-  * **${ name } per week:** ${ currency(itemized_job.item_amount( item, annual_frequency=52 )) }
+  * **${ name } per month:** ${ currency(itemized_job.total( source=name, period=12 )) }
+  * **${ name } per week:** ${ currency(itemized_job.item_amount( item, period=52 )) }
   % endfor
   
   **${itemized_job.name} json:**
@@ -374,9 +390,9 @@ subquestion: |
   Amounts totals:
   
   * **gross per year:** ${currency( itemized_job_list.gross_amount() )}
-  * **gross per month:** ${currency( itemized_job_list.gross_amount(times_per_year=12) )}
+  * **gross per month:** ${currency( itemized_job_list.gross_amount(period=12) )}
   * **net per year:** ${currency( itemized_job_list.net_amount() )}
-  * **net per week:** ${currency( itemized_job_list.net_amount(times_per_year=52) )}
+  * **net per week:** ${currency( itemized_job_list.net_amount(period=52) )}
   * **money out per year:** ${currency(itemized_job_list.total_out())}
   
   The below only shows useful amounts when both "wages" and "federal_taxes" have amounts:
@@ -390,16 +406,16 @@ subquestion: |
   #### ${ one_itemized_job.name }
   
   * **gross:** ${ currency( one_itemized_job.gross_amount() ) }
-  * **gross:** ${ currency( one_itemized_job.gross_amount(times_per_year=12) ) } per month
+  * **gross:** ${ currency( one_itemized_job.gross_amount(period=12) ) } per month
   * **net:** ${currency( one_itemized_job.net_amount() )} per year
-  * **net:** ${currency( one_itemized_job.net_amount(times_per_year=52) )} per week
+  * **net:** ${currency( one_itemized_job.net_amount(period=52) )} per week
   * **money out per year:** ${currency(one_itemized_job.total_out())}
   
   Two different ways of printing money coming in:
   
   % for name, item in one_itemized_job.in_values.complete_elements().items():
-  * **${ name } per month:** ${ currency(one_itemized_job.total( source=name, times_per_year=12 )) }
-  * **${ name } per week:** ${ currency(one_itemized_job.item_amount( item, annual_frequency=52 )) }
+  * **${ name } per month:** ${ currency(one_itemized_job.total( source=name, period=12 )) }
+  * **${ name } per week:** ${ currency(one_itemized_job.item_amount( item, period=52 )) }
   % endfor
   
   **${one_itemized_job.name} json:**
@@ -454,13 +470,13 @@ comment: |
   Money coming in:
   
   % for line_item in one_itemized_job.line_items(transaction_type='payment'):
-  * ${ line_item.source }: ${currency( one_itemized_job.period_value( line_item, times_per_year=1 ))}
+  * ${ line_item.source }: ${currency( one_itemized_job.period_value( line_item, period=1 ))}
   % endfor
   
   Money going out:
   
   % for line_item in one_itemized_job.line_items(transaction_type='deduction'):
-  * ${ line_item.source }: ${currency( one_itemized_job.absolute_period_value( line_item, times_per_year=1 ))}
+  * ${ line_item.source }: ${currency( one_itemized_job.absolute_period_value( line_item, period=1 ))}
   % endfor
   
   % endfor
@@ -494,13 +510,13 @@ comment: |
   Money coming in:
   
   % for item in itemized_job.line_items(transaction_type='payment'):
-  * ${ item.source }: ${currency( itemized_job.period_value( item, times_per_year=1 ))}
+  * ${ item.source }: ${currency( itemized_job.period_value( item, period=1 ))}
   % endfor
   
   Money going out:
   
   % for item in itemized_job.line_items(transaction_type='deduction'):
-  * ${ item.source }: ${currency( itemized_job.absolute_period_value( item, times_per_year=1 ))}
+  * ${ item.source }: ${currency( itemized_job.absolute_period_value( item, period=1 ))}
   % endfor
   
   #### `itemized_job` JSON
