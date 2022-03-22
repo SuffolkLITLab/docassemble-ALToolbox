@@ -787,7 +787,7 @@ class ALItemizedJob(DAObject):
         """
         # Q: Is there a safe value to return if it's not hourly?
         return round((float(self.hours_per_period) * float(self.period)) / float(period_to_use))
-    
+
     #def to_json(self):
     #    """
     #    Returns an itemized job's dictionary suitable for Legal Server API.
@@ -801,23 +801,23 @@ class ALItemizedJob(DAObject):
     #      "in_values": self.items_json(self.in_values),
     #      "out_values": self.items_json(self.out_values)
     #    }
-    
-    def items_json(self, item_dict):
-        """
-        Return a JSON version of the given dict of ALItemizedJob "in" or "out"
-        objects.
-        """
-        result = {}
-        for key in item_dict.true_values():
-          item = item_dict[key]
-          result[key] = {}
-          result[key]['value'] = item.value
-          # Q: Include defaults for all attributes?
-          if hasattr(item, 'is_hourly'):
-            result[key]['is_hourly'] = item.is_hourly
-          if hasattr(item, 'period'):
-            result[key]['period'] = item.period
-        return result
+    #
+    #def items_json(self, item_dict):
+    #    """
+    #    Return a JSON version of the given dict of ALItemizedJob "in" or "out"
+    #    objects.
+    #    """
+    #    result = {}
+    #    for key in item_dict.true_values():
+    #      item = item_dict[key]
+    #      result[key] = {}
+    #      result[key]['value'] = item.value
+    #      # Q: Include defaults for all attributes?
+    #      if hasattr(item, 'is_hourly'):
+    #        result[key]['is_hourly'] = item.is_hourly
+    #      if hasattr(item, 'period'):
+    #        result[key]['period'] = item.period
+    #    return result
 
 
 class ALItemizedJobList(DAList):

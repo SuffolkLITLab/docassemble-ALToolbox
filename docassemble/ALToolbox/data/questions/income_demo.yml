@@ -229,49 +229,39 @@ generic object: ALItemizedJob
 question: |
   Other incomes
 subquestion: |
-  You've already told us about your income from **${comma_and_list( x.in_values.complete_elements() )}**.
+  You've already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
 fields:
   - Income name: x.in_values.new_item_name
 validation code: |
   if x.in_values.new_item_name in x.in_values.complete_elements().keys():
-    validation_error(f'You already told us about your <strong>{ x.in_values.new_item_name }</strong> that pay { currency( x.in_values[ x.in_values.new_item_name ].value )}. Pick a different name.')
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.in_values.new_item_name, x.in_values.new_item_name) }</strong> that pay { currency( x.in_values[ x.in_values.new_item_name ].value )}. Pick a different name.')
 ---
 id: other income value
 generic object: ALItemizedJob
 question: |
-  What do you get paid for ${ x.in_values[i] } in your ${ x.name } job?
+  What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
 fields:
   - Amount: x.in_values[i].value
     datatype: currency
   - Do you have another source of income?: x.in_values.there_is_another
     datatype: yesnoradio
 ---
-id: other deduction name
+id: other reduction name
 generic object: ALItemizedJob
 question: |
   Other deductions
 subquestion: |
-  You've already told us about your income from **${comma_and_list( x.out_values.complete_elements() )}**.
+  You've already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
 fields:
   - Deduction name: x.out_values.new_item_name
 validation code: |
   if x.out_values.new_item_name in x.out_values.complete_elements().keys():
-    validation_error(f'You already told us about your <strong>{ x.out_values.new_item_name }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
----
-id: other income value
-generic object: ALItemizedJob
-question: |
-  What do you get paid for ${ x.in_values[i] } in your ${ x.name } job?
-fields:
-  - Amount: x.in_values[i].value
-    datatype: currency
-  - Do you have another source of income?: x.in_values.there_is_another
-    datatype: yesnoradio
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.out_values.new_item_name, x.out_values.new_item_name) }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
 ---
 id: other reduction value
 generic object: ALItemizedJob
 question: |
-  What do you get paid for ${ x.out_values[i] } in your ${ x.name } job?
+  What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
 fields:
   - Amount: x.out_values[i].value
     datatype: currency
@@ -385,8 +375,8 @@ subquestion: |
   Two different ways of printing money coming in:
   
   % for name, item in itemized_job.in_values.complete_elements().items():
-  * **${ name } per month:** ${ currency(itemized_job.total( source=name, period_to_use=12 )) }
-  * **${ name } per week:** ${ currency(itemized_job.item_amount( item, period_to_use=52 )) }
+  * **${ job_items_names.get(name, name) } per month:** ${ currency(itemized_job.total( source=name, period_to_use=12 )) }
+  * **${ job_items_names.get(name, name) } per week:** ${ currency(itemized_job.item_amount( item, period_to_use=52 )) }
   % endfor
   
   ---
@@ -423,8 +413,8 @@ subquestion: |
   Two different ways of printing money coming in:
   
   % for name, item in one_itemized_job.in_values.complete_elements().items():
-  * **${ name } per month:** ${ currency(one_itemized_job.total( source=name, period_to_use=12 )) }
-  * **${ name } per week:** ${ currency(one_itemized_job.item_amount( item, period_to_use=52 )) }
+  * **${ job_items_names.get(name, name) } per month:** ${ currency(one_itemized_job.total( source=name, period_to_use=12 )) }
+  * **${ job_items_names.get(name, name) } per week:** ${ currency(one_itemized_job.item_amount( item, period_to_use=52 )) }
   % endfor
   
   % endfor
@@ -549,4 +539,26 @@ comment: |
   ---
   
   % endif
+---
+depends on:
+  - user_language
+language: en
+variable name: job_items_names
+data:
+  full time: Full time wages
+  part time: Part time wages
+  tips: Tips
+  insurance: Insurance
+  federal_taxes: Federal taxes
+---
+depends on:
+  - user_language
+language: es
+variable name: job_items_names
+data:
+  full time: salario del el trabajo de tiempo completo
+  part time: salario del el trabajo de medio tiempo
+  tips: Propinas
+  insurance: Seguro
+  federal_taxes: Impuestos federales
 ---
