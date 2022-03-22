@@ -8,7 +8,7 @@ import docassemble.base.functions
 import json
 
 
-def flatten(listname,index=1):
+def flatten(listname, index=1):
     """
     Return just the nth item in an 2D list. Intended to use for multiple choice
     option lists in Docassemble. e.g., flatten(asset_source_list()) will return
@@ -43,7 +43,7 @@ def income_period(index):
 
 docassemble.base.functions.update_language_function('*', 'period_list', income_period_list)
 
-def recent_years(years=15, order='descending',future=1):
+def recent_years(years=15, order='descending', future=1):
     """
     Returns a list of the most recent years, continuing into the future.
     Defaults to most recent 15 years+1. Useful to populate a combobox of years
@@ -53,9 +53,9 @@ def recent_years(years=15, order='descending',future=1):
     """
     now = datetime.datetime.now()
     if order=='ascending':
-        return list(range(now.year-years,now.year+future,1))
+        return list(range(now.year-years, now.year+future, 1))
     else:
-        return list(range(now.year+future,now.year-years,-1))
+        return list(range(now.year+future, now.year-years, -1))
 
 def asset_source_list() :
     """Returns a list of asset sources for a multiple choice dropdown."""
@@ -146,7 +146,6 @@ class ALIncome(PeriodicValue):
     An income must have a `.period` and, if needed, `.hourly_rate` and
     `.hours_per_period` or `value`.
     """
-    # Q: It's actually the value per period. "amount" isn't super clear. Change name?
     def amount(self, period_to_use=1):
         """Returns the income over the specified period_to_use."""
         if hasattr(self, 'is_hourly') and self.is_hourly:
@@ -222,6 +221,7 @@ class ALIncomeList(DAList):
                             result += Decimal(item.amount(period_to_use=period_to_use))
         return result
     
+    # Name: to_json_string? json.dumps returns str right? Don't we want to just give them a JSON-compatible dict and let them prety print it their own way?
     def to_json(self):
         """
         Returns an income list suitable for Legal Server API. Items must have
@@ -582,7 +582,7 @@ class ALItemizedJob(DAObject):
         Given an item and an period_to_use, returns the value accumulated
         by the item for that period_to_use.
         
-        params
+        @params
         arg item {_ALItemizedValue} Object containing the value and other props
             for an "in" or "out" ALItemizedJob item.
         kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
@@ -665,7 +665,7 @@ class ALItemizedJob(DAObject):
         so jobs/items can be normalized to each other easily (instead of using
         their own periods by default).
         
-        params
+        @params
         kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
@@ -691,7 +691,7 @@ class ALItemizedJob(DAObject):
         jobs/items can be normalized to each other easily (instead of using
         their own periods by default).
         
-        params
+        @params
         kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
@@ -714,7 +714,7 @@ class ALItemizedJob(DAObject):
         period_to_use (1 for yearly, 12 for monthly, etc). Default frequency value
         of 1 so all jobs can be normalized.
         
-        params
+        @params
         kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
             year for compatibility with PeriodicFinancialList class. E.g, to
             express hours/week, use 52.
@@ -788,20 +788,19 @@ class ALItemizedJob(DAObject):
         # Q: Is there a safe value to return if it's not hourly?
         return round((float(self.hours_per_period) * float(self.period)) / float(period_to_use))
     
-    # Name: to_json_string? json.dumps returns str right? Don't we want to just give them a JSON-compatible dict and let them prety print it their own way?
-    def to_json(self):
-        """
-        Returns an itemized job's dictionary suitable for Legal Server API.
-        # Q: I couldn't find Legal Server's API for this. Link? Does this need to be a string? If so, how do we handle this with .to_json of itemized job list?
-        """
-        return {
-          "name": self.name,
-          "frequency": float(self.period),
-          "gross": float(self.gross_amount(period_to_use=self.period)),
-          "net": float(self.net_amount(period_to_use=self.period)),
-          "in_values": self.items_json(self.in_values),
-          "out_values": self.items_json(self.out_values)
-        }
+    #def to_json(self):
+    #    """
+    #    Returns an itemized job's dictionary suitable for Legal Server API.
+    #    # Q: I couldn't find Legal Server's API for this. Link? Does this need to be a string? If so, how do we handle this with .to_json of itemized job list?
+    #    """
+    #    return {
+    #      "name": self.name,
+    #      "frequency": float(self.period),
+    #      "gross": float(self.gross_amount(period_to_use=self.period)),
+    #      "net": float(self.net_amount(period_to_use=self.period)),
+    #      "in_values": self.items_json(self.in_values),
+    #      "out_values": self.items_json(self.out_values)
+    #    }
     
     def items_json(self, item_dict):
         """
@@ -940,6 +939,6 @@ class ALItemizedJobList(DAList):
           total += job.net_amount(period_to_use=period_to_use, source=source)
         return total
     
-    def to_json(self):
-        """Creates line item list suitable for Legal Server API."""
-        return [job.to_json() for job in self.elements]
+    #def to_json(self):
+    #    """Creates line item list suitable for Legal Server API."""
+    #    return [job.to_json() for job in self.elements]

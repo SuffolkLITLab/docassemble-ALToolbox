@@ -70,8 +70,8 @@ subquestion: |
 #  matches
 #  total
 #  market_value
-#  balance
-#  to_json
+#  balanceto_json
+#  
 
 fields:
   - no label: to_run
@@ -389,12 +389,6 @@ subquestion: |
   * **${ name } per week:** ${ currency(itemized_job.item_amount( item, period_to_use=52 )) }
   % endfor
   
-  **${itemized_job.name} json:**
-  
-  ```
-  ${ json.dumps(itemized_job.to_json()) }
-  ```
-  
   ---
   
   % endif
@@ -433,19 +427,7 @@ subquestion: |
   * **${ name } per week:** ${ currency(one_itemized_job.item_amount( item, period_to_use=52 )) }
   % endfor
   
-  **${one_itemized_job.name} json:**
-  
-  ```
-  ${ json.dumps(one_itemized_job.to_json()) }
-  ```
-  
   % endfor
-  
-  **JSON for itemized job list**
-  
-  ```
-  ${ json.dumps(itemized_job_list.to_json()) }
-  ```
   
   ---
   
@@ -496,10 +478,6 @@ comment: |
   
   % endfor
   
-  #### `itemized_job_list` JSON
-  
-  ${ itemized_job_list.to_json() }
-  
   ---
 
   % endif
@@ -533,10 +511,6 @@ comment: |
   % for item in itemized_job.line_items(transaction_type='deduction'):
   * ${ item.source }: ${currency( itemized_job.absolute_period_value( item, period_to_use=1 ))}
   % endfor
-  
-  #### `itemized_job` JSON
-  
-  ${ itemized_job.to_json() }
   
   ---
   
