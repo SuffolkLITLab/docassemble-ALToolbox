@@ -142,25 +142,24 @@ class ALIncome(PeriodicValue):
     incomes must include hours and period. Period is some demoninator of a year
     for compatibility with PeriodicFinancialList class. E.g, to express
     hours/week, use 52.
+
+    An income must have a `.period` and, if needed, `.hourly_rate` and
+    `.hours_per_period` or `value`.
     """
     # Q: It's actually the value per period. "amount" isn't super clear. Change name?
     def amount(self, period_to_use=1):
         """Returns the income over the specified period_to_use."""
-        ## Q: Conform to behavior of docassemble PeriodicValue?
-        #if not hasattr(self, 'value'):
-        #  return Decimal(0)
         if hasattr(self, 'is_hourly') and self.is_hourly:
+            # Should we change `hourly_rate` to `value` to conform with itemized job?
             return Decimal(self.hourly_rate * self.hours_per_period * self.period) / Decimal(period_to_use)
         else:
           return (Decimal(self.value) * Decimal(self.period)) / Decimal(period_to_use)
 
 
-# Q: Make income list so it can add up all income sources (jobs, assets, etc?). Give everything (inc. jobs) an `.amount()`. For jobs, it would be equivalent to .net_amount()
-# Q: Include prev classes? [Yes, mostly copy/paste]
 class ALIncomeList(DAList):
     """
     Represents a filterable DAList of income items, each of which has an
-    associated period or hourly wages.
+    associated period or hourly wages. All items must have a `.amount()`
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -176,9 +175,6 @@ class ALIncomeList(DAList):
                 sources.add(item.source)
         return sources
 
-    # Q: Instead, require `source` to always be a list? They just have
-    # to put brackets around the item at worst. Same question for all
-    # other locations.
     def matches(self, source):
         """
         Returns an ALIncomeList consisting only of elements matching the
@@ -200,13 +196,12 @@ class ALIncomeList(DAList):
         also specify one `owner`.
         """
         # Q: can `owner` be a list? I see that `.owners()` returns a set
+        # Q: Should this allow the user to filter _just_ by the `owner` as well if they include just the `owner`?
         self._trigger_gather()
         result = Decimal(0)
         if period_to_use == 0:
             return result
         if source is None:
-            # Q: Should this allow the user to filter _just_ by the `owner`
-            # as well if they include just the `owner`?
             for item in self.elements:
                 result += Decimal(item.amount(period_to_use=period_to_use))
         elif isinstance(source, list):
@@ -215,7 +210,7 @@ class ALIncomeList(DAList):
                     if owner is None: # if we don't care who the owner is
                         result += Decimal(item.amount(period_to_use=period_to_use))
                     else:
-                        if not (isinstance(owner, DAEmpty)) and item.owner == owner:
+                        if not (isinstance(owner, DAEmpty)) and hasattr(item, 'owner') and item.owner == owner:
                             result += Decimal(item.amount(period_to_use=period_to_use))
         else:
             for item in self.elements:
@@ -223,41 +218,40 @@ class ALIncomeList(DAList):
                     if owner is None:
                         result += Decimal(item.amount(period_to_use=period_to_use))
                     else:
-                        if not (isinstance(owner, DAEmpty)) and item.owner == owner:
+                        if not (isinstance(owner, DAEmpty)) and hasattr(item, 'owner') and item.owner == owner:
                             result += Decimal(item.amount(period_to_use=period_to_use))
         return result
     
     def to_json(self):
-        """Returns an income list suitable for Legal Server API."""
-        return [{
+        """
+        Returns an income list suitable for Legal Server API. Items must have
+        a `.source` attribute.
+        """
+        return json.dumps([{
           "source": income.source,
-          # Q: Should `frequency` be `period`?
           "frequency": float(income.period),
-          # Q: shouldn't this use `amount()`? [what does this second question mean? ->] Is this why period needs to default to 1?
-          # Q: Actually, in docassemble, `.amount()` always defaults to a period of 1, so if this is `amount`, it would use a year as a period, so maybe this really should be called `value` instead.
           "value": income.value
-        } for income in self.elements]
+        } for income in self.elements])
 
 
 class ALJob(ALIncome):
     """
-    Represents a job that may be hourly or pay-period based. If non-hourly, may
-    specify gross and net income amounts. This is a more common way of reporting
-    income than ALItemizedJob.
+    Represents a job that may be hourly or pay-period based. This is a more
+    common way of reporting income than ALItemizedJob.
     """
     def gross_amount(self, period_to_use=1):
-      """Gross amount is identical to ALIncome amount."""
+      """
+      Gross amount is identical to ALIncome amount.
+      period_to_use is some demoninator of a year for compatibility with
+      PeriodicFinancialList class. E.g, to express hours/week, use 52.
+      """
       return self.amount(period_to_use=period_to_use)
     
-    # Q: Not sure of the name, but something like `net_value` or
-    # `net_amount` seems indistinguishable from `.net`. Maybe
-    # there should be `payment` and `deductions` and `.net()`
-    # like ALItemizedJob
     def net_amount(self, period_to_use=1):
       """
       Returns the net amount provided by the user (e.g. money in minus money
       out) for the time period_to_use. Only applies if value is non-hourly.
-      Period is some demoninator of a year for compatibility with
+      period_to_use is some demoninator of a year for compatibility with
       PeriodicFinancialList class. E.g, to express hours/week, use 52.
       """
       return (Decimal(self.net) * Decimal(self.period)) / Decimal(period_to_use)
@@ -333,8 +327,8 @@ class ALJobList(ALIncomeList):
 class ALAsset(ALIncome):
     """Like income but the `value` attribute is optional."""
     def amount(self, period_to_use=1):
-      if not hasattr(self, 'value'):
-        return 0
+      if not hasattr(self, 'value') or self.value == '':
+        return Decimal(0)
       else:
         return super(ALAsset, self).amount(period_to_use=period_to_use)
 
@@ -414,14 +408,8 @@ class ALVehicleList(ALAssetList):
 class ALSimpleValue(DAObject):
     """
     Like a Value object, but no fiddling around with .exists attribute because
-    it's designed to store in a list, not a dictionary.
+    this is designed to be stored in a list, not a dictionary.
     """
-    # Q: "it's designed to store" means "because ALSimpleValue is a list instead
-    # of a dictionary? Or because ALSimpleValueList is? Maybe "to be stored"?
-    # Q: add a `.delta()` that just returns positive or negative 1 depending on item?
-    
-    # Q: da `period` is not necessarily a yearly values while ours are yearly values, so maybe we can take the opportunity to come up with a more appropriate way to refer to ours
-    # Q: da `amount` is not based on a yearly period, but an undetermined period, so maybe this is a similar opportunity to use our own name.
     def amount(self):
         """
         If desired, to use as a ledger, values can be signed. Setting
@@ -430,11 +418,12 @@ class ALSimpleValue(DAObject):
         """
         # Q: Why does `ALSimpleValue.amount()` not use Decimal?
         if hasattr(self, 'transaction_type'):
-            return (self.value * -1) if (self.transaction_type == 'expense') else self.value
+            return Decimal(self.value * -1) if (self.transaction_type == 'expense') else Decimal(self.value)
         else:
-            return self.value
+            return Decimal(self.value)
 
     def __str__(self):
+        """Returns own `.amount()` as string, not own name."""
         return str(self.amount())
 
 
@@ -490,10 +479,10 @@ class ALLedger(ALValueList):
         Sort the ledger by date, then add a running total to each ledger entry.
         """
         self.elements.sort(key=lambda y: y.date)
-        running_total = 0
+        running_total = Decimal(0)
         for entry in self.elements:
-            running_total += entry.amount()
-            entry.running_total = running_total
+            running_total += Decimal(entry.amount())
+            entry.running_total = Decimal(running_total)
 
 
 class _ALItemizedValue(DAObject):
