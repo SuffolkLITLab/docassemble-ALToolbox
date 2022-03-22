@@ -267,24 +267,26 @@ class ALJob(ALIncome):
 
 class ALJobList(ALIncomeList):
     """
-    Represents a list of ALJobs. Adds the `.net_amount()` and `.gross_amount()`
+    Represents a list of ALJobs. Adds the `.gross_total()` and `.net_total()`
     methods to the ALIncomeList class. It's a more common way of reporting
-    income as opposed to ALItemizedJobList.
+    income than ALItemizedJobList.
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)     
         self.object_type = ALJob
     
-    def gross_amount(self, period_to_use=1, source=None):
+    def gross_total(self, period_to_use=1, source=None):
         """
-        Gross amount is identical to ALIncome amount, except it adds up all
-        ALJobs it contains and filters them by `source`, which can be a string
-        or a list.
+        Identical to ALIncome amount, except it adds up all ALJobs it contains
+        and filters them by `source`, which can be a string or a list.
+
+        `period_to_use` is some demoninator of a year for compatibility with
+        PeriodicFinancialList class. E.g, to express hours/week, use 52.
         """
         self._trigger_gather()
-        result = 0
+        result = Decimal(0)
         if period_to_use == 0:
-            return(result)
+            return result
         if source is None:
             for item in self.elements:
                 result += Decimal(item.gross_amount(period_to_use=period_to_use))
@@ -298,18 +300,19 @@ class ALJobList(ALIncomeList):
                     result += Decimal(item.gross_amount(period_to_use=period_to_use))
         return result
     
-    def net_amount(self, period_to_use=1, source=None):
+    def net_total(self, period_to_use=1, source=None):
         """
         Returns the net amount provided by the user (e.g. money in minus money
         out) for the time period_to_use for all jobs of the given `source` which
-        can be a string or a list. Only applies if value is non-hourly. Period
-        is some demoninator of a year for compatibility with
+        can be a string or a list. Only applies if value is non-hourly.
+
+        `period_to_use` is some demoninator of a year for compatibility with
         PeriodicFinancialList class. E.g, to express hours/week, use 52.
         """
         self._trigger_gather()
-        result = 0
+        result = Decimal(0)
         if period_to_use == 0:
-            return(result)
+            return result
         if source is None:
             for item in self.elements:
                 result += Decimal(item.net_amount(period_to_use=period_to_use))
@@ -325,7 +328,7 @@ class ALJobList(ALIncomeList):
 
 
 class ALAsset(ALIncome):
-    """Like income but the `value` attribute is optional."""
+    """Like ALIncome but the `value` attribute is optional."""
     def amount(self, period_to_use=1):
       if not hasattr(self, 'value') or self.value == '':
         return Decimal(0)
@@ -339,7 +342,7 @@ class ALAssetList(ALIncomeList):
       self.object_type = ALAsset
     
     def market_value(self, source=None):
-        """Returns the total market value of values in the list."""
+        """Returns the total `.market_value` of items in the list."""
         result = Decimal(0)
         for item in self.elements:
             if source is None:
@@ -352,8 +355,8 @@ class ALAssetList(ALIncomeList):
                     result += Decimal(item.market_value)
         return result
     
-    # Q: Does this need to work per period?
     def balance(self, source=None):
+        """Returns the total `.balance` of items in the list."""
         self._trigger_gather()
         result = Decimal(0)
         for item in self.elements:
