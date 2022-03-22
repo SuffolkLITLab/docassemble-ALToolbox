@@ -1,7 +1,8 @@
 # Based on https://github.com/GBLS/docassemble-income/blob/master/docassemble/income/income.py
 
-from docassemble.base.util import DAObject, DAList, DAOrderedDict, PeriodicValue, DAEmpty, Individual, comma_list, log
+from docassemble.base.util import DAObject, DAList, DAOrderedDict, PeriodicValue, DAEmpty, Individual, comma_list, log, object_name_convert
 from decimal import Decimal
+import re
 import datetime
 import docassemble.base.functions
 import json
@@ -143,23 +144,23 @@ class ALIncome(PeriodicValue):
     hours/week, use 52.
     """
     # Q: It's actually the value per period. "amount" isn't super clear. Change name?
-    def amount(self, period=1):
-        """Returns the income over the specified period."""
+    def amount(self, period_to_use=1):
+        """Returns the income over the specified period_to_use."""
         ## Q: Conform to behavior of docassemble PeriodicValue?
         #if not hasattr(self, 'value'):
         #  return Decimal(0)
         if hasattr(self, 'is_hourly') and self.is_hourly:
-            return Decimal(self.hourly_rate * self.hours_per_period * self.period) / Decimal(period)
+            return Decimal(self.hourly_rate * self.hours_per_period * self.period) / Decimal(period_to_use)
         else:
-          return (Decimal(self.value) * Decimal(self.period)) / Decimal(period)
+          return (Decimal(self.value) * Decimal(self.period)) / Decimal(period_to_use)
 
 
-# Q: Make income list so it can add up all income sources (jobs, assets, etc?)
+# Q: Make income list so it can add up all income sources (jobs, assets, etc?). Give everything (inc. jobs) an `.amount()`. For jobs, it would be equivalent to .net_amount()
+# Q: Include prev classes? [Yes, mostly copy/paste]
 class ALIncomeList(DAList):
     """
     Represents a filterable DAList of income items, each of which has an
     associated period or hourly wages.
-    # Q: Give everything (inc. jobs) an `.amount()`. For jobs, it would be equivalent to .net_amount()
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -191,7 +192,7 @@ class ALIncomeList(DAList):
         return ALIncomeList(elements = [item for item in self.elements if item.source in sources])
     
     # Names: .total() -> .total_amount() since it uses an annual frequency (unlike ValueList)?
-    def total(self, period=1, source=None, owner=None):
+    def total(self, period_to_use=1, source=None, owner=None):
         """
         Returns the total periodic value in the list, gathering the list items
         if necessary. You can specify a `source`, which may be a list, to only
@@ -201,29 +202,29 @@ class ALIncomeList(DAList):
         # Q: can `owner` be a list? I see that `.owners()` returns a set
         self._trigger_gather()
         result = Decimal(0)
-        if period == 0:
+        if period_to_use == 0:
             return result
         if source is None:
             # Q: Should this allow the user to filter _just_ by the `owner`
             # as well if they include just the `owner`?
             for item in self.elements:
-                result += Decimal(item.amount(period=period))
+                result += Decimal(item.amount(period_to_use=period_to_use))
         elif isinstance(source, list):
             for item in self.elements:
                 if item.source in source:
                     if owner is None: # if we don't care who the owner is
-                        result += Decimal(item.amount(period=period))
+                        result += Decimal(item.amount(period_to_use=period_to_use))
                     else:
                         if not (isinstance(owner, DAEmpty)) and item.owner == owner:
-                            result += Decimal(item.amount(period=period))
+                            result += Decimal(item.amount(period_to_use=period_to_use))
         else:
             for item in self.elements:
                 if item.source == source:
                     if owner is None:
-                        result += Decimal(item.amount(period=period))
+                        result += Decimal(item.amount(period_to_use=period_to_use))
                     else:
                         if not (isinstance(owner, DAEmpty)) and item.owner == owner:
-                            result += Decimal(item.amount(period=period))
+                            result += Decimal(item.amount(period_to_use=period_to_use))
         return result
     
     def to_json(self):
@@ -244,30 +245,30 @@ class ALJob(ALIncome):
     specify gross and net income amounts. This is a more common way of reporting
     income than ALItemizedJob.
     """
-    def gross_amount(self, period=1):
+    def gross_amount(self, period_to_use=1):
       """Gross amount is identical to ALIncome amount."""
-      return self.amount(period=period)
+      return self.amount(period_to_use=period_to_use)
     
     # Q: Not sure of the name, but something like `net_value` or
     # `net_amount` seems indistinguishable from `.net`. Maybe
     # there should be `payment` and `deductions` and `.net()`
     # like ALItemizedJob
-    def net_amount(self, period=1):
+    def net_amount(self, period_to_use=1):
       """
       Returns the net amount provided by the user (e.g. money in minus money
-      out) for the time period given. Only applies if value is non-hourly.
+      out) for the time period_to_use. Only applies if value is non-hourly.
       Period is some demoninator of a year for compatibility with
       PeriodicFinancialList class. E.g, to express hours/week, use 52.
       """
-      return (Decimal(self.net) * Decimal(self.period)) / Decimal(period)
+      return (Decimal(self.net) * Decimal(self.period)) / Decimal(period_to_use)
 
     def employer_name_address_phone(self):
         """Returns name, address and phone number of employer."""
         return self.employer + ': ' + self.employer_address + ', ' + self.employer_phone
 
-    def normalized_hours(self, period):
-        """Returns the number of hours worked in a given period."""
-        return (float(self.hours_per_period) * int(self.period)) / int(period)
+    def normalized_hours(self, period_to_use=1):
+        """Returns the number of hours worked in a given period_to_use."""
+        return (float(self.hours_per_period) * int(self.period)) / int(period_to_use)
 
 
 class ALJobList(ALIncomeList):
@@ -280,7 +281,7 @@ class ALJobList(ALIncomeList):
         super().init(*pargs, **kwargs)     
         self.object_type = ALJob
     
-    def gross_amount(self, period=1, source=None):
+    def gross_amount(self, period_to_use=1, source=None):
         """
         Gross amount is identical to ALIncome amount, except it adds up all
         ALJobs it contains and filters them by `source`, which can be a string
@@ -288,507 +289,54 @@ class ALJobList(ALIncomeList):
         """
         self._trigger_gather()
         result = 0
-        if period == 0:
+        if period_to_use == 0:
             return(result)
         if source is None:
             for item in self.elements:
-                result += Decimal(item.gross_amount(period=period))
+                result += Decimal(item.gross_amount(period_to_use=period_to_use))
         elif isinstance(source, list):
             for item in self.elements:
                 if item.source in source:
-                    result += Decimal(item.gross_amount(period=period))
+                    result += Decimal(item.gross_amount(period_to_use=period_to_use))
         else:
             for item in self.elements:
                 if item.source == source:
-                    result += Decimal(item.gross_amount(period=period))
+                    result += Decimal(item.gross_amount(period_to_use=period_to_use))
         return result
     
-    def net_amount(self, period=1, source=None):
+    def net_amount(self, period_to_use=1, source=None):
         """
         Returns the net amount provided by the user (e.g. money in minus money
-        out) for the time period given for all jobs of the given `source` which
+        out) for the time period_to_use for all jobs of the given `source` which
         can be a string or a list. Only applies if value is non-hourly. Period
         is some demoninator of a year for compatibility with
         PeriodicFinancialList class. E.g, to express hours/week, use 52.
         """
         self._trigger_gather()
         result = 0
-        if period == 0:
+        if period_to_use == 0:
             return(result)
         if source is None:
             for item in self.elements:
-                result += Decimal(item.net_amount(period=period))
+                result += Decimal(item.net_amount(period_to_use=period_to_use))
         elif isinstance(source, list):
             for item in self.elements:
                 if item.source in source:
-                    result += Decimal(item.net_amount(period=period))
+                    result += Decimal(item.net_amount(period_to_use=period_to_use))
         else:
             for item in self.elements:
                 if item.source == source:
-                    result += Decimal(item.net_amount(period=period))
+                    result += Decimal(item.net_amount(period_to_use=period_to_use))
         return result
-
-
-class _ALItemizedValue(DAObject):
-  """
-  A private class. An item in an ALItemizedJob item list. Here to provide a better
-  string value. An object created this way should only be accessed directly to get
-  its string. Its `amounts` have to be calculated in context of the ALItemizedJob
-  that contains it.
-  """
-  def init(self, *pargs, **kwargs):
-    super().init(*pargs, **kwargs)
-
-  def __str__(self):
-    """Return just the name of the object, instead of its whole path."""
-    # Q: How does this string value have access to the names of its containers? And is it possible to get other information about its containers in a similar way?
-    # Also, there must be a better way to do this, right?
-    orig_name = self.object_name()
-    new_name = orig_name.replace( 'out values in the itemized job', '' )
-    new_name = new_name.replace( 'in values in the itemized job', '' )
-    return new_name
-
-
-class ALItemizedJob(DAObject):
-    """
-    Represents a job that can have multiple sources of earned income and
-    deductions. It may be hourly or pay-period based. This is a less common way
-    of reporting income than a plain ALJob.
-    
-    attribs:
-    .period {str} Actually a number, as a string, of the annual frequency of the
-        job.
-    .is_hourly {bool} Whether the user gets paid hourly for the job.
-    .hours_per_period {int} If the job is hourly, how many hours the user works
-        per period.
-    .employer {Individual} Individual assumed to have an address and name.
-    .in_values {DAOrderedDict} Dict of _ALItemizedValues of money coming in. Use
-        ALItemizedJob methods to calcuate amounts.
-    .out_values {DAOrderedDict} Dict of _ALItemizedValues of money going out.
-        Use ALItemizedJob methods to calcuate amounts.
-    """
-    """
-    Notes:
-    # Q: Has these in common with ALIncomeList: .total(), .to_json(). I don't want to provide individual items with .matches() because directly using individual items themselves should be avoided. Only their str() and .value is reliable. ALItemizedJob methods should be used for other needs.
-    
-    # Look at needs in SSI interview (https://github.com/nonprofittechy/docassemble-ssioverpaymentwaiver)
-    # `amount` is in docassemble. not sure it means quite the same thing. period doesn't quite either.
-    
-    Names and explanations of job in/out sources
-    # in: commission, bonus, hourly wage (wages?), non-hourly wages (salary?), overtime, tips
-    # out: deductions(?), garnishments, dues, insurance, federal taxes, state taxes
-    # https://fingercheck.com/the-difference-between-a-paycheck-and-a-pay-stub/
-    # "Deductions" definition: the amounts subtracted or withheld from the total pay, including the income tax percentage of an employee’s gross wages.
-    # Social security and Medicare are deducted based on the income over the set threshold.
-    # Other deductions can include state and local income taxes, employee 401K contributions, insurance payments, profit sharing, union dues, garnishments and unemployment insurance etc.
-    """
-    """
-    Requirements:
-    Implemented:
-    - A job can be hourly
-    - Despite an hourly job, some individual items must be calcuated
-      using the whole period
-    - Some items will have their own periods
-    - Devs need to be able to have different types of job base_pay (e.g.
-      full time, part time) that they must be able to access separately
-    - Devs may need to total amounts same names across different jobs (e.g.
-      tips for all jobs, etc.)
-    - need total in/income and total out/deductions
-    - Users must be able to add arbitrary in/out items for a job
-    Unsure:
-    - get jobs by attributes, total by job attribute. devs can do this themselves by:
-        da filter by attribute (raises exception)
-        list comprehension
-        Unclear if this is to get line_item in all jobs or to get jobs themselves by attribute. Think this was one of the "part time" vs. "full time" conversations.
-    # Q: Allow multiple "sources" per item, so an item can be both "taxes" and "federal taxes"? Devs can always filter the names themselves, so maybe not MVP
-    """
-    def init(self, *pargs, **kwargs):
-        super().init(*pargs, **kwargs)
-        if not hasattr(self, 'employer'):
-          self.initializeAttribute('employer', Individual)
-        # Q: Use complete_attribute = "value" for in/out items?
-        # Money coming in
-        # Names: in_values -> values_in, money_in, income, incomes
-        if not hasattr(self, 'in_values'):
-          self.initializeAttribute('in_values', DAOrderedDict.using(object_type=_ALItemizedValue))
-        # Money being taken out
-        # Names: in_values -> values_out, money_out, deductions ("an amount that you can use to reduce your income-tax liability")
-        if not hasattr(self, 'out_values'):
-          self.initializeAttribute('out_values', DAOrderedDict.using(object_type=_ALItemizedValue))
-    
-    # Names: change .period to .frequency or .annual_frequency? Or job has a period while asking for `amount` has a frequency?
-    # Names: divided_by = 52, annual_frequency=52/desired_frequency
-    # Q: Allow `line_item`/`item` to be a string (source/id name)?
-    # Names: line_item_period_value? item_period_value?
-    def item_amount(self, item, period=1):
-        """
-        Given an item and an period, returns the value accumulated
-        by the item for that period.
-        
-        params
-        arg item {_ALItemizedValue} Object containing the value and other props
-            for an "in" or "out" ALItemizedJob item.
-        kwarg period {str | num}  Default is 1. Some demoninator of a
-            year for compatibility with PeriodicFinancialList class. E.g, to
-            express hours/week, use 52.
-        """
-        if period == 0:
-          return Decimal(0)
-
-        own_period = self.period
-        if hasattr(item, 'period') and item.period:
-          own_period = item.period
-
-        is_hourly = False
-        # Override if item should be calculated hourly (like wages)
-        # Names: is_hourly -> calculate_hourly (for individual items)
-        if self.is_hourly and hasattr(item, 'is_hourly'):
-          is_hourly = item.is_hourly
-
-        # Conform to behavior of docassemble PeriodicValue
-        value = Decimal(0)
-        if hasattr(item, 'value'):
-          value = Decimal(item.value)
-
-        # Use the appropriate cacluation
-        if is_hourly:
-          return (value * Decimal(self.hours_per_period) * Decimal(own_period)) / Decimal(period)
-        else:
-          return (value * Decimal(own_period)) / Decimal(period)
-    
-    # Q: What aliases would be useful? We need gross and incomes, apparently. What else?
-    # ---
-    # In amount aliases
-    # ---
-    def total_in(self, period=1, source=None):
-        """Alias for ALItemizedJob.gross_amount."""
-        return self.gross_amount(period=period, source=source)
-    def in_amount(self, period=1, source=None):
-        """Alias for ALItemizedJob.gross_amount."""
-        return self.gross_amount(period=period, source=source)
-    def incomes(self, period=1, source=None):
-        """Alias for ALItemizedJob.gross_amount."""
-        return self.gross_amount(period=period, source=source)
-    
-    # ---
-    # Out amount aliases
-    # ---
-    def out_amount(self, period=1, source=None):
-        """Alias for ALItemizedJob.total_out()."""
-        return self.total_out(period=period, source=source)
-    def deductions(self, period=1, source=None):
-        """
-        Alias for ALItemizedJob.total_out()
-        "Deductions" in the wrong word. In financial vocabulary, it technically
-        means amounts you can use to reduce your income-tax liability.
-        """
-        return self.total_out(period=period, source=source)
-    
-    # ---
-    # Net aliases
-    # ---
-    def total(self, period=1, source=None):
-        """Alias for ALItemizedJob.net_amount()."""
-        return self.net_amount(period=period, source=source)
-    def total_amount(self, period=1, source=None):
-        """Alias for ALItemizedJob.net_amount()."""
-        return self.net_amount(period=period, source=source)
-    
-    # ---
-    # Actual calculations
-    # ---
-    # Include filtering by name? So confused.
-    def gross_amount(self, period=1, source=None):
-        """
-        Returns the sum of positive values (payments) for a given pay period (1
-        for yearly, 12 for monthly, etc). Default frequency value of 1 (yearly)
-        so jobs/items can be normalized to each other easily (instead of using
-        their own periods by default).
-        
-        params
-        kwarg period {str | num}  Default is 1. Some demoninator of a
-            year for compatibility with PeriodicFinancialList class. E.g, to
-            express hours/week, use 52.
-        kwarg source {str or [str]} Name or list of names of desired item(s).
-        """
-        #self._trigger_gather()
-        #self.in_values._trigger_gather()
-        total = Decimal(0)
-        if period == 0:
-          return total
-        # Make sure we're always working with a list of sources (names?)
-        sources = self.source_to_list(source=source)
-        # Add up all money coming in from a source
-        for key, item in self.in_values.elements.items():
-          if key in sources:
-            total += self.item_amount(item, period=period)
-        return total
-    
-    def total_out(self, period=1, source=None):
-        """
-        Returns the sum of negative values for a given pay period (1 for yearly,
-        12 for monthly, etc). Default frequency value of 1 (yearly) so
-        jobs/items can be normalized to each other easily (instead of using
-        their own periods by default).
-        
-        params
-        kwarg period {str | num}  Default is 1. Some demoninator of a
-            year for compatibility with PeriodicFinancialList class. E.g, to
-            express hours/week, use 52.
-        kwarg source {str or [str]} Name or list of names of desired item(s).
-        """
-        total = Decimal(0)
-        if period == 0:
-          return total
-        # Make sure we're always working with a list of sources (names?)
-        sources = self.source_to_list(source=source)
-        # Add all the money going out
-        for key, item in self.out_values.elements.items():
-          if key in sources:
-            total += self.item_amount(item, period=period)
-        return total
-    
-    def net_amount(self, period=1, source=None):
-        """
-        Returns the net (payments minus deductions) value of the job for a given
-        pay period (1 for yearly, 12 for monthly, etc). Default frequency value
-        of 1 so all jobs can be normalized.
-        
-        params
-        kwarg period {str | num}  Default is 1. Some demoninator of a
-            year for compatibility with PeriodicFinancialList class. E.g, to
-            express hours/week, use 52.
-        kwarg source {str or [str]} Name or list of names of desired item(s).
-        """
-        # Cannot trigger gather for DAObject?
-        #self._trigger_gather()
-        #self.in_values._trigger_gather()
-        #self.out_values._trigger_gather()
-        total = Decimal(0)
-        if period == 0:
-          return total
-        # Make sure we're always working with a list of sources (names?)
-        sources = self.source_to_list(source=source)
-        # Add up all money coming in
-        for key, item in self.in_values.elements.items():
-          if key in sources:
-            total += self.item_amount(item, period=period)
-        # Subtract the money going out
-        for key, item in self.out_values.elements.items():
-          if key in sources:
-            total -= self.item_amount(item, period=period)
-        return total
-    
-    # Q: Should this be `name`, like an itemized job's name?
-    # Different signature to ALIncomeList `sources`
-    def source_to_list(self, source=None):
-        """
-        Given a string or list of strings, return a list of strings. If no
-        strings given, return a list of all keys in both the `in_values` and
-        `out_values` _ALItemizedValues.
-        """
-        # If not filtering by anything, get all possible sources
-        sources = []
-        if source is None:
-          sources = sources + [key for key in self.in_values.elements.keys()]
-          sources = sources + [key for key in self.out_values.elements.keys()]
-        elif isinstance(source, list):
-          sources = source
-        else:
-          sources = [source]
-        return sources
-    
-    ## Names: Should `source` be `id`? That only makes sense for jobs, not incomes/assets, so they then won't share an interface. Maybe `name`? Or do we need categories, not `id`s? In what situations would there be income values from the same "type"/`source`?
-    # Q/Names: Should `period` be a string that's the "name" of the period? Calling it just `period` is a bit confusing when the value is a number. e.g. `period = 12`, to me, doesn't shout out "monthly".
-    
-    def employer_name_address_phone(self):
-        """
-        Returns concatenation of employer name and, if they exist, employer
-        address and phone number.
-        """
-        employer_str = self.employer.name
-        info_list = []
-        has_address = hasattr( self.employer.address, 'address' ) and self.employer.address.address
-        has_number = hasattr( self.employer, 'phone_number' ) and self.employer.phone_number
-        # Create a list so we can take advantage of `comma_list` instead
-        # of doing further fiddly list manipulation
-        if has_address:
-          info_list.append( self.employer.address.on_one_line() )
-        if has_number:
-          info_list.append( self.employer.phone_number )
-        # If either exist, add a colon and the appropriate strings
-        if has_address or has_number:
-          employer_str = f'{ employer_str }: {comma_list( info_list )}'
-        return employer_str
-    
-    def normalized_hours(self, period):
-        """
-        Returns the number of hours worked in a given period for an hourly job.
-        """
-        # Q: Is there a safe value to return if it's not hourly?
-        return round((float(self.hours_per_period) * float(self.period)) / float(period))
-    
-    # Name: to_json_string? json.dumps returns str right? Don't we want to just give them a JSON-compatible dict and let them prety print it their own way?
-    def to_json(self):
-        """
-        Returns an itemized job's dictionary suitable for Legal Server API.
-        # Q: I couldn't find Legal Server's API for this. Link? Does this need to be a string? If so, how do we handle this with .to_json of itemized job list?
-        """
-        return {
-          "name": self.name,
-          "frequency": float(self.period),
-          "gross": float(self.gross_amount(period=self.period)),
-          "net": float(self.net_amount(period=self.period)),
-          "in_values": self.items_json(self.in_values),
-          "out_values": self.items_json(self.out_values)
-        }
-    
-    def items_json(self, item_dict):
-        """
-        Return a JSON version of the given dict of ALItemizedJob "in" or "out"
-        objects.
-        """
-        result = {}
-        for key in item_dict.true_values():
-          item = item_dict[key]
-          result[key] = {}
-          result[key]['value'] = item.value
-          # Q: Include defaults for all attributes?
-          if hasattr(item, 'is_hourly'):
-            result[key]['is_hourly'] = item.is_hourly
-          if hasattr(item, 'period'):
-            result[key]['period'] = item.period
-        return result
-
-
-class ALItemizedJobList(DAList):
-    """
-    Represents a list of jobs that can have both payments and money out. This is
-    a less common way of reporting income.
-    """
-    def init(self, *pargs, **kwargs):
-        super().init(*pargs, **kwargs)     
-        self.object_type = ALItemizedJob
-    
-    # Q: Do we want some way to have a running total?
-    # ---
-    # In amount aliases
-    # ---
-    def total_in(self, period=1, source=None):
-        """Alias for ALItemizedJobList.gross_amount()."""
-        return self.gross_amount(period=period, source=source)
-    def in_amount(self, period=1, source=None):
-        """Alias for ALItemizedJobList.gross_amount()."""
-        return self.gross_amount(period=period, source=source)
-    def incomes(self, period=1, source=None):
-        """Alias for ALItemizedJobList.gross_amount()."""
-        return self.gross_amount(period=period, source=source)
-      
-    # ---
-    # Out amount aliases
-    # ---
-    def out_amount(self, period=1, source=None):
-        """Alias for ALItemizedJobList.total_out()."""
-        return self.total_out(period=period, source=source)
-    def deductions(self, period=1, source=None):
-        """
-        Alias for ALItemizedJobList.total_out()
-        "Deductions" in the wrong word. In financial vocabulary, it technically
-        means amounts you can use to reduce your income-tax liability.
-        """
-        return self.total_out(period=period, source=source)
-    
-    # ---
-    # Net aliases
-    # ---
-    def total(self, period=1, source=None):
-        """Alias for ALItemizedJobList.net_amount()."""
-        return self.net_amount(period=period, source=source)
-    def total_amount(self, period=1, source=None):
-        """Alias for ALItemizedJobList.net_amount()."""
-        return self.net_amount(period=period, source=source)
-    
-    # ---
-    # Actual calculations
-    # ---
-    def gross_amount(self, period=1, source=None):
-        """
-        Return amount totals of money coming in for a specific source or sources
-        calculated using the desired annual frequency (monthly = 12 times per
-        year, etc).
-        
-        @params
-        kwarg: source {str, [str]} - Name or list of names of desired item(s) to
-            sum from every itemized job. E.g. ['tips', 'taxes']
-        kwarg: period {str | num}  Default is 1. Some demoninator of a
-            year for compatibility with PeriodicFinancialList class. E.g, to
-            express hours/week, use 52.
-        """
-        self._trigger_gather()
-        total = Decimal(0)
-        if period == 0:
-            return total
-        # Add all job gross amounts from particular sources
-        for job in self.elements:
-          total += job.gross_amount(period=period, source=source)
-        return total
-    
-    def total_out(self, period=1, source=None):
-        """
-        Return amount totals of money going out for a specific source or sources
-        calculated using the desired annual frequency (monthly = 12 times per
-        year, etc).
-        
-        @params
-        kwarg: source {str, [str]} - Name or list of names of desired item(s) to
-            sum from every itemized job. E.g. ['tips', 'taxes']
-        kwarg: period {str | num}  Default is 1. Some demoninator of a
-            year for compatibility with PeriodicFinancialList class. E.g, to
-            express hours/week, use 52.
-        """
-        self._trigger_gather()
-        total = Decimal(0)
-        if period == 0:
-          return total
-        # Add all the money going out for all jobs
-        for job in self.elements:
-          total += job.total_out(period=period, source=source)
-        return total
-    
-    def net_amount(self, period=1, source=None):
-        """
-        Return amount totals of all money for a specific source or sources
-        calculated using the desired annual frequency (monthly = 12 times per
-        year, etc).
-        
-        @params
-        kwarg: source {str, [str]} - Name or list of names of desired item(s) to
-            sum from every itemized job. E.g. ['tips', 'taxes']
-        kwarg: period {str | num}  Default is 1. Some demoninator of a
-            year for compatibility with PeriodicFinancialList class. E.g, to
-            express hours/week, use 52.
-        """
-        self._trigger_gather()
-        total = Decimal(0)
-        if period == 0:
-            return total
-        # Combine all the net amounts in all the jobs from particular sources
-        for job in self.elements:
-          total += job.net_amount(period=period, source=source)
-        return total
-    
-    def to_json(self):
-        """Creates line item list suitable for Legal Server API."""
-        return [job.to_json() for job in self.elements]
 
 
 class ALAsset(ALIncome):
     """Like income but the `value` attribute is optional."""
-    def amount(self, period=1):
+    def amount(self, period_to_use=1):
       if not hasattr(self, 'value'):
         return 0
       else:
-        return super(ALAsset, self).amount(period=period)
+        return super(ALAsset, self).amount(period_to_use=period_to_use)
 
 
 class ALAssetList(ALIncomeList):
@@ -946,3 +494,460 @@ class ALLedger(ALValueList):
         for entry in self.elements:
             running_total += entry.amount()
             entry.running_total = running_total
+
+
+class _ALItemizedValue(DAObject):
+  """
+  A private class. An item in an ALItemizedJob item list. Here to provide a better
+  string value. An object created this way should only be accessed directly to get
+  its string. Its `amounts` have to be calculated in context of the ALItemizedJob
+  that contains it.
+  """
+  def init(self, *pargs, **kwargs):
+    super().init(*pargs, **kwargs)
+
+  def __str__(self):
+    """Return just the name of the object, instead of its whole path."""
+    # Q: Can instanceName give access to the job? If so, can calculate its own `amount` 
+    name_end = re.sub( r"^.*\['", '', self.instanceName.split(".")[-1] )
+    isolated_name = re.sub( r"']$", '', name_end )
+    return isolated_name
+
+
+class ALItemizedJob(DAObject):
+    """
+    Represents a job that can have multiple sources of earned income and
+    deductions. It may be hourly or pay-period based. This is a less common way
+    of reporting income than a plain ALJob.
+    
+    attribs:
+    .period {str} Actually a number, as a string, of the annual frequency of the
+        job.
+    .is_hourly {bool} Whether the user gets paid hourly for the job.
+    .hours_per_period {int} If the job is hourly, how many hours the user works
+        per period.
+    .employer {Individual} Individual assumed to have an address and name.
+    .in_values {DAOrderedDict} Dict of _ALItemizedValues of money coming in. Use
+        ALItemizedJob methods to calcuate amounts.
+    .out_values {DAOrderedDict} Dict of _ALItemizedValues of money going out.
+        Use ALItemizedJob methods to calcuate amounts.
+    """
+    """
+    Notes:
+    # Q: Has these in common with ALIncomeList: .total(), .to_json(). I don't want to provide individual items with .matches() because directly using individual items themselves should be avoided. Only their str() and .value is reliable. ALItemizedJob methods should be used for other needs.
+    
+    # Look at needs in SSI interview (https://github.com/nonprofittechy/docassemble-ssioverpaymentwaiver)
+    # `amount` is in docassemble. not sure it means quite the same thing. period doesn't quite either.
+    
+    Names and explanations of job in/out sources
+    # in: commission, bonus, hourly wage (wages?), non-hourly wages (salary?), overtime, tips
+    # out: deductions(?), garnishments, dues, insurance, federal taxes, state taxes
+    # https://fingercheck.com/the-difference-between-a-paycheck-and-a-pay-stub/
+    # "Deductions" definition: the amounts subtracted or withheld from the total pay, including the income tax percentage of an employee’s gross wages.
+    # Social security and Medicare are deducted based on the income over the set threshold.
+    # Other deductions can include state and local income taxes, employee 401K contributions, insurance payments, profit sharing, union dues, garnishments and unemployment insurance etc.
+    """
+    """
+    Requirements:
+    Implemented:
+    - A job can be hourly
+    - Despite an hourly job, some individual items must be calcuated
+      using the whole period
+    - Some items will have their own periods
+    - Devs need to be able to have different types of job base_pay (e.g.
+      full time, part time) that they must be able to access separately
+    - Devs may need to total amounts same names across different jobs (e.g.
+      tips for all jobs, etc.)
+    - need total in/income and total out/deductions
+    - Users must be able to add arbitrary in/out items for a job
+    Unsure:
+    - get jobs by attributes, total by job attribute. devs can do this themselves by:
+        da filter by attribute (raises exception)
+        list comprehension
+        Unclear if this is to get line_item in all jobs or to get jobs themselves by attribute. Think this was one of the "part time" vs. "full time" conversations.
+    # Q: Allow multiple "sources" per item, so an item can be both "taxes" and "federal taxes"? Devs can always filter the names themselves, so maybe not MVP
+    """
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        if not hasattr(self, 'employer'):
+          self.initializeAttribute('employer', Individual)
+        # Q: Use complete_attribute = "value" for in/out items?
+        # Money coming in
+        # Names: in_values -> values_in, money_in, income, incomes
+        if not hasattr(self, 'in_values'):
+          self.initializeAttribute('in_values', DAOrderedDict.using(object_type=_ALItemizedValue))
+        # Money being taken out
+        # Names: in_values -> values_out, money_out, deductions ("an amount that you can use to reduce your income-tax liability")
+        if not hasattr(self, 'out_values'):
+          self.initializeAttribute('out_values', DAOrderedDict.using(object_type=_ALItemizedValue))
+    
+    # Names: change .period to .frequency or .annual_frequency? Or job has a period while asking for `amount` has a frequency?
+    # Names: divided_by = 52, annual_frequency=52/desired_frequency
+    # Q: Allow `line_item`/`item` to be a string (source/id name)?
+    # Names: line_item_period_value? item_period_value?
+    def item_amount(self, item, period_to_use=1):
+        """
+        Given an item and an period_to_use, returns the value accumulated
+        by the item for that period_to_use.
+        
+        params
+        arg item {_ALItemizedValue} Object containing the value and other props
+            for an "in" or "out" ALItemizedJob item.
+        kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
+            year for compatibility with PeriodicFinancialList class. E.g, to
+            express hours/week, use 52.
+        """
+        if period_to_use == 0:
+          return Decimal(0)
+
+        period = self.period
+        if hasattr(item, 'period') and item.period:
+          period = item.period
+
+        is_hourly = False
+        # Override if item should be calculated hourly (like wages)
+        # Names: is_hourly -> calculate_hourly (for individual items)
+        if self.is_hourly and hasattr(item, 'is_hourly'):
+          is_hourly = item.is_hourly
+
+        # Conform to behavior of docassemble PeriodicValue
+        value = Decimal(0)
+        if hasattr(item, 'value'):
+          value = Decimal(item.value)
+
+        # Use the appropriate cacluation
+        if is_hourly:
+          return (value * Decimal(self.hours_per_period) * Decimal(period)) / Decimal(period_to_use)
+        else:
+          return (value * Decimal(period)) / Decimal(period_to_use)
+    
+    # Q: What aliases would be useful? We need gross and incomes, apparently. What else?
+    # ---
+    # In amount aliases
+    # ---
+    def total_in(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJob.gross_amount."""
+        return self.gross_amount(period_to_use=period_to_use, source=source)
+    def in_amount(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJob.gross_amount."""
+        return self.gross_amount(period_to_use=period_to_use, source=source)
+    def incomes(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJob.gross_amount."""
+        return self.gross_amount(period_to_use=period_to_use, source=source)
+    def amount(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJob.gross_amount."""
+        return self.gross_amount(period_to_use=period_to_use, source=source)
+    
+    # ---
+    # Out amount aliases
+    # ---
+    def out_amount(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJob.total_out()."""
+        return self.total_out(period_to_use=period_to_use, source=source)
+    def deductions(self, period_to_use=1, source=None):
+        """
+        Alias for ALItemizedJob.total_out()
+        "Deductions" in the wrong word. In financial vocabulary, it technically
+        means amounts you can use to reduce your income-tax liability.
+        """
+        return self.total_out(period_to_use=period_to_use, source=source)
+    
+    # ---
+    # Net aliases
+    # ---
+    def total(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJob.net_amount()."""
+        return self.net_amount(period_to_use=period_to_use, source=source)
+    def total_amount(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJob.net_amount()."""
+        return self.net_amount(period_to_use=period_to_use, source=source)
+    
+    # ---
+    # Actual calculations
+    # ---
+    # Include filtering by name? So confused.
+    def gross_amount(self, period_to_use=1, source=None):
+        """
+        Returns the sum of positive values (payments) for a given pay period_to_use (1
+        for yearly, 12 for monthly, etc). Default frequency value of 1 (yearly)
+        so jobs/items can be normalized to each other easily (instead of using
+        their own periods by default).
+        
+        params
+        kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
+            year for compatibility with PeriodicFinancialList class. E.g, to
+            express hours/week, use 52.
+        kwarg source {str or [str]} Name or list of names of desired item(s).
+        """
+        #self._trigger_gather()
+        #self.in_values._trigger_gather()
+        total = Decimal(0)
+        if period_to_use == 0:
+          return total
+        # Make sure we're always working with a list of sources (names?)
+        sources = self.source_to_list(source=source)
+        # Add up all money coming in from a source
+        for key, item in self.in_values.elements.items():
+          if key in sources:
+            total += self.item_amount(item, period_to_use=period_to_use)
+        return total
+    
+    def total_out(self, period_to_use=1, source=None):
+        """
+        Returns the sum of negative values for a pay period_to_use (1 for yearly,
+        12 for monthly, etc). Default frequency value of 1 (yearly) so
+        jobs/items can be normalized to each other easily (instead of using
+        their own periods by default).
+        
+        params
+        kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
+            year for compatibility with PeriodicFinancialList class. E.g, to
+            express hours/week, use 52.
+        kwarg source {str or [str]} Name or list of names of desired item(s).
+        """
+        total = Decimal(0)
+        if period_to_use == 0:
+          return total
+        # Make sure we're always working with a list of sources (names?)
+        sources = self.source_to_list(source=source)
+        # Add all the money going out
+        for key, item in self.out_values.elements.items():
+          if key in sources:
+            total += self.item_amount(item, period_to_use=period_to_use)
+        return total
+    
+    def net_amount(self, period_to_use=1, source=None):
+        """
+        Returns the net (payments minus deductions) value of the job for a pay
+        period_to_use (1 for yearly, 12 for monthly, etc). Default frequency value
+        of 1 so all jobs can be normalized.
+        
+        params
+        kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
+            year for compatibility with PeriodicFinancialList class. E.g, to
+            express hours/week, use 52.
+        kwarg source {str or [str]} Name or list of names of desired item(s).
+        """
+        # Cannot trigger gather for DAObject?
+        #self._trigger_gather()
+        #self.in_values._trigger_gather()
+        #self.out_values._trigger_gather()
+        total = Decimal(0)
+        if period_to_use == 0:
+          return total
+        # Make sure we're always working with a list of sources (names?)
+        sources = self.source_to_list(source=source)
+        # Add up all money coming in
+        for key, item in self.in_values.elements.items():
+          if key in sources:
+            total += self.item_amount(item, period_to_use=period_to_use)
+        # Subtract the money going out
+        for key, item in self.out_values.elements.items():
+          if key in sources:
+            total -= self.item_amount(item, period_to_use=period_to_use)
+        return total
+    
+    # Q: Should this be `name`, like an itemized job's name?
+    # Different signature to ALIncomeList `sources`
+    def source_to_list(self, source=None):
+        """
+        Given a string or list of strings, return a list of strings. If no
+        strings given, return a list of all keys in both the `in_values` and
+        `out_values` _ALItemizedValues.
+        """
+        # If not filtering by anything, get all possible sources
+        sources = []
+        if source is None:
+          sources = sources + [key for key in self.in_values.elements.keys()]
+          sources = sources + [key for key in self.out_values.elements.keys()]
+        elif isinstance(source, list):
+          sources = source
+        else:
+          sources = [source]
+        return sources
+    
+    ## Names: Should `source` be `id`? That only makes sense for jobs, not incomes/assets, so they then won't share an interface. Maybe `name`? Or do we need categories, not `id`s? In what situations would there be income values from the same "type"/`source`?
+    # Q/Names: Should `period` be a string that's the "name" of the period? Calling it just `period` is a bit confusing when the value is a number. e.g. `period = 12`, to me, doesn't shout out "monthly".
+    
+    def employer_name_address_phone(self):
+        """
+        Returns concatenation of employer name and, if they exist, employer
+        address and phone number.
+        """
+        employer_str = self.employer.name
+        info_list = []
+        has_address = hasattr( self.employer.address, 'address' ) and self.employer.address.address
+        has_number = hasattr( self.employer, 'phone_number' ) and self.employer.phone_number
+        # Create a list so we can take advantage of `comma_list` instead
+        # of doing further fiddly list manipulation
+        if has_address:
+          info_list.append( self.employer.address.on_one_line() )
+        if has_number:
+          info_list.append( self.employer.phone_number )
+        # If either exist, add a colon and the appropriate strings
+        if has_address or has_number:
+          employer_str = f'{ employer_str }: {comma_list( info_list )}'
+        return employer_str
+    
+    def normalized_hours(self, period_to_use=1):
+        """
+        Returns the number of hours worked in a period_to_use for an hourly job.
+        """
+        # Q: Is there a safe value to return if it's not hourly?
+        return round((float(self.hours_per_period) * float(self.period)) / float(period_to_use))
+    
+    # Name: to_json_string? json.dumps returns str right? Don't we want to just give them a JSON-compatible dict and let them prety print it their own way?
+    def to_json(self):
+        """
+        Returns an itemized job's dictionary suitable for Legal Server API.
+        # Q: I couldn't find Legal Server's API for this. Link? Does this need to be a string? If so, how do we handle this with .to_json of itemized job list?
+        """
+        return {
+          "name": self.name,
+          "frequency": float(self.period),
+          "gross": float(self.gross_amount(period_to_use=self.period)),
+          "net": float(self.net_amount(period_to_use=self.period)),
+          "in_values": self.items_json(self.in_values),
+          "out_values": self.items_json(self.out_values)
+        }
+    
+    def items_json(self, item_dict):
+        """
+        Return a JSON version of the given dict of ALItemizedJob "in" or "out"
+        objects.
+        """
+        result = {}
+        for key in item_dict.true_values():
+          item = item_dict[key]
+          result[key] = {}
+          result[key]['value'] = item.value
+          # Q: Include defaults for all attributes?
+          if hasattr(item, 'is_hourly'):
+            result[key]['is_hourly'] = item.is_hourly
+          if hasattr(item, 'period'):
+            result[key]['period'] = item.period
+        return result
+
+
+class ALItemizedJobList(DAList):
+    """
+    Represents a list of jobs that can have both payments and money out. This is
+    a less common way of reporting income.
+    """
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)     
+        self.object_type = ALItemizedJob
+    
+    # Q: Do we want some way to have a running total?
+    # ---
+    # In amount aliases
+    # ---
+    def total_in(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJobList.gross_amount()."""
+        return self.gross_amount(period_to_use=period_to_use, source=source)
+    def in_amount(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJobList.gross_amount()."""
+        return self.gross_amount(period_to_use=period_to_use, source=source)
+    def incomes(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJobList.gross_amount()."""
+        return self.gross_amount(period_to_use=period_to_use, source=source)
+    def amount(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJobList.gross_amount()."""
+        return self.gross_amount(period_to_use=period_to_use, source=source)
+      
+    # ---
+    # Out amount aliases
+    # ---
+    def out_amount(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJobList.total_out()."""
+        return self.total_out(period_to_use=period_to_use, source=source)
+    def deductions(self, period_to_use=1, source=None):
+        """
+        Alias for ALItemizedJobList.total_out()
+        "Deductions" in the wrong word. In financial vocabulary, it technically
+        means amounts you can use to reduce your income-tax liability.
+        """
+        return self.total_out(period_to_use=period_to_use, source=source)
+    
+    # ---
+    # Net aliases
+    # ---
+    def total(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJobList.net_amount()."""
+        return self.net_amount(period_to_use=period_to_use, source=source)
+    def total_amount(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJobList.net_amount()."""
+        return self.net_amount(period_to_use=period_to_use, source=source)
+    
+    # ---
+    # Actual calculations
+    # ---
+    def gross_amount(self, period_to_use=1, source=None):
+        """
+        Return amount totals of money coming in for a specific source or sources
+        calculated using the desired annual frequency (monthly = 12 times per
+        year, etc).
+        
+        @params
+        kwarg: source {str, [str]} - Name or list of names of desired item(s) to
+            sum from every itemized job. E.g. ['tips', 'taxes']
+        kwarg: period_to_use {str | num}  Default is 1. Some demoninator of a
+            year for compatibility with PeriodicFinancialList class. E.g, to
+            express hours/week, use 52.
+        """
+        self._trigger_gather()
+        total = Decimal(0)
+        if period_to_use == 0:
+            return total
+        # Add all job gross amounts from particular sources
+        for job in self.elements:
+          total += job.gross_amount(period_to_use=period_to_use, source=source)
+        return total
+    
+    def total_out(self, period_to_use=1, source=None):
+        """
+        Return amount totals of money going out for a specific source or sources
+        calculated using the desired annual frequency (monthly = 12 times per
+        year, etc).
+        
+        @params
+        kwarg: source {str, [str]} - Name or list of names of desired item(s) to
+            sum from every itemized job. E.g. ['tips', 'taxes']
+        kwarg: period_to_use {str | num}  Default is 1. Some demoninator of a
+            year for compatibility with PeriodicFinancialList class. E.g, to
+            express hours/week, use 52.
+        """
+        self._trigger_gather()
+        total = Decimal(0)
+        if period_to_use == 0:
+          return total
+        # Add all the money going out for all jobs
+        for job in self.elements:
+          total += job.total_out(period_to_use=period_to_use, source=source)
+        return total
+    
+    def net_amount(self, period_to_use=1, source=None):
+        """
+        Return amount totals of all money for a specific source or sources
+        calculated using the desired annual frequency (monthly = 12 times per
+        year, etc).
+        
+        @params
+        kwarg: source {str, [str]} - Name or list of names of desired item(s) to
+            sum from every itemized job. E.g. ['tips', 'taxes']
+        kwarg: period_to_use {str | num}  Default is 1. Some demoninator of a
+            year for compatibility with PeriodicFinancialList class. E.g, to
+            express hours/week, use 52.
+        """
+        self._trigger_gather()
+        total = Decimal(0)
+        if period_to_use == 0:
+            return total
+        # Combine all the net amounts in all the jobs from particular sources
+        for job in self.elements:
+          total += job.net_amount(period_to_use=period_to_use, source=source)
+        return total
+    
+    def to_json(self):
+        """Creates line item list suitable for Legal Server API."""
+        return [job.to_json() for job in self.elements]

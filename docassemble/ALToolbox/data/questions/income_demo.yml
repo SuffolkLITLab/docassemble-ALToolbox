@@ -4,6 +4,11 @@ metadata:
 modules: 
   - .income
 ---
+comment: |
+  translation options:
+    - map dict/lookup from key to lang word. See https://github.com/nonprofittechy/docassemble-HousingCodeChecklist/blob/0cbfe02b29bbec66b8a2b925b36b3c67bb300e84/docassemble/HousingCodeChecklist/data/questions/language.yml#L41
+    - ???
+---
 objects:
   - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
@@ -145,8 +150,10 @@ code: |
   x.period
   x.in_values.complete_attribute = 'complete'
   x.out_values.complete_attribute = 'complete'
-  x.in_values["wages"].value
-  x.in_values["wages"].is_hourly = True
+  if x.is_part_time:
+    x.in_values["part time"].is_hourly = x.is_hourly
+  else:
+    x.in_values["full time"].is_hourly = x.is_hourly
   x.in_values.gather()
   x.out_values.gather()
   x.complete = True
@@ -175,8 +182,14 @@ generic object: ALItemizedJob
 question: |
     Enter info from your paystub for your ${ x.name } job
 fields:
-    - What are your wages for this job?: x.in_values['wages'].value
+    - What are your wages for this full time job?: x.in_values['full time'].value
       datatype: currency
+      show if:
+        code: x.is_part_time is False
+    - What are your wages for this part time job?: x.in_values['part time'].value
+      datatype: currency
+      show if:
+        code: x.is_part_time is True
     - What are your tips for this job?: x.in_values['tips'].value
       datatype: currency
       required: False
@@ -196,6 +209,8 @@ generic object: ALItemizedJob
 question: |
   Tell us about your ${ x.name }'s job hours
 fields:
+  - Is this a part time job: x.is_part_time
+    datatype: yesnoradio
   - Hourly or salary?: x.is_hourly
     input type: radio
     choices:
@@ -370,8 +385,8 @@ subquestion: |
   Two different ways of printing money coming in:
   
   % for name, item in itemized_job.in_values.complete_elements().items():
-  * **${ name } per month:** ${ currency(itemized_job.total( source=name, period=12 )) }
-  * **${ name } per week:** ${ currency(itemized_job.item_amount( item, period=52 )) }
+  * **${ name } per month:** ${ currency(itemized_job.total( source=name, period_to_use=12 )) }
+  * **${ name } per week:** ${ currency(itemized_job.item_amount( item, period_to_use=52 )) }
   % endfor
   
   **${itemized_job.name} json:**
@@ -390,32 +405,32 @@ subquestion: |
   Amounts totals:
   
   * **gross per year:** ${currency( itemized_job_list.gross_amount() )}
-  * **gross per month:** ${currency( itemized_job_list.gross_amount(period=12) )}
+  * **gross per month:** ${currency( itemized_job_list.gross_amount(period_to_use=12) )}
   * **net per year:** ${currency( itemized_job_list.net_amount() )}
-  * **net per week:** ${currency( itemized_job_list.net_amount(period=52) )}
+  * **net per week:** ${currency( itemized_job_list.net_amount(period_to_use=52) )}
   * **money out per year:** ${currency(itemized_job_list.total_out())}
   
-  The below only shows useful amounts when both "wages" and "federal_taxes" have amounts:
+  The below only shows useful amounts when both base pay and `federal_taxes` have amounts:
   
-  * **wages gross:** ${currency( itemized_job_list.gross_amount(source=['wages']) )}
-  * **wages and federal_taxes gross:** (same) ${currency( itemized_job_list.gross_amount(source=['wages', 'federal_taxes']) )} per year
-  * **wages net:** (same) ${currency( itemized_job_list.net_amount(source=['wages']) )} per year
-  * **wages and federal_taxes net:** ${currency( itemized_job_list.net_amount(source=['wages', 'federal_taxes']) )} per year
+  * **base pay gross:** ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
+  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+  * **base pay net:** (same) ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )} per year
+  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
   
   % for one_itemized_job in itemized_job_list:
   #### ${ one_itemized_job.name }
   
   * **gross:** ${ currency( one_itemized_job.gross_amount() ) }
-  * **gross:** ${ currency( one_itemized_job.gross_amount(period=12) ) } per month
+  * **gross:** ${ currency( one_itemized_job.gross_amount(period_to_use=12) ) } per month
   * **net:** ${currency( one_itemized_job.net_amount() )} per year
-  * **net:** ${currency( one_itemized_job.net_amount(period=52) )} per week
+  * **net:** ${currency( one_itemized_job.net_amount(period_to_use=52) )} per week
   * **money out per year:** ${currency(one_itemized_job.total_out())}
   
   Two different ways of printing money coming in:
   
   % for name, item in one_itemized_job.in_values.complete_elements().items():
-  * **${ name } per month:** ${ currency(one_itemized_job.total( source=name, period=12 )) }
-  * **${ name } per week:** ${ currency(one_itemized_job.item_amount( item, period=52 )) }
+  * **${ name } per month:** ${ currency(one_itemized_job.total( source=name, period_to_use=12 )) }
+  * **${ name } per week:** ${ currency(one_itemized_job.item_amount( item, period_to_use=52 )) }
   % endfor
   
   **${one_itemized_job.name} json:**
@@ -470,13 +485,13 @@ comment: |
   Money coming in:
   
   % for line_item in one_itemized_job.line_items(transaction_type='payment'):
-  * ${ line_item.source }: ${currency( one_itemized_job.period_value( line_item, period=1 ))}
+  * ${ line_item.source }: ${currency( one_itemized_job.period_value( line_item, period_to_use=1 ))}
   % endfor
   
   Money going out:
   
   % for line_item in one_itemized_job.line_items(transaction_type='deduction'):
-  * ${ line_item.source }: ${currency( one_itemized_job.absolute_period_value( line_item, period=1 ))}
+  * ${ line_item.source }: ${currency( one_itemized_job.absolute_period_value( line_item, period_to_use=1 ))}
   % endfor
   
   % endfor
@@ -510,13 +525,13 @@ comment: |
   Money coming in:
   
   % for item in itemized_job.line_items(transaction_type='payment'):
-  * ${ item.source }: ${currency( itemized_job.period_value( item, period=1 ))}
+  * ${ item.source }: ${currency( itemized_job.period_value( item, period_to_use=1 ))}
   % endfor
   
   Money going out:
   
   % for item in itemized_job.line_items(transaction_type='deduction'):
-  * ${ item.source }: ${currency( itemized_job.absolute_period_value( item, period=1 ))}
+  * ${ item.source }: ${currency( itemized_job.absolute_period_value( item, period_to_use=1 ))}
   % endfor
   
   #### `itemized_job` JSON
