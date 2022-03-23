@@ -1,7 +1,7 @@
 import re
 from .copy_button import *
 
-def display_template(template, scrollable=True, collapse=False, copy=False, class_name=None):   
+def display_template(template, scrollable=True, collapse=False, copy=False, class_name='bg-light'):   
   # 1. Initialize    
   if scrollable:
     scroll_class = 'scrollable-panel'
@@ -10,16 +10,12 @@ def display_template(template, scrollable=True, collapse=False, copy=False, clas
     scroll_class = ''
     adjust_height = f'onmouseover="this.style.height = (this.scrollHeight) + \'px\';"'       
 
-  if class_name is None:
-    class_name = ' bg-light'
-  else:
-    class_name = ' ' + class_name.strip()  
+  class_name = ' ' + class_name.strip()  
 
   the_id = re.sub(r'[^A-Za-z0-9]', '', template.instanceName)  
 
   # 2. If copiable, call copy_button_html() to generate the template content along with a copy button   
   if copy: 
-    text = ''
     text = copy_button_html(template, copy_template_block=True, scroll_class=scroll_class, style_class=class_name, adjust_height=adjust_height)  
 
     # 2.1 If collapsible, add collapsible elements to the output
