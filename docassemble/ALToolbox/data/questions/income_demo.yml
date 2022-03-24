@@ -14,14 +14,14 @@ objects:
   - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
       ask_number=True)
+  - aljob: ALJob
   - aljob_list: ALJobList.using(
       complete_attribute='complete',
       ask_number=True)
-  - aljob: ALJob
+  - alincome: ALIncome
   #- incomes: ALIncomeList.using(
   #    complete_attribute='complete',
   #    there_is_another=False)
-  #- income: ALIncome
 ---
 mandatory: True
 code: |
@@ -39,15 +39,14 @@ code: |
   if to_run['ALJobList'] or to_run['all']:
     aljob_list.gather()
   
+  if to_run['ALIncome'] or to_run['all']:
+    alincome.source = 'Some Income'
+    alincome.complete
+  
   #if to_run['ALIncomeList'] or to_run['all']:
   #  income_sources
   #  get_income_sources
   #  incomes.gather()
-  
-  #if to_run['ALIncome'] or to_run['all']:
-  #  income.source = 'Random Income'
-  #  income.value
-  #
   
   before_end_so_answers_are_saved
   end
@@ -58,21 +57,11 @@ question: |
 subquestion: |
   Before choosing what to test:
   
-  `ALItemizedJobList` covers all the same functionality as `ALItemizedJob`.
+  * `ALItemizedJobList` covers all the same functionality as `ALItemizedJob`.
+  * `ALJob` covers all the same functionality as `ALIncome`.
+  * `ALJobList` covers all the same functionality as `ALJob` and `ALIncome`.
   
-  `ALIncomeList` covers all the same functionality as `ALIncome`.
-  
-  
-# Other classes are testing ALIncomeList's also needs to test
-#  √ sources
-
-# ALIncomeList's also needs to test
-#  owners
-#  matches
-#  total
-#  market_value
-#  balanceto_json
-#  
+#  * `ALIncomeList` covers all the same functionality as `ALIncome`. 
 
 fields:
   - no label: to_run
@@ -82,12 +71,12 @@ fields:
       - All of the them: all
       #- ALSimpleValue: ALSimpleValue
       #- ALValueList: ALValueList
-      - ALItemizedJobList: ALItemizedJobList
       - ALItemizedJob: ALItemizedJob
+      - ALItemizedJobList: ALItemizedJobList
       - ALJob: ALJob
       - ALJobList: ALJobList
+      - ALIncome: ALIncome
       #- ALIncomeList: ALIncomeList
-      #- ALIncome: ALIncome
       #- ALLedger: ALLedger
       #- ALVehicle: ALVehicle
       #- ALVehicleList: ALVehicleList
@@ -297,6 +286,7 @@ code: |
 ---
 generic object: ALIncome
 code: |
+  x.source
   x.value
   x.complete = True
 ---
@@ -316,12 +306,17 @@ generic object: ALIncome
 question: |
   What how much do you get paid for ${ x.source }?
 fields:
-  - Amount: x.value
-    datatype: currency
+  - Is it hourly?: x.is_hourly
+    datatype: yesnoradio
   - Period: x.period
     input type: radio
     code: |
       income_period_list()
+  - How many hours do you work per period?: x.hours_per_period
+    datatype: number
+    show if: x.is_hourly
+  - Amount: x.value
+    datatype: currency
 ---
 # SHARED BY ALJob AND ALJobList
 ---
@@ -477,11 +472,20 @@ subquestion: |
   ---
   
   % endif
+  
+  % if to_run['ALIncome'] or to_run['all']:
+  ### A single ALIncome: ${ alincome.source }
+  
+  ${ alincome.output }
+  
+  ---
+  
+  % endif
 
 comment: |
   
   % if to_run['ALIncomeList'] or to_run['all']:
-  ## List of incomes
+  ### List of incomes
   
   % for one_income in incomes:
   * ${ one_income.source }: ${ currency( one_income.value ) } ${ one_income.period } times per year
@@ -490,18 +494,11 @@ comment: |
   ---
   
   % endif
-  
-  % if to_run['ALIncome'] or to_run['all']:
-  ## One income
-  
-  ${ income.source } income: ${ currency( income.value ) } ${ income.period } times per year
-  
-  ---
-  
-  % endif
 ---
-template: x.output
+# OUTPUT TEMPLATES
+---
 generic object: ALItemizedJob
+template: x.output
 content: |
   **Employer info:**[BR]
   ${ x.employer_name_address_phone() }
@@ -534,8 +531,16 @@ content: |
   **${ x.name }** is not hourly
   % endif
 ---
+generic object: ALIncome
 template: x.output
+content: |
+  **Amount:**
+  
+  * Per year: ${ currency( x.amount() ) }
+  * Fortnightly: ${ currency( x.amount(period_to_use=26) ) }
+---
 generic object: ALJob
+template: x.output
 content: |
   **Employer info:**[BR]
   ${ x.employer_name_address_phone() }
