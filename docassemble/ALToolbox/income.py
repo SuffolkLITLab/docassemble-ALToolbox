@@ -161,8 +161,7 @@ class ALIncomeList(DAList):
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
-        self.elements = list()
-        if not hasattr(self, 'object_type'):
+        if self.object_type is None:
             self.object_type = ALIncome
     
     def sources(self):
@@ -224,7 +223,7 @@ class ALIncomeList(DAList):
     def to_json(self):
         """
         Returns an income list suitable for Legal Server API. Items must have
-        a `.source` attribute.
+        `.source`, `.period`, and `.value` attributes.
         """
         return json.dumps([{
           "source": income.source,
@@ -253,6 +252,7 @@ class ALJob(ALIncome):
       period_to_use is some demoninator of a year for compatibility with
       PeriodicFinancialList class. E.g, to express hours/week, use 52.
       """
+      # Change to .net_value
       return (Decimal(self.net) * Decimal(self.period)) / Decimal(period_to_use)
 
     def employer_name_address_phone(self):
@@ -620,6 +620,10 @@ class ALItemizedJob(DAObject):
     # ---
     # In amount aliases
     # ---
+    def amount(self, period_to_use=1, source=None):
+        """Alias for ALItemizedJob.gross_amount to integrate with ALIncomeList math."""
+        return self.gross_amount(period_to_use=period_to_use, source=source)
+    # Name consistency questions:
     def total_in(self, period_to_use=1, source=None):
         """Alias for ALItemizedJob.gross_amount."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
@@ -629,9 +633,6 @@ class ALItemizedJob(DAObject):
     def incomes(self, period_to_use=1, source=None):
         """Alias for ALItemizedJob.gross_amount."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
-    def amount(self, period_to_use=1, source=None):
-        """Alias for ALItemizedJob.gross_amount to integrate with ALIncomeList math."""
-        return self.gross_amount(period_to_use=period_to_use, source=source)
     
     # ---
     # Out amount aliases
@@ -640,18 +641,14 @@ class ALItemizedJob(DAObject):
         """Alias for ALItemizedJob.total_out()."""
         return self.total_out(period_to_use=period_to_use, source=source)
     def deductions(self, period_to_use=1, source=None):
-        """
-        Alias for ALItemizedJob.total_out()
-        "Deductions" in the wrong word. In financial vocabulary, it technically
-        means amounts you can use to reduce your income-tax liability.
-        """
+        """Alias for ALItemizedJob.total_out()."""
         return self.total_out(period_to_use=period_to_use, source=source)
     
     # ---
     # Net aliases
     # ---
     def total(self, period_to_use=1, source=None):
-        """Alias for ALItemizedJob.net_amount()."""
+        """Alias for ALItemizedJob.net_amount(). ALIncomeList has a `.total()`."""
         return self.net_amount(period_to_use=period_to_use, source=source)
     def total_amount(self, period_to_use=1, source=None):
         """Alias for ALItemizedJob.net_amount()."""
@@ -667,6 +664,8 @@ class ALItemizedJob(DAObject):
         for yearly, 12 for monthly, etc). Default frequency value of 1 (yearly)
         so jobs/items can be normalized to each other easily (instead of using
         their own periods by default).
+        
+        "Incomes" is confusing because you can have negative incomes.
         
         @params
         kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
@@ -693,6 +692,9 @@ class ALItemizedJob(DAObject):
         12 for monthly, etc). Default frequency value of 1 (yearly) so
         jobs/items can be normalized to each other easily (instead of using
         their own periods by default).
+        
+        "Deductions" in the wrong word. In financial vocabulary, it technically
+        means amounts you can use to reduce your income-tax liability.
         
         @params
         kwarg period_to_use {str | num}  Default is 1. Some demoninator of a
@@ -829,13 +831,16 @@ class ALItemizedJobList(DAList):
     a less common way of reporting income.
     """
     def init(self, *pargs, **kwargs):
-        super().init(*pargs, **kwargs)     
-        self.object_type = ALItemizedJob
+        super().init(*pargs, **kwargs)
+        if self.object_type is None:
+            self.object_type = ALItemizedJob
     
     # Q: Do we want some way to have a running total?
     # ---
     # In amount aliases
     # ---
+    # Q: ALJobList has a `.gross_total()`. If `amount` is supposed to express "per period", this is missing that
+    # Q: Maybe we need a method for each period and one for a custom period...
     def total_in(self, period_to_use=1, source=None):
         """Alias for ALItemizedJobList.gross_amount()."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
@@ -866,6 +871,7 @@ class ALItemizedJobList(DAList):
     # ---
     # Net aliases
     # ---
+    # ALJobList has a `.net_total()`
     def total(self, period_to_use=1, source=None):
         """Alias for ALItemizedJobList.net_amount()."""
         return self.net_amount(period_to_use=period_to_use, source=source)
