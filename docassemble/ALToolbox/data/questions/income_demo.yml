@@ -328,6 +328,7 @@ fields:
 generic object: ALJob
 code: |
   x.name
+  x.source = x.name
   x.employer
   x.value
   x.complete = True
@@ -362,7 +363,7 @@ fields:
   - How many hours do you work in each period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
-  - Amount you get paid per period: x.value
+  - What do you get paid?: x.value
     datatype: currency
     show if: x.is_hourly
   - Amount you get paid: x.value
@@ -463,6 +464,9 @@ subquestion: |
   * net total per month: ${ currency(aljob_list.gross_total(period_to_use=12)) }
   * gross total per year: ${ currency(aljob_list.net_total()) }
   * net total per month: ${ currency(aljob_list.net_total(period_to_use=12)) }
+  
+  One item value:[BR]
+  ${ [item for item in aljob_list.sources()][0] } base pay per year: ${ currency(aljob_list.net_total(source=[item for item in aljob_list.sources()][0])) }
   
   % for one_job in aljob_list:
   #### ${ one_job.name }

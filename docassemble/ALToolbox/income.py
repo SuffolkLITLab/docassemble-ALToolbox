@@ -630,7 +630,7 @@ class ALItemizedJob(DAObject):
         """Alias for ALItemizedJob.gross_amount."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
     def amount(self, period_to_use=1, source=None):
-      """Alias for ALItemizedJob.gross_amount to integrate with ALIncomeList math."""
+        """Alias for ALItemizedJob.gross_amount to integrate with ALIncomeList math."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
     
     # ---
@@ -846,7 +846,7 @@ class ALItemizedJobList(DAList):
         """Alias for ALItemizedJobList.gross_amount()."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
     def amount(self, period_to_use=1, source=None):
-      """Alias for ALItemizedJobList.gross_amount to integrate with ALIncomeList math."""
+        """Alias for ALItemizedJobList.gross_amount to integrate with ALIncomeList math."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
       
     # ---
