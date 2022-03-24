@@ -143,14 +143,13 @@ class ALIncome(PeriodicValue):
     for compatibility with PeriodicFinancialList class. E.g, to express
     hours/week, use 52.
 
-    An income must have a `.period` and, if needed, `.hourly_rate` and
-    `.hours_per_period` or `value`.
+    An income must have a `.period`, `value`, and, depending on need,
+    `.hours_per_period`.
     """
     def amount(self, period_to_use=1):
         """Returns the income over the specified period_to_use."""
         if hasattr(self, 'is_hourly') and self.is_hourly:
-            # Should we change `hourly_rate` to `value` to conform with itemized job?
-            return Decimal(self.hourly_rate * self.hours_per_period * self.period) / Decimal(period_to_use)
+            return (Decimal(self.value) * Decimal(self.hours_per_period) * Decimal(self.period)) / Decimal(period_to_use)
         else:
           return (Decimal(self.value) * Decimal(self.period)) / Decimal(period_to_use)
 
