@@ -10,279 +10,273 @@ comment: |
     - ???
 ---
 objects:
-  #- itemized_job: ALItemizedJob.using()
-  #- itemized_job_list: ALItemizedJobList.using(
-  #    complete_attribute='complete',
-  #    ask_number=True)
-  #- aljob: ALJob
-  #- aljob_list: ALJobList.using(
-  #    complete_attribute='complete',
-  #    ask_number=True)
-  #- alincome: ALIncome
+  - itemized_job: ALItemizedJob.using()
+  - itemized_job_list: ALItemizedJobList.using(
+      complete_attribute='complete',
+      ask_number=True)
+  - aljob: ALJob
+  - aljob_list: ALJobList.using(
+      complete_attribute='complete',
+      ask_number=True)
+  - alincome: ALIncome
   #- alincome_list: ALIncomeList.using(complete_attribute='complete', ask_number=False)
   - alincome_list: ALIncomeList.using(auto_gather=False)
 ---
 id: interview order
 mandatory: True
 code: |
-  #if to_run['ALItemizedJob'] or to_run['all']:
-  #  itemized_job.name = 'Some Itemized Job'
-  #  itemized_job.complete
-  #
-  #if to_run['ALItemizedJobList'] or to_run['all']:
-  #  itemized_job_list.gather()
-  #
-  #if to_run['ALJob'] or to_run['all']:
-  #  aljob.name = 'Some Unitemized Job'
-  #  aljob.complete
-  #
-  #if to_run['ALJobList'] or to_run['all']:
-  #  aljob_list.gather()
-  #
-  #if to_run['ALIncome'] or to_run['all']:
-  #  alincome.source = 'Some Income'
-  #  alincome.complete
-  #
-  #if to_run['ALIncomeList'] or to_run['all']:
-  #  income_sources
-  #  create_income_items
-  #  alincome_list.gathered
+  if to_run['ALItemizedJob'] or to_run['all']:
+    itemized_job.name = 'Some Itemized Job'
+    itemized_job.complete
   
-  income_sources
-  create_income_items
-  alincome_list.gathered
-  get_alincome_list_item_values
+  if to_run['ALItemizedJobList'] or to_run['all']:
+    itemized_job_list.gather()
+  
+  if to_run['ALJob'] or to_run['all']:
+    aljob.name = 'Some Unitemized Job'
+    aljob.complete
+  
+  if to_run['ALJobList'] or to_run['all']:
+    aljob_list.gather()
+  
+  if to_run['ALIncome'] or to_run['all']:
+    alincome.source = 'Some Income'
+    alincome.complete
+  
+  if to_run['ALIncomeList'] or to_run['all']:
+    income_sources
+    alincome_list.gathered  # get sources in the list
+    get_alincome_list_item_values
   
   before_end_so_answers_are_saved
   end
 ---
-#code: |
-#    alincome_list.there_are_any = income_sources.any_true
-#    alincome_list.target_number = len(income_sources.true_values())
-#---
-#id: which to test
-#question: |
-#  Which functionality do you want to try?
-#subquestion: |
-#  Before choosing what to test:
-#  
-#  * `ALItemizedJobList` covers all the same functionality as `ALItemizedJob`.
-#  * `ALJob` covers all the same functionality as `ALIncome`.
-#  * `ALJobList` covers all the same functionality as `ALJob` and `ALIncome`.
-#  
-##  * `ALIncomeList` covers all the same functionality as `ALIncome`. 
-#
-#fields:
-#  - no label: to_run
-#    datatype: checkboxes
-#    none of the above: False
-#    choices:
-#      - All of the them: all
-#      #- ALSimpleValue: ALSimpleValue
-#      #- ALValueList: ALValueList
-#      - ALItemizedJob: ALItemizedJob
-#      - ALItemizedJobList: ALItemizedJobList
-#      - ALJob: ALJob
-#      - ALJobList: ALJobList
-#      - ALIncome: ALIncome
-#      - ALIncomeList: ALIncomeList
-#      #- ALLedger: ALLedger
-#      #- ALVehicle: ALVehicle
-#      #- ALVehicleList: ALVehicleList
-#      #- ALAsset: ALAsset
-#      #- ALAssetList: ALAssetList
-#      #- flatten: flatten
-#      #- income_period_list: income_period_list
-#      #- income_period: income_period
-#      #- recent_years: recent_years
-#      #- asset_source_list: asset_source_list
-#      #- income_source_list: income_source_list
-#      #- non_wage_income_list: non_wage_income_list
-#      #- expense_source_list: expense_source_list
-#---
-#code: |
-#  job_source_transaction_types = {
-#    'tips': 'payment',
-#    'deductions': 'deduction',
-#    'garnishments': 'deduction'
-#  }
-#---
-#code: |
-#  # commission, bonus, hourly wage, salary, overtime
-#  # https://fingercheck.com/the-difference-between-a-paycheck-and-a-pay-stub/
-#  #Deductions are the amounts subtracted or withheld from the total pay, including the income tax percentage of an employee’s gross wages.
-#  #Social security and Medicare are deducted based on the income over the set threshold.
-#  #Other deductions can include state and local income taxes, employee 401K contributions, insurance payments, profit sharing, union dues, garnishments and unemployment insurance etc.
-#  job_income_choices = [
-#    ('tips', 'Tips'),
-#    ('deductions', 'Deductions'),
-#    ('garnishments', 'Garnishments')
-#  ]
-#---
+code: |
+    alincome_list.there_are_any = income_sources.any_true
+    alincome_list.target_number = len(income_sources.true_values())
+---
+id: which to test
+question: |
+  Which functionality do you want to try?
+subquestion: |
+  Before choosing what to test:
+  
+  * `ALItemizedJobList` covers all the same functionality as `ALItemizedJob`.
+  * `ALJob` covers all the same functionality as `ALIncome`.
+  * `ALJobList` covers all the same functionality as `ALJob` and `ALIncome`.
+  * `ALIncomeList` covers all the same functionality as `ALIncome`. 
+
+fields:
+  - no label: to_run
+    datatype: checkboxes
+    none of the above: False
+    choices:
+      - All of the them: all
+      #- ALSimpleValue: ALSimpleValue
+      #- ALValueList: ALValueList
+      - ALItemizedJob: ALItemizedJob
+      - ALItemizedJobList: ALItemizedJobList
+      - ALJob: ALJob
+      - ALJobList: ALJobList
+      - ALIncome: ALIncome
+      - ALIncomeList: ALIncomeList
+      #- ALLedger: ALLedger
+      #- ALVehicle: ALVehicle
+      #- ALVehicleList: ALVehicleList
+      #- ALAsset: ALAsset
+      #- ALAssetList: ALAssetList
+      #- flatten: flatten
+      #- income_period_list: income_period_list
+      #- income_period: income_period
+      #- recent_years: recent_years
+      #- asset_source_list: asset_source_list
+      #- income_source_list: income_source_list
+      #- non_wage_income_list: non_wage_income_list
+      #- expense_source_list: expense_source_list
+---
+code: |
+  job_source_transaction_types = {
+    'tips': 'payment',
+    'deductions': 'deduction',
+    'garnishments': 'deduction'
+  }
+---
+code: |
+  # commission, bonus, hourly wage, salary, overtime
+  # https://fingercheck.com/the-difference-between-a-paycheck-and-a-pay-stub/
+  #Deductions are the amounts subtracted or withheld from the total pay, including the income tax percentage of an employee’s gross wages.
+  #Social security and Medicare are deducted based on the income over the set threshold.
+  #Other deductions can include state and local income taxes, employee 401K contributions, insurance payments, profit sharing, union dues, garnishments and unemployment insurance etc.
+  job_income_choices = [
+    ('tips', 'Tips'),
+    ('deductions', 'Deductions'),
+    ('garnishments', 'Garnishments')
+  ]
+---
 # SHARED BY ALItemizedJob AND ALItemizedJobList
-#---
-#generic object: ALItemizedJob
-#code: |
-#  x.name
-#  x.employer.name.first
-#  x.period
-#  x.in_values.complete_attribute = 'complete'
-#  x.out_values.complete_attribute = 'complete'
-#  if x.is_part_time:
-#    x.in_values["part time"].is_hourly = x.is_hourly
-#  else:
-#    x.in_values["full time"].is_hourly = x.is_hourly
-#  x.in_values.gather()
-#  x.out_values.gather()
-#  x.complete = True
-#---
-#generic object: ALItemizedJob
-#code: |
-#  x.in_values[i].value
-#  x.in_values[i].complete = True
-#---
-#generic object: ALItemizedJob
-#code: |
-#  x.out_values[i].value
-#  x.out_values[i].complete = True
-#---
-#id: itemized job name
-#generic object: ALItemizedJob
-#question: |
-#  What is the name of this itemized job?
-#fields:
-#  - Job name: x.name
-#---
-#id: employer
-#generic object: ALItemizedJob
-#question: |
-#  Tell us about your employer for ${ x.name }
-#fields:
-#  - Name: x.employer.name.first
-#  - street: x.employer.address.address
-#    required: False
-#  - unit: x.employer.address.unit
-#    required: False
-#  - city: x.employer.address.city
-#    required: False
-#  - state: x.employer.address.state
-#    required: False
-#  - zip: x.employer.address.zip
-#    required: False
-#  - Phone number: x.employer.phone_number
-#    required: False
-#---
-#id: itemized job line items
-#generic object: ALItemizedJob
-#question: |
-#    Enter info from your paystub for your ${ x.name } job
-#fields:
-#    - What are your wages for this full time job?: x.in_values['full time'].value
-#      datatype: currency
-#      show if:
-#        code: x.is_part_time is False
-#    - What are your wages for this part time job?: x.in_values['part time'].value
-#      datatype: currency
-#      show if:
-#        code: x.is_part_time is True
-#    - What are your tips for this job?: x.in_values['tips'].value
-#      datatype: currency
-#      required: False
-#    - What is your federal tax amount?: x.out_values['federal_taxes'].value
-#      datatype: currency
-#      required: False
-#    - What do you pay for insurance?: x.out_values['insurance'].value
-#      datatype: currency
-#      required: False
-#    - Does the job have other incomes?: x.in_values.there_is_another
-#      datatype: yesnoradio
-#    - Does the job have other deductions?: x.out_values.there_is_another
-#      datatype: yesnoradio
-#---
-#id: itemized job period
-#generic object: ALItemizedJob
-#question: |
-#  Tell us about your ${ x.name }'s job hours
-#fields:
-#  - Is this a part time job: x.is_part_time
-#    datatype: yesnoradio
-#  - Hourly or salary?: x.is_hourly
-#    input type: radio
-#    choices:
-#      - Hourly: True
-#      - Salary: False
-#  - How often do you get paid?: x.period
-#    input type: radio
-#    code: |
-#      income_period_list()
-#  - How many hours do you work during that time?: x.hours_per_period
-#    input type: number
-#    show if: x.is_hourly
-#---
+---
+generic object: ALItemizedJob
+code: |
+  x.name
+  x.employer.name.first
+  x.period
+  x.in_values.complete_attribute = 'complete'
+  x.out_values.complete_attribute = 'complete'
+  if x.is_part_time:
+    x.in_values["part time"].is_hourly = x.is_hourly
+  else:
+    x.in_values["full time"].is_hourly = x.is_hourly
+  x.in_values.gather()
+  x.out_values.gather()
+  x.complete = True
+---
+generic object: ALItemizedJob
+code: |
+  x.in_values[i].value
+  x.in_values[i].complete = True
+---
+generic object: ALItemizedJob
+code: |
+  x.out_values[i].value
+  x.out_values[i].complete = True
+---
+id: itemized job name
+generic object: ALItemizedJob
+question: |
+  What is the name of this itemized job?
+fields:
+  - Job name: x.name
+---
+id: employer
+generic object: ALItemizedJob
+question: |
+  Tell us about your employer for ${ x.name }
+fields:
+  - Name: x.employer.name.first
+  - street: x.employer.address.address
+    required: False
+  - unit: x.employer.address.unit
+    required: False
+  - city: x.employer.address.city
+    required: False
+  - state: x.employer.address.state
+    required: False
+  - zip: x.employer.address.zip
+    required: False
+  - Phone number: x.employer.phone_number
+    required: False
+---
+id: itemized job line items
+generic object: ALItemizedJob
+question: |
+    Enter info from your paystub for your ${ x.name } job
+fields:
+    - What are your wages for this full time job?: x.in_values['full time'].value
+      datatype: currency
+      show if:
+        code: x.is_part_time is False
+    - What are your wages for this part time job?: x.in_values['part time'].value
+      datatype: currency
+      show if:
+        code: x.is_part_time is True
+    - What are your tips for this job?: x.in_values['tips'].value
+      datatype: currency
+      required: False
+    - What is your federal tax amount?: x.out_values['federal_taxes'].value
+      datatype: currency
+      required: False
+    - What do you pay for insurance?: x.out_values['insurance'].value
+      datatype: currency
+      required: False
+    - Does the job have other incomes?: x.in_values.there_is_another
+      datatype: yesnoradio
+    - Does the job have other deductions?: x.out_values.there_is_another
+      datatype: yesnoradio
+---
+id: itemized job period
+generic object: ALItemizedJob
+question: |
+  Tell us about your ${ x.name }'s job hours
+fields:
+  - Is this a part time job: x.is_part_time
+    datatype: yesnoradio
+  - Hourly or salary?: x.is_hourly
+    input type: radio
+    choices:
+      - Hourly: True
+      - Salary: False
+  - How often do you get paid?: x.period
+    input type: radio
+    code: |
+      income_period_list()
+  - How many hours do you work during that time?: x.hours_per_period
+    input type: number
+    show if: x.is_hourly
+---
 #id: other itemized job income name
-#generic object: ALItemizedJob
-#question: |
-#  Other incomes
-#subquestion: |
-#  You've already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
-#fields:
-#  - Income name: x.in_values.new_item_name
-#validation code: |
-#  if x.in_values.new_item_name in x.in_values.complete_elements().keys():
-#    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.in_values.new_item_name, x.in_values.new_item_name) }</strong> that pay { currency( x.in_values[ x.in_values.new_item_name ].value )}. Pick a different name.')
-#---
-#id: other itemized job income value
-#generic object: ALItemizedJob
-#question: |
-#  What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
-#fields:
-#  - Amount: x.in_values[i].value
-#    datatype: currency
-#  - Do you have another source of income?: x.in_values.there_is_another
-#    datatype: yesnoradio
-#---
-#id: other itemized job reduction name
-#generic object: ALItemizedJob
-#question: |
-#  Other deductions
-#subquestion: |
-#  You've already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
-#fields:
-#  - Deduction name: x.out_values.new_item_name
-#validation code: |
-#  if x.out_values.new_item_name in x.out_values.complete_elements().keys():
-#    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.out_values.new_item_name, x.out_values.new_item_name) }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
-#---
-#id: other itemized job reduction value
-#generic object: ALItemizedJob
-#question: |
-#  What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
-#fields:
-#  - Amount: x.out_values[i].value
-#    datatype: currency
-#  - Do other money being taken out of your job?: x.out_values.there_is_another
-#    datatype: yesnoradio
-#---
-## UNIQUE ITEMS FOR ALItemizedJobList
-#---
-#id: how many itemized jobs
-#generic object: ALItemizecJobList
-#question: |
-#  How many itemized jobs do you have?
-#fields:
-#  - no label: x.target_number
-#    datatype: number
-#---
-#id: name of one itemized job in list
-#generic object: ALItemizedJobList
-#question: |
-#  What is the name of this itemized job?
-#subquestion: |
-#  % if len(x.complete_elements()) > 0:
-#  You've already told us about ${ comma_and_list([job.name for job in x.complete_elements()]) }.
-#  % endif
-#fields:
-#  - Job name: x[i].name
+generic object: ALItemizedJob
+question: |
+  Other incomes
+subquestion: |
+  You've already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
+fields:
+  - Income name: x.in_values.new_item_name
+validation code: |
+  if x.in_values.new_item_name in x.in_values.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.in_values.new_item_name, x.in_values.new_item_name) }</strong> that pay { currency( x.in_values[ x.in_values.new_item_name ].value )}. Pick a different name.')
+---
+id: other itemized job income value
+generic object: ALItemizedJob
+question: |
+  What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
+fields:
+  - Amount: x.in_values[i].value
+    datatype: currency
+  - Do you have another source of income?: x.in_values.there_is_another
+    datatype: yesnoradio
+---
+id: other itemized job reduction name
+generic object: ALItemizedJob
+question: |
+  Other deductions
+subquestion: |
+  You've already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
+fields:
+  - Deduction name: x.out_values.new_item_name
+validation code: |
+  if x.out_values.new_item_name in x.out_values.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.out_values.new_item_name, x.out_values.new_item_name) }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
+---
+id: other itemized job reduction value
+generic object: ALItemizedJob
+question: |
+  What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
+fields:
+  - Amount: x.out_values[i].value
+    datatype: currency
+  - Do other money being taken out of your job?: x.out_values.there_is_another
+    datatype: yesnoradio
+---
+# UNIQUE ITEMS FOR ALItemizedJobList
+---
+id: how many itemized jobs
+generic object: ALItemizecJobList
+question: |
+  How many itemized jobs do you have?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: name of one itemized job in list
+generic object: ALItemizedJobList
+question: |
+  What is the name of this itemized job?
+subquestion: |
+  % if len(x.complete_elements()) > 0:
+  You've already told us about ${ comma_and_list([job.name for job in x.complete_elements()]) }.
+  % endif
+fields:
+  - Job name: x[i].name
 ---
 # SHARED CODE FOR ALIncome and ALIncomeList
 ---
@@ -324,13 +318,11 @@ code: |
     for source in income_sources.true_values():
       one_income = alincome_list.appendObject(source=source)
       # Never put anything else in here
-  create_income_items = True
   alincome_list.gathered = True
 ---
 code: |
   for income in alincome_list.elements:
     income.complete
-  #alincome_list.gathered = True
   get_alincome_list_item_values = True
 ---
 id: which incomes
@@ -342,79 +334,79 @@ fields:
     code: |
       income_source_list()
 ---
-## SHARED BY ALJob AND ALJobList
-#---
-#generic object: ALJob
-#code: |
-#  # Q: aljob.source vs. itemized_job.name
-#  x.source
-#  x.employer
-#  x.value
-#  x.complete = True
-#---
-#id: regular job name
-#generic object: ALJob
-#question: |
-#  What is the name of this regular job?
-#fields:
-#  - Name: x.source
-#---
-#id: regular job employer
-#generic object: ALJob
-#question: |
-#  Tell us about your employer for ${ x.source }
-#fields:
-#  - Name: x.employer
-#  - Address: x.employer_address
-#  - Phone: x.employer_phone
-#---
-#id: regular job value
-#generic object: ALJob
-#question: |
-#  What how much do you get paid for ${ x.source }?
-#fields:
-#  - Is the job hourly?: x.is_hourly
-#    datatype: yesnoradio
-#  - How often do you get paid?: x.period
-#    input type: radio
-#    code: |
-#      income_period_list()
-#  - How many hours do you work in each period?: x.hours_per_period
-#    datatype: number
-#    show if: x.is_hourly
-#  - What do you get paid?: x.value
-#    datatype: currency
-#    show if: x.is_hourly
-#  - Amount you get paid: x.value
-#    datatype: currency
-#    show if:
-#      variable: x.is_hourly
-#      is: False
-#  - What is the net income of the job?: x.net
-#    datatype: currency
-#---
-## UNIQUE ITEMS FOR ALJobList
-#---
-#id: how many regular jobs
-#generic object: ALJobList
-#question: |
-#  How many non-itemized jobs do you have?
-#fields:
-#  - no label: x.target_number
-#    datatype: number
-#---
-#id: name of one regular job in list
-#generic object: ALJobList
-#question: |
-#  What is the name of this non-itemized job?
-#subquestion: |
-#  % if len(x.complete_elements()) > 0:
-#  You've already told us about ${ comma_and_list([job.source for job in x.complete_elements()]) }.
-#  % endif
-#fields:
-#  - Job name: x[i].name
-#---
-## ENDING SCREENS
+# SHARED BY ALJob AND ALJobList
+---
+generic object: ALJob
+code: |
+  # Q: aljob.source vs. itemized_job.name
+  x.source
+  x.employer
+  x.value
+  x.complete = True
+---
+id: regular job name
+generic object: ALJob
+question: |
+  What is the name of this regular job?
+fields:
+  - Name: x.source
+---
+id: regular job employer
+generic object: ALJob
+question: |
+  Tell us about your employer for ${ x.source }
+fields:
+  - Name: x.employer
+  - Address: x.employer_address
+  - Phone: x.employer_phone
+---
+id: regular job value
+generic object: ALJob
+question: |
+  What how much do you get paid for ${ x.source }?
+fields:
+  - Is the job hourly?: x.is_hourly
+    datatype: yesnoradio
+  - How often do you get paid?: x.period
+    input type: radio
+    code: |
+      income_period_list()
+  - How many hours do you work in each period?: x.hours_per_period
+    datatype: number
+    show if: x.is_hourly
+  - What do you get paid?: x.value
+    datatype: currency
+    show if: x.is_hourly
+  - Amount you get paid: x.value
+    datatype: currency
+    show if:
+      variable: x.is_hourly
+      is: False
+  - What is the net income of the job?: x.net
+    datatype: currency
+---
+# UNIQUE ITEMS FOR ALJobList
+---
+id: how many regular jobs
+generic object: ALJobList
+question: |
+  How many non-itemized jobs do you have?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: name of one regular job in list
+generic object: ALJobList
+question: |
+  What is the name of this non-itemized job?
+subquestion: |
+  % if len(x.complete_elements()) > 0:
+  You've already told us about ${ comma_and_list([job.source for job in x.complete_elements()]) }.
+  % endif
+fields:
+  - Job name: x[i].name
+---
+# ENDING SCREENS
 ---
 id: before_end_so_answers_are_saved
 question: |
@@ -425,194 +417,198 @@ id: end
 event: end
 question: |
   Your answers
-#subquestion: |
-#  
-#  % if to_run['ALItemizedJob'] or to_run['all']:
-#  ## Single ALItemizedJob: ${ itemized_job.name }
-#  
-#  ${ itemized_job.output }
-#  
-#  ---
-#  
-#  % endif
-#
-#  % if to_run['ALItemizedJobList'] or to_run['all']:
-#  ### Itemized jobs list
-#  
-#  Amounts totals:
-#  
-#  * **gross per year:** ${currency( itemized_job_list.gross_amount() )}
-#  * **gross per month:** ${currency( itemized_job_list.gross_amount(period_to_use=12) )}
-#  * **net per year:** ${currency( itemized_job_list.net_amount() )}
-#  * **net per week:** ${currency( itemized_job_list.net_amount(period_to_use=52) )}
-#  * **money out per year:** ${currency(itemized_job_list.total_out())}
-#  
-#  The below only shows useful amounts when both base pay and `federal_taxes` have amounts:
-#  
-#  * **base pay gross:** ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
-#  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
-#  * **base pay net:** (same) ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )} per year
-#  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
-#  
-#  
-#  % for one_itemized_job in itemized_job_list:
-#  #### ${ one_itemized_job.name }
-#  
-#  ${ one_itemized_job.output }
-#  
-#  % endfor
-#  
-#  ---
-#  
-#  % endif
-#  
-#  % if to_run['ALJob'] or to_run['all']:
-#  
-#  ### Single ALJob: ${ aljob.source }
-#  
-#  ${ aljob.output }
-#  
-#  ---
-#  
-#  % endif
-#  
-#  % if to_run['ALJobList'] or to_run['all']:
-#  ### ALJobList
-#  
-#  * gross total per year: ${ currency(aljob_list.gross_total()) }
-#  * net total per month: ${ currency(aljob_list.gross_total(period_to_use=12)) }
-#  * gross total per year: ${ currency(aljob_list.net_total()) }
-#  * net total per month: ${ currency(aljob_list.net_total(period_to_use=12)) }
-#  
-#  One item value:[BR]
-#  ${ [item for item in aljob_list.sources()][0] } base pay per year: ${ currency(aljob_list.net_total(source=[item for item in aljob_list.sources()][0])) }
-#  
-#  % for one_job in aljob_list:
-#  #### ${ one_job.source }
-#  
-#  ${ one_job.output }
-#  % endfor
-#  
-#  ---
-#  
-#  % endif
-#  
-#  % if to_run['ALIncome'] or to_run['all']:
-#  ### A single ALIncome: ${ alincome.source }
-#  
-#  
-#  ${ alincome.output }
-#  
-#  ---
-#  
-#  % endif
-#comment: |
-#  
-#  % if to_run['ALIncomeList'] or to_run['all']:
-#  ### ALIncomeList
-#  
-#  **Sources**: ${ alincome_list.sources() }
-#  **matches for (source)
-#  total(period_to_use=1, source=None, owner=None)
-#  to_json()
-#  
-#  % for one_income in incomes:
-#  #### ${ one_income.source }
-#  
-#  ${ one_income.output }
-#  % endfor
-#  
-#  ---
-#  
-#  % endif
-#
-#  sldkf
-#
-#---
-## OUTPUT TEMPLATES
-#---
-#generic object: ALItemizedJob
-#template: x.output
-#content: |
-#  **Employer info:**[BR]
-#  ${ x.employer_name_address_phone() }
-#  
-#  **In:**[BR]
-#  **Gross per year:** ${ currency( x.gross_amount() ) }[BR]
-#  **Gross per week:** ${ currency( x.gross_amount(period_to_use=12) ) }
-#  
-#  % for name, item in x.in_values.complete_elements().items():
-#  * **${ job_items_names.get(name, name) } per month:** ${ currency(x.gross_amount( source=name, period_to_use=12 )) }
-#  % endfor
-#  
-#  **Out:**[BR]
-#  **Total out per year:** ${currency(x.total_out())}
-#  **Total out per week:** ${currency(x.total_out(period_to_use=52))}
-#  
-#  % for name, item in x.out_values.complete_elements().items():
-#  * **${ job_items_names.get(name, name) } per month:** ${ currency(x.total_out( source=name, period_to_use=12 )) }
-#  % endfor
-#  
-#  **Net:**[BR]
-#  **Net per year:** ${currency( x.net_amount() )}[BR]
-#  **Net quarterly:** ${currency( x.net_amount(period_to_use=4) )}
-#  
-#  **Hours for hourly job:**[BR]
-#  % if x.is_hourly:
-#  * ${ x.normalized_hours() } hours per year
-#  * ${ x.normalized_hours(period_to_use=52) } hours per week
-#  % else:
-#  **${ x.name }** is not hourly
-#  % endif
-#---
-#generic object: ALIncome
-#template: x.output
-#content: |
-#  **Amount:**
-#  
-#  * Per year: ${ currency( x.amount() ) }
-#  * Fortnightly: ${ currency( x.amount(period_to_use=26) ) }
-#---
-#generic object: ALJob
-#template: x.output
-#content: |
-#  **Employer info:**[BR]
-#  ${ x.employer_name_address_phone() }
-#  
-#  * **gross per year:** ${ currency( x.gross_amount() ) }
-#  * **gross per month:** ${ currency( x.gross_amount(period_to_use=12) ) }
-#  * **net per year:** ${ currency( x.net_amount() ) }
-#  * **net per month:** ${ currency( x.net_amount(period_to_use=12) ) }
-#  
-#  **Hours for hourly job:**[BR]
-#  % if x.is_hourly:
-#  * ${ x.normalized_hours() } hours per year
-#  * ${ x.normalized_hours(period_to_use=52) } hours per week
-#  % else:
-#  **${ x.source }** is not hourly
-#  % endif
-#---
-## TRANSLATIONS
-#---
-#depends on:
-#  - user_language
-#language: en
-#variable name: job_items_names
-#data:
-#  full time: Full time wages
-#  part time: Part time wages
-#  tips: Tips
-#  insurance: Insurance
-#  federal_taxes: Federal taxes
-#---
-#depends on:
-#  - user_language
-#language: es
-#variable name: job_items_names
-#data:
-#  full time: salario del el trabajo de tiempo completo
-#  part time: salario del el trabajo de medio tiempo
-#  tips: Propinas
-#  insurance: Seguro
-#  federal_taxes: Impuestos federales
-#---
+subquestion: |
+  
+  % if to_run['ALItemizedJob'] or to_run['all']:
+  ## Single ALItemizedJob: ${ itemized_job.name }
+  
+  ${ itemized_job.output }
+  
+  ---
+  
+  % endif
+
+  % if to_run['ALItemizedJobList'] or to_run['all']:
+  ### Itemized jobs list
+  
+  Amounts totals:
+  
+  * **gross per year:** ${currency( itemized_job_list.gross_amount() )}
+  * **gross per month:** ${currency( itemized_job_list.gross_amount(period_to_use=12) )}
+  * **net per year:** ${currency( itemized_job_list.net_amount() )}
+  * **net per week:** ${currency( itemized_job_list.net_amount(period_to_use=52) )}
+  * **money out per year:** ${currency(itemized_job_list.total_out())}
+  
+  The below only shows useful amounts when both base pay and `federal_taxes` have amounts:
+  
+  * **base pay gross:** ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
+  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+  * **base pay net:** (same) ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )} per year
+  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+  
+  
+  % for one_itemized_job in itemized_job_list:
+  #### ${ one_itemized_job.name }
+  
+  ${ one_itemized_job.output }
+  
+  % endfor
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALJob'] or to_run['all']:
+  
+  ### Single ALJob: ${ aljob.source }
+  
+  ${ aljob.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALJobList'] or to_run['all']:
+  ### ALJobList
+  
+  * gross total per year: ${ currency(aljob_list.gross_total()) }
+  * net total per month: ${ currency(aljob_list.gross_total(period_to_use=12)) }
+  * gross total per year: ${ currency(aljob_list.net_total()) }
+  * net total per month: ${ currency(aljob_list.net_total(period_to_use=12)) }
+  
+  One item value:[BR]
+  ${ [item for item in aljob_list.sources()][0] } base pay per year: ${ currency(aljob_list.net_total(source=[item for item in aljob_list.sources()][0])) }
+  
+  % for one_job in aljob_list:
+  #### ${ one_job.source }
+  
+  ${ one_job.output }
+  % endfor
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALIncome'] or to_run['all']:
+  ### A single ALIncome: ${ alincome.source }
+  
+  
+  ${ alincome.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALIncomeList'] or to_run['all']:
+  ### ALIncomeList
+  
+  **Sources**: ${ alincome_list.sources() }[BR]
+  **Matches for source called "TAFDC":** ${ alincome_list.matches("TAFDC") }[BR]
+  **Total per year of everything:** ${ currency(alincome_list.total()) }[BR]
+  **Total per month of owners called "me":** ${ currency(alincome_list.total(period_to_use=12, owner=["me"])) }[BR]
+  **Income list json for Legal Server:**[BR]
+  ```
+  ${ alincome_list.to_json() }
+  ```
+  
+  % for one_income in alincome_list:
+  #### ${ one_income.source }
+  
+  ${ one_income.output }
+  % endfor
+  
+  ---
+  
+  % endif
+comment: |
+
+  sldkf
+
+---
+# OUTPUT TEMPLATES
+---
+generic object: ALItemizedJob
+template: x.output
+content: |
+  **Employer info:**[BR]
+  ${ x.employer_name_address_phone() }
+  
+  **In:**[BR]
+  **Gross per year:** ${ currency( x.gross_amount() ) }[BR]
+  **Gross per week:** ${ currency( x.gross_amount(period_to_use=12) ) }
+  
+  % for name, item in x.in_values.complete_elements().items():
+  * **${ job_items_names.get(name, name) } per month:** ${ currency(x.gross_amount( source=name, period_to_use=12 )) }
+  % endfor
+  
+  **Out:**[BR]
+  **Total out per year:** ${currency(x.total_out())}
+  **Total out per week:** ${currency(x.total_out(period_to_use=52))}
+  
+  % for name, item in x.out_values.complete_elements().items():
+  * **${ job_items_names.get(name, name) } per month:** ${ currency(x.total_out( source=name, period_to_use=12 )) }
+  % endfor
+  
+  **Net:**[BR]
+  **Net per year:** ${currency( x.net_amount() )}[BR]
+  **Net quarterly:** ${currency( x.net_amount(period_to_use=4) )}
+  
+  **Hours for hourly job:**[BR]
+  % if x.is_hourly:
+  * ${ x.normalized_hours() } hours per year
+  * ${ x.normalized_hours(period_to_use=52) } hours per week
+  % else:
+  **${ x.name }** is not hourly
+  % endif
+---
+generic object: ALIncome
+template: x.output
+content: |
+  **Amount:**
+  
+  * Per year: ${ currency( x.amount() ) }
+  * Fortnightly: ${ currency( x.amount(period_to_use=26) ) }
+---
+generic object: ALJob
+template: x.output
+content: |
+  **Employer info:**[BR]
+  ${ x.employer_name_address_phone() }
+  
+  * **gross per year:** ${ currency( x.gross_amount() ) }
+  * **gross per month:** ${ currency( x.gross_amount(period_to_use=12) ) }
+  * **net per year:** ${ currency( x.net_amount() ) }
+  * **net per month:** ${ currency( x.net_amount(period_to_use=12) ) }
+  
+  **Hours for hourly job:**[BR]
+  % if x.is_hourly:
+  * ${ x.normalized_hours() } hours per year
+  * ${ x.normalized_hours(period_to_use=52) } hours per week
+  % else:
+  **${ x.source }** is not hourly
+  % endif
+---
+# TRANSLATIONS
+---
+depends on:
+  - user_language
+language: en
+variable name: job_items_names
+data:
+  full time: Full time wages
+  part time: Part time wages
+  tips: Tips
+  insurance: Insurance
+  federal_taxes: Federal taxes
+---
+depends on:
+  - user_language
+language: es
+variable name: job_items_names
+data:
+  full time: salario del el trabajo de tiempo completo
+  part time: salario del el trabajo de medio tiempo
+  tips: Propinas
+  insurance: Seguro
+  federal_taxes: Impuestos federales
+---
