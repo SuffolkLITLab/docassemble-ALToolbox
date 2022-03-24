@@ -322,8 +322,8 @@ fields:
 ---
 generic object: ALJob
 code: |
-  x.name
-  x.source = x.name
+  # Q: aljob.source vs. itemized_job.name
+  x.source
   x.employer
   x.value
   x.complete = True
@@ -333,12 +333,12 @@ generic object: ALJob
 question: |
   What is the name of this regular job?
 fields:
-  - Name: x.name
+  - Name: x.source
 ---
 id: regular job employer
 generic object: ALJob
 question: |
-  Tell us about your employer for ${ x.name }
+  Tell us about your employer for ${ x.source }
 fields:
   - Name: x.employer
   - Address: x.employer_address
@@ -347,7 +347,7 @@ fields:
 id: regular job value
 generic object: ALJob
 question: |
-  What how much do you get paid for ${ x.name }?
+  What how much do you get paid for ${ x.source }?
 fields:
   - Is the job hourly?: x.is_hourly
     datatype: yesnoradio
@@ -385,7 +385,7 @@ question: |
   What is the name of this non-itemized job?
 subquestion: |
   % if len(x.complete_elements()) > 0:
-  You've already told us about ${ comma_and_list([job.name for job in x.complete_elements()]) }.
+  You've already told us about ${ comma_and_list([job.source for job in x.complete_elements()]) }.
   % endif
 fields:
   - Job name: x[i].name
@@ -444,7 +444,7 @@ subquestion: |
   
   % if to_run['ALJob'] or to_run['all']:
   
-  ### Single ALJob: ${ aljob.name }
+  ### Single ALJob: ${ aljob.source }
   
   ${ aljob.output }
   
@@ -464,9 +464,9 @@ subquestion: |
   ${ [item for item in aljob_list.sources()][0] } base pay per year: ${ currency(aljob_list.net_total(source=[item for item in aljob_list.sources()][0])) }
   
   % for one_job in aljob_list:
-  #### ${ one_job.name }
+  #### ${ one_job.source }
   
-  ${ one_job.output }:
+  ${ one_job.output }
   % endfor
   
   ---
@@ -555,7 +555,7 @@ content: |
   * ${ x.normalized_hours() } hours per year
   * ${ x.normalized_hours(period_to_use=52) } hours per week
   % else:
-  **${ x.name }** is not hourly
+  **${ x.source }** is not hourly
   % endif
 ---
 # TRANSLATIONS
