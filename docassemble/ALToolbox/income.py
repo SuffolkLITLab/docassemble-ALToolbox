@@ -271,8 +271,12 @@ class ALJobList(ALIncomeList):
     income than ALItemizedJobList.
     """
     def init(self, *pargs, **kwargs):
-        super().init(*pargs, **kwargs)     
+        super().init(*pargs, **kwargs)
         self.object_type = ALJob
+    
+    def amount(self, period_to_use=1, source=None):
+      """Alias for self.gross_total() to integrate with ALIncomeList math."""
+      return self.gross_total(period_to_use=period_to_use, source=source)
     
     def gross_total(self, period_to_use=1, source=None):
         """
@@ -626,7 +630,7 @@ class ALItemizedJob(DAObject):
         """Alias for ALItemizedJob.gross_amount."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
     def amount(self, period_to_use=1, source=None):
-        """Alias for ALItemizedJob.gross_amount."""
+      """Alias for ALItemizedJob.gross_amount to integrate with ALIncomeList math."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
     
     # ---
@@ -842,7 +846,7 @@ class ALItemizedJobList(DAList):
         """Alias for ALItemizedJobList.gross_amount()."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
     def amount(self, period_to_use=1, source=None):
-        """Alias for ALItemizedJobList.gross_amount()."""
+      """Alias for ALItemizedJobList.gross_amount to integrate with ALIncomeList math."""
         return self.gross_amount(period_to_use=period_to_use, source=source)
       
     # ---

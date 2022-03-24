@@ -10,13 +10,13 @@ comment: |
     - ???
 ---
 objects:
+  - itemized_job: ALItemizedJob.using()
   - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
       ask_number=True)
-  - itemized_job: ALItemizedJob.using()
-  #- jobs: ALJobList.using(
-  #    complete_attribute='complete',
-  #    there_is_another=False)
+  - aljob_list: ALJobList.using(
+      complete_attribute='complete',
+      ask_number=True)
   - aljob: ALJob
   #- incomes: ALIncomeList.using(
   #    complete_attribute='complete',
@@ -34,8 +34,10 @@ code: |
   
   if to_run['ALJob'] or to_run['all']:
     aljob.name = 'Some Unitemized Job'
-    aljob.employer
-    aljob.value
+    aljob.complete
+  
+  if to_run['ALJobList'] or to_run['all']:
+    aljob_list.gather()
   
   #if to_run['ALIncomeList'] or to_run['all']:
   #  income_sources
@@ -83,7 +85,7 @@ fields:
       - ALItemizedJobList: ALItemizedJobList
       - ALItemizedJob: ALItemizedJob
       - ALJob: ALJob
-      #- ALJobList: ALJobList
+      - ALJobList: ALJobList
       #- ALIncomeList: ALIncomeList
       #- ALIncome: ALIncome
       #- ALLedger: ALLedger
@@ -119,28 +121,7 @@ code: |
     ('garnishments', 'Garnishments')
   ]
 ---
-# JOB/ITEMIZED_JOB SHARED QUESTIONS
----
-id: employer
-generic object: DAObject
-question: |
-  Tell us about your employer for ${ x.name }
-fields:
-  - Name: x.employer.name.first
-  - street: x.employer.address.address
-    required: False
-  - unit: x.employer.address.unit
-    required: False
-  - city: x.employer.address.city
-    required: False
-  - state: x.employer.address.state
-    required: False
-  - zip: x.employer.address.zip
-    required: False
-  - Phone number: x.employer.phone_number
-    required: False
----
-# SHARED BY ITEMIZED JOB-RELATED OBJECTS
+# SHARED BY ALItemizedJob AND ALItemizedJobList
 ---
 generic object: ALItemizedJob
 code: |
@@ -167,7 +148,33 @@ code: |
   x.out_values[i].value
   x.out_values[i].complete = True
 ---
-id: line items for itemized job
+id: itemized job name
+generic object: ALItemizedJob
+question: |
+  What is the name of this itemized job?
+fields:
+  - Job name: x.name
+---
+id: employer
+generic object: ALItemizedJob
+question: |
+  Tell us about your employer for ${ x.name }
+fields:
+  - Name: x.employer.name.first
+  - street: x.employer.address.address
+    required: False
+  - unit: x.employer.address.unit
+    required: False
+  - city: x.employer.address.city
+    required: False
+  - state: x.employer.address.state
+    required: False
+  - zip: x.employer.address.zip
+    required: False
+  - Phone number: x.employer.phone_number
+    required: False
+---
+id: itemized job line items
 generic object: ALItemizedJob
 question: |
     Enter info from your paystub for your ${ x.name } job
@@ -194,7 +201,7 @@ fields:
     - Does the job have other deductions?: x.out_values.there_is_another
       datatype: yesnoradio
 ---
-id: itemized_job period
+id: itemized job period
 generic object: ALItemizedJob
 question: |
   Tell us about your ${ x.name }'s job hours
@@ -258,22 +265,14 @@ fields:
   - Do other money being taken out of your job?: x.out_values.there_is_another
     datatype: yesnoradio
 ---
-# ITEMIZED_JOB (Unique items)
----
-id: single itemized job name
-generic object: ALItemizedJob
-question: |
-  What is the name of this itemized job?
-fields:
-  - Job name: x.name
----
-# ITEMIZED_JOB LIST (Unique items)
+# UNIQUE ITEMS FOR ALItemizedJobList
 ---
 id: how many itemized jobs
+generic object: ALItemizecJobList
 question: |
   How many itemized jobs do you have?
 fields:
-  - no label: itemized_job_list.target_number
+  - no label: x.target_number
     datatype: number
 ---
 id: name of one itemized job in list
@@ -287,7 +286,67 @@ subquestion: |
 fields:
   - Job name: x[i].name
 ---
-# ONE REGULAR JOB
+# INCOMES
+---
+code: |
+  if income_sources.any_true():
+    for source in income_sources.true_values():
+      one_income = incomes.appendObject(source=source)
+      # Never put anything else in here
+  get_income_sources = True
+---
+generic object: ALIncome
+code: |
+  x.value
+  x.complete = True
+---
+id: which incomes
+question: |
+  What are your sources of income?
+fields:
+  - no label: income_sources
+    datatype: checkboxes
+    code: |
+      income_source_list()
+---
+# ONE INCOME
+---
+id: income value
+generic object: ALIncome
+question: |
+  What how much do you get paid for ${ x.source }?
+fields:
+  - Amount: x.value
+    datatype: currency
+  - Period: x.period
+    input type: radio
+    code: |
+      income_period_list()
+---
+# SHARED BY ALJob AND ALJobList
+---
+generic object: ALJob
+code: |
+  x.name
+  x.employer
+  x.value
+  x.complete = True
+---
+id: regular job name
+generic object: ALJob
+question: |
+  What is the name of this regular job?
+fields:
+  - Name: x.name
+---
+id: regular job employer
+generic object: ALJob
+question: |
+  Tell us about your employer for ${ x.name }
+fields:
+  - Name: x.employer
+  - Address: x.employer_address
+  - Phone: x.employer_phone
 ---
 id: regular job value
 generic object: ALJob
@@ -314,58 +373,26 @@ fields:
   - What is the net income of the job?: x.net
     datatype: currency
 ---
-id: regular job employer
-generic object: ALJob
+# UNIQUE ITEMS FOR ALItemizedJobList
+---
+id: how many regular jobs
+generic object: ALJobList
 question: |
-  Tell us about your employer for ${ x.name }
+  How many non-itemized jobs do you have?
 fields:
-  - Name: x.employer
-  - Address: x.employer_address
-  - Phone: x.employer_phone
+  - no label: x.target_number
+    datatype: number
 ---
-id: single regular job name
-generic object: ALJob
+id: name of one regular job in list
+generic object: ALJobList
 question: |
-  What is the name of this regular job?
+  What is the name of this non-itemized job?
+subquestion: |
+  % if len(x.complete_elements()) > 0:
+  You've already told us about ${ comma_and_list([job.name for job in x.complete_elements()]) }.
+  % endif
 fields:
-  - Name: x.name
----
-# INCOMES
----
-code: |
-  if income_sources.any_true():
-    for source in income_sources.true_values():
-      one_income = incomes.appendObject(source=source)
-      # Never put anything else in here
-  get_income_sources = True
----
-generic object: ALIncomeList
-code: |
-  x[i].value
-  x[i].complete = True
----
-id: which incomes
-question: |
-  What are your sources of income?
-fields:
-  - no label: income_sources
-    datatype: checkboxes
-    code: |
-      income_source_list()
----
-# ONE INCOME
----
-id: income value
-generic object: ALIncome
-question: |
-  What how much do you get paid for ${ x.source }?
-fields:
-  - Amount: x.value
-    datatype: currency
-  - Period: x.period
-    input type: radio
-    code: |
-      income_period_list()
+  - Job name: x[i].name
 ---
 # ENDING SCREENS
 ---
@@ -381,7 +408,7 @@ question: |
 subquestion: |
   
   % if to_run['ALItemizedJob'] or to_run['all']:
-  ## Single itemized_job called ${ itemized_job.name }
+  ## Single ALItemizedJob: ${ itemized_job.name }
   
   ${ itemized_job.output }
   
@@ -390,7 +417,7 @@ subquestion: |
   % endif
 
   % if to_run['ALItemizedJobList'] or to_run['all']:
-  ## Itemized jobs list
+  ### Itemized jobs list
   
   Amounts totals:
   
@@ -421,9 +448,27 @@ subquestion: |
   
   % if to_run['ALJob'] or to_run['all']:
   
-  # ALJob: ${ aljob.name }
+  ### Single ALJob: ${ aljob.name }
   
   ${ aljob.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALJobList'] or to_run['all']:
+  ### ALJobList
+  
+  * gross total per year: ${ currency(aljob_list.gross_total()) }
+  * net total per month: ${ currency(aljob_list.gross_total(period_to_use=12)) }
+  * gross total per year: ${ currency(aljob_list.net_total()) }
+  * net total per month: ${ currency(aljob_list.net_total(period_to_use=12)) }
+  
+  % for one_job in aljob_list:
+  #### ${ one_job.name }
+  
+  ${ one_job.output }:
+  % endfor
   
   ---
   
@@ -476,27 +521,32 @@ content: |
   **Net:**[BR]
   **Net per year:** ${currency( x.net_amount() )}[BR]
   **Net quarterly:** ${currency( x.net_amount(period_to_use=4) )}
+  
+  **Hours for hourly job:**[BR]
+  % if x.is_hourly:
+  * ${ x.normalized_hours() } hours per year
+  * ${ x.normalized_hours(period_to_use=52) } hours per week
+  % else:
+  **${ x.name }** is not hourly
+  % endif
 ---
 template: x.output
 generic object: ALJob
 content: |
-  **Employer info:**
-  
+  **Employer info:**[BR]
   ${ x.employer_name_address_phone() }
   
-  * **gross:** ${ currency( x.gross_amount() ) } per year
-  * **gross:** ${ currency( x.gross_amount(period_to_use=12) ) } per month
-  * **net:** ${ currency( x.net_amount() ) } per year
-  * **net:** ${ currency( x.net_amount(period_to_use=12) ) } per month
+  * **gross per year:** ${ currency( x.gross_amount() ) }
+  * **gross per month:** ${ currency( x.gross_amount(period_to_use=12) ) }
+  * **net per year:** ${ currency( x.net_amount() ) }
+  * **net per month:** ${ currency( x.net_amount(period_to_use=12) ) }
   
-  **Hours per month for hourly job:**
+  **Hours for hourly job:**[BR]
   % if x.is_hourly:
-  
   * ${ x.normalized_hours() } hours per year
   * ${ x.normalized_hours(period_to_use=52) } hours per week
-  
   % else:
-  This job is not hourly
+  **${ x.name }** is not hourly
   % endif
 ---
 # TRANSLATIONS
