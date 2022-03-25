@@ -73,6 +73,7 @@ code: |
     alincome_list.target_number = len(income_sources.true_values())
 ---
 id: which to test
+# TODO: Accumulate them all in one ALIncomeList at the end to test the ability of ALIncomeList to run its functions appropriately on all types of values (other than ALIncomeLists themselves)
 question: |
   Which functionality do you want to try?
 subquestion: |
@@ -83,6 +84,7 @@ subquestion: |
   * `ALJobList` covers all the same functionality as `ALJob` and `ALIncome`.
   * `ALIncomeList` covers all the same functionality as `ALIncome`.
   * `ALValueList` covers all the same functionality as `ALSimpleValue`.
+  * `ALLedger` covers all the same functionality as `ALValueList` and `ALSimpleValue`.
 
 fields:
   - no label: to_run
@@ -258,7 +260,7 @@ generic object: ALItemizedJob
 question: |
   Other deductions
 subquestion: |
-  You've already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
+  You've already told us about what gets taken out for **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.out_values.complete_elements().keys()] )}**.
 fields:
   - Deduction name: x.out_values.new_item_name
 validation code: |
@@ -272,13 +274,13 @@ question: |
 fields:
   - Amount: x.out_values[i].value
     datatype: currency
-  - Do other money being taken out of your job?: x.out_values.there_is_another
+  - Is there other money being taken out?: x.out_values.there_is_another
     datatype: yesnoradio
 ---
 # UNIQUE ITEMS FOR ALItemizedJobList
 ---
 id: how many itemized jobs
-generic object: ALItemizecJobList
+generic object: ALItemizedJobList
 question: |
   How many itemized jobs do you have?
 fields:
@@ -514,15 +516,28 @@ subquestion: |
   % if to_run['ALItemizedJobList'] or to_run['all']:
   ### Itemized jobs list
   
-  Amounts totals:
+  Calculations:
   
-  * **gross per year:** ${currency( itemized_job_list.gross_amount() )}
-  * **gross per month:** ${currency( itemized_job_list.gross_amount(period_to_use=12) )}
-  * **net per year:** ${currency( itemized_job_list.net_amount() )}
-  * **net per week:** ${currency( itemized_job_list.net_amount(period_to_use=52) )}
-  * **money out per year:** ${currency(itemized_job_list.total_out())}
+  Calcuation type | Frequency | Amount
+  - | - | -
+  Gross | Yearly | ${currency( itemized_job_list.gross_amount() )}
+  Gross | Monthly | ${currency( itemized_job_list.gross_amount(period_to_use=12) )}
+  Net | Yearly | ${currency( itemized_job_list.net_amount() )}
+  Net | Weekly | ${currency( itemized_job_list.net_amount(period_to_use=52) )}
+  Money out | Yearly | ${currency(itemized_job_list.total_out())}
   
-  The below only shows useful amounts when both base pay and `federal_taxes` have amounts:
+  **Getting base pay amounts by `source`:**
+  
+  The below only shows useful amounts when both base pay and `federal_taxes` have amounts. "Base pay" refers to either `full time` or `part time` values.
+  
+  All rows should be the same except the last row, where `federal_taxes` is being subtracted from the base pay.
+  
+  Calcuation type | Sources | Amount
+  - | - | -
+  Gross | Base pay | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
+  Gross | Base pay and `federal_taxes` | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )}
+  Net | Base pay | ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )}
+  Net | Base pay and `federal_taxes` | ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )}
   
   * **base pay gross:** ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
   * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
@@ -554,10 +569,12 @@ subquestion: |
   % if to_run['ALJobList'] or to_run['all']:
   ### ALJobList
   
-  * gross total per year: ${ currency(aljob_list.gross_total()) }
-  * net total per month: ${ currency(aljob_list.gross_total(period_to_use=12)) }
-  * gross total per year: ${ currency(aljob_list.net_total()) }
-  * net total per month: ${ currency(aljob_list.net_total(period_to_use=12)) }
+  Calculation Type | Frequency | Amount
+  - | - | -
+  Gross | Yearly | ${ currency(aljob_list.gross_total()) }
+  Gross | Monthly | ${ currency(aljob_list.gross_total(period_to_use=12)) }
+  Net | Yearly | ${ currency(aljob_list.net_total()) }
+  Net | Monthly | ${ currency(aljob_list.net_total(period_to_use=12)) }
   
   One item value:[BR]
   ${ [item for item in aljob_list.sources()][0] } base pay per year: ${ currency(aljob_list.net_total(source=[item for item in aljob_list.sources()][0])) }
@@ -573,9 +590,10 @@ subquestion: |
   % endif
   
   % if to_run['ALIncome'] or to_run['all']:
-  ### A single ALIncome: ${ alincome.source }
+  ### A single ALIncome:
   
-  
+  Source | Period | Amount
+  - | - | -
   ${ alincome.output }
   
   ---
@@ -589,16 +607,17 @@ subquestion: |
   **Matches for source called "SSR" (Social Security Retirement Benefits):** ${ alincome_list.matches('SSR') }[BR]
   **Total per year of everything:** ${ currency(alincome_list.total()) }[BR]
   **Total per month of owners called "me":** ${ currency(alincome_list.total(period_to_use=12, owner=['me'])) }[BR]
-  **Income list json for Legal Server:**[BR]
+  
+  Source | Period | Amount
+  - | - | -
+  % for one_income in alincome_list:
+  ${ one_income.output }
+  % endfor
+  
+  **Income list JSON string for Legal Server:**[BR]
   ```
   ${ alincome_list.to_json() }
   ```
-  
-  % for one_income in alincome_list:
-  #### ${ one_income.source }
-  
-  ${ one_income.output }
-  % endfor
   
   ---
   
@@ -609,7 +628,8 @@ subquestion: |
   
   An ALSimpleValue is not a periodic value. Its `.amount()` is negative if its `transaction_type` is an "expense", otherwise it's positive.
   
-  ${ al_simple_value.output }
+  As a string: ${ al_simple_value }[BR]
+  Amount: ${ currency(al_simple_value.amount()) }
   
   ---
   
@@ -625,28 +645,18 @@ subquestion: |
   % endif
   
   % if to_run['ALLedger'] or to_run['all']:
-  ### ALLedger
+  ### ALLedger running totals
   
-  #### Running total:
-  
-  Date | Source | Value | Total
-  - | - | - | -
-  % for val in al_ledger:
-  ${ val.date } | ${ val.source } | ${ val.amount() } | ${ val.running_total }
-  % endfor
+  ${ al_ledger.display_table }
   
   ---
   
   % endif
 comment: |
-  Causes "Decimal" error. See table itself
-  ${ al_ledger.display_table }
-  
   Causes infinite loop:
   ${ al_ledger.output }
-  
 
-  sldkf
+  keep the comments alive!
 
 ---
 # OUTPUT TEMPLATES
@@ -657,25 +667,22 @@ content: |
   **Employer info:**[BR]
   ${ x.employer_name_address_phone() }
   
-  Type | Period | Amount
+  Calculation Type | Period | Amount
   --- | --- | ---
-  Gross | yearly | ${ currency( x.gross_amount() ) }
-  Gross | weekly | ${ currency( x.gross_amount(period_to_use=12) ) }
-  Total out | yearly | ${currency(x.total_out())}
-  Total out | fortnightly | ${currency(x.total_out(period_to_use=26))}
-  Net | yearly | ${currency( x.net_amount() )}
-  Net | quarterly | ${currency( x.net_amount(period_to_use=4) )}
+  Gross | Yearly | ${ currency( x.gross_amount() ) }
+  Gross | Weekly | ${ currency( x.gross_amount(period_to_use=12) ) }
+  Total out | Yearly | ${currency(x.total_out())}
+  Total out | Fortnightly | ${currency(x.total_out(period_to_use=26))}
+  Net | Yearly | ${currency( x.net_amount() )}
+  Net | Quarterly | ${currency( x.net_amount(period_to_use=4) )}
   
-  **Gross for each item:**
+  **Specifying by item `source`:**
   
+  Name | Calculation Type | Frequency | Gross amount
+  - | - | - | -
   % for name, item in x.in_values.complete_elements().items():
-  * **${ job_items_names.get(name, name) } per month:** ${ currency(x.gross_amount( source=name, period_to_use=12 )) }
-  % endfor
-  
-  **Total out for each item:**
-  
-  % for name, item in x.out_values.complete_elements().items():
-  * **${ job_items_names.get(name, name) } per month:** ${ currency(x.total_out( source=name, period_to_use=12 )) }
+  ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_amount( source=name, period_to_use=12 )) }
+  ${ job_items_names.get(name, name) } | Total out | Monthly | ${ currency(x.total_out( source=name, period_to_use=12 )) }
   % endfor
   
   **Hours for hourly job:**[BR]
@@ -689,11 +696,8 @@ content: |
 generic object: ALIncome
 template: x.output
 content: |
-  Period | Amount
-  --- | ---
-  Yearly | ${ currency( x.amount() ) }
-  Fortnightly | ${ currency( x.amount(period_to_use=26) ) }
-  
+  ${ x.source } | Yearly | ${ currency( x.amount() ) }
+  ${ x.source } | Fortnightly | ${ currency( x.amount(period_to_use=26) ) }
 ---
 generic object: ALJob
 template: x.output
@@ -703,10 +707,10 @@ content: |
   
   Type | Period | Amount
   --- | --- | ---
-  Gross | yearly | ${ currency( x.gross_amount() ) }
-  Gross | monthly | ${ currency( x.gross_amount(period_to_use=12) ) }
-  Net | yearly | ${ currency( x.net_amount() ) }
-  Net | monthly | ${ currency( x.net_amount(period_to_use=12) ) }
+  Gross | Yearly | ${ currency( x.gross_amount() ) }
+  Gross | Monthly | ${ currency( x.gross_amount(period_to_use=12) ) }
+  Net | Yearly | ${ currency( x.net_amount() ) }
+  Net | Monthly | ${ currency( x.net_amount(period_to_use=12) ) }
   
   **Hours for hourly job:**[BR]
   % if x.is_hourly:
@@ -716,61 +720,36 @@ content: |
   **${ x.source }** is not hourly
   % endif
 ---
-generic object: ALSimpleValue
-template: x.output
-content: |
-  Functionality | Value 
-  - | -
-  As string | ${ x }
-  Amount | ${ currency(x.amount()) }
----
 generic object: ALValueList
 template: x.output
 content: |
   * **sources:** ${ x.sources() }
   * **total:** ${ currency(x.total()) }
-  * **total of sources called "car":** ${ currency(x.total(source=['car'])) }
+  * **total of sources called "cash":** ${ currency(x.total(source=['cash'])) }
   
   An item's `.amount()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
   
+  **Simple values:**
+  
+  Source | Functionality | Value 
+  - | - | -
   % for val in x:
-  #### ${ val.source }:
-  
-  ${ val.output }
-  
+  ${ val.source } | As string | ${ val }
+  ${ val.source } | Amount | ${ currency(val.amount()) }
   % endfor
 ---
+table: x.display_table
 generic object: ALLedger
-template: x.output
-content: |
-  * **sources:** ${ x.sources() }
-  * **total:** ${ currency(x.total()) }
-  * **total of sources called "car":** ${ currency(x.total(source=['car'])) }
-  
-  An item's `.amount()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
-  
-  % for val in x:
-  #### ${ val.source }:
-  
-  ${ val.output }
-  
-  % endfor
----
-#table: x.display_table
-#generic object: ALedger
-#rows: x
-# TypeError: 'Decimal' object is not callable`
-#table: al_ledger.display_table
-#rows: al_ledger
-#columns:
-#  - Date: |
-#      row_item.date
-#  - Source: |
-#      row_item.source
-#  - Amount: |
-#      currency( float(row_item.amount()) )
-#  - Total: |
-#      currency( row_item.running_total() )
+rows: x
+columns:
+  - Date: |
+      row_item.date
+  - Source: |
+      row_item.source
+  - Amount: |
+      currency( row_item.amount() )
+  - Total: |
+      currency( row_item.running_total )
 ---
 # TRANSLATIONS
 ---
