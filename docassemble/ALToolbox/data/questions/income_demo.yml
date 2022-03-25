@@ -25,6 +25,9 @@ objects:
   - al_value_list: ALValueList.using(
       complete_attribute='complete',
       ask_number=True)
+  - al_ledger: ALLedger.using(
+      complete_attribute='complete',
+      ask_number=True)
 ---
 id: interview order
 mandatory: True
@@ -57,6 +60,10 @@ code: |
   
   if to_run['ALValueList'] or to_run['all']:
     al_value_list.gather()
+  
+  if to_run['ALLedger'] or to_run['all']:
+    al_ledger.gather()
+    al_ledger.calculate()
   
   before_end_so_answers_are_saved
   end
@@ -91,7 +98,7 @@ fields:
       - ALIncomeList: ALIncomeList
       - ALSimpleValue: ALSimpleValue
       - ALValueList: ALValueList
-      #- ALLedger: ALLedger
+      - ALLedger: ALLedger
       #- ALVehicle: ALVehicle
       #- ALVehicleList: ALVehicleList
       #- ALAsset: ALAsset
@@ -418,7 +425,7 @@ generic object: ALSimpleValue
 question: |
   Tell us about the simple value
 subquestion: |
-  Note: An ALSimpleValue doesn't require a transaction type in order to function.
+  Note: An ALSimpleValue doesn't require a transaction type in order to work.
 fields:
   - Value: x.value
     datatype: currency
@@ -429,28 +436,30 @@ fields:
       - Expense: expense
       - Income: income
 ---
-# UNIQUE FOR ALValueList
+# SHARED BY ALValueList and ALLedger
+---
+id: how many simple values
+generic object: ALValueList
+question: |
+  How many simple values do you have in your ${ x.object_name() } ${ x.__class__.__name__ }?
+fields:
+  - no label: x.target_number
+    datatype: number
+    default: 2
+---
+# UNIQUE TO ALValueList
 ---
 generic object: ALValueList
 code: |
   x[i].value
   x[i].complete = True
 ---
-id: how many simple values
-generic object: ALValueList
-question: |
-  How many simple values do you have?
-fields:
-  - no label: x.target_number
-    datatype: number
-    default: 2
----
 id: value list item value
 generic object: ALValueList
 question: |
-  Tell us about your ${ ordinal(i) } simple value
+  Tell us about your ${ ordinal(i) } simple value for your ${ x.object_name() } ${ x.__class__.__name__ }
 subquestion: |
-  Note: An ALSimpleValue doesn't require a transaction type in order to function.
+  Note: An ALSimpleValue doesn't require a transaction type in order to work.
 fields:
   - Source: x[i].source
   - Value: x[i].value
@@ -461,6 +470,22 @@ fields:
     choices:
       - Expense: expense
       - Income: income
+---
+# UNIQUE TO ALLedger
+---
+generic object: ALLedger
+code: |
+  x[i].value
+  x[i].date
+  x[i].complete = True
+---
+id: ledger value date
+generic object: ALLedger
+question: |
+  When did the transaction for your ${ x.object_name() } ${ x.__class__.__name__ } occur?
+fields:
+  - Date: x[i].date
+    datatype: date
 ---
 # ENDING SCREENS
 ---
@@ -473,6 +498,8 @@ id: end
 event: end
 question: |
   Your answers
+buttons:
+  - Restart: restart
 subquestion: |
   
   % if to_run['ALItemizedJob'] or to_run['all']:
@@ -555,15 +582,6 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALIncome'] or to_run['all']:
-  ### A single ALIncome: ${ alincome.source }
-  
-  ${ alincome.output }
-  
-  ---
-  
-  % endif
-  
   % if to_run['ALIncomeList'] or to_run['all']:
   ### ALIncomeList
   
@@ -589,7 +607,7 @@ subquestion: |
   % if to_run['ALSimpleValue'] or to_run['all']:
   ### A single ALSimpleValue
   
-  It is not a periodic value. Its `.amount()` is negative if its `transaction_type` is an "expense", otherwise it's positive.
+  An ALSimpleValue is not a periodic value. Its `.amount()` is negative if its `transaction_type` is an "expense", otherwise it's positive.
   
   ${ al_simple_value.output }
   
@@ -600,25 +618,33 @@ subquestion: |
   % if to_run['ALValueList'] or to_run['all']:
   ### ALValueList
   
-  * **sources:** ${ al_value_list.sources() }
-  * **total:** ${ al_value_list.total() }
-  * **total of sources called "car":** ${ al_value_list.total(source=['car']) }
+  ${ al_value_list.output }
   
-  Individual items' `.amount()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
+  ---
   
-  % for val in al_value_list:
+  % endif
   
-  ${ val.output }
+  % if to_run['ALLedger'] or to_run['all']:
+  ### ALLedger
   
+  #### Running total:
+  
+  Date | Source | Value | Total
+  - | - | - | -
+  % for val in al_ledger:
+  ${ val.date } | ${ val.source } | ${ val.amount() } | ${ val.running_total }
   % endfor
   
   ---
   
   % endif
 comment: |
-  ### ALSimpleValue and ALValueList
-  amount
-  __str__
+  Causes "Decimal" error. See table itself
+  ${ al_ledger.display_table }
+  
+  Causes infinite loop:
+  ${ al_ledger.output }
+  
 
   sldkf
 
@@ -631,25 +657,26 @@ content: |
   **Employer info:**[BR]
   ${ x.employer_name_address_phone() }
   
-  **In:**[BR]
-  **Gross per year:** ${ currency( x.gross_amount() ) }[BR]
-  **Gross per week:** ${ currency( x.gross_amount(period_to_use=12) ) }
+  Type | Period | Amount
+  --- | --- | ---
+  Gross | yearly | ${ currency( x.gross_amount() ) }
+  Gross | weekly | ${ currency( x.gross_amount(period_to_use=12) ) }
+  Total out | yearly | ${currency(x.total_out())}
+  Total out | fortnightly | ${currency(x.total_out(period_to_use=26))}
+  Net | yearly | ${currency( x.net_amount() )}
+  Net | quarterly | ${currency( x.net_amount(period_to_use=4) )}
+  
+  **Gross for each item:**
   
   % for name, item in x.in_values.complete_elements().items():
   * **${ job_items_names.get(name, name) } per month:** ${ currency(x.gross_amount( source=name, period_to_use=12 )) }
   % endfor
   
-  **Out:**[BR]
-  **Total out per year:** ${currency(x.total_out())}
-  **Total out per week:** ${currency(x.total_out(period_to_use=52))}
+  **Total out for each item:**
   
   % for name, item in x.out_values.complete_elements().items():
   * **${ job_items_names.get(name, name) } per month:** ${ currency(x.total_out( source=name, period_to_use=12 )) }
   % endfor
-  
-  **Net:**[BR]
-  **Net per year:** ${currency( x.net_amount() )}[BR]
-  **Net quarterly:** ${currency( x.net_amount(period_to_use=4) )}
   
   **Hours for hourly job:**[BR]
   % if x.is_hourly:
@@ -662,10 +689,11 @@ content: |
 generic object: ALIncome
 template: x.output
 content: |
-  **Amount:**
+  Period | Amount
+  --- | ---
+  Yearly | ${ currency( x.amount() ) }
+  Fortnightly | ${ currency( x.amount(period_to_use=26) ) }
   
-  * Per year: ${ currency( x.amount() ) }
-  * Fortnightly: ${ currency( x.amount(period_to_use=26) ) }
 ---
 generic object: ALJob
 template: x.output
@@ -673,10 +701,12 @@ content: |
   **Employer info:**[BR]
   ${ x.employer_name_address_phone() }
   
-  * **gross per year:** ${ currency( x.gross_amount() ) }
-  * **gross per month:** ${ currency( x.gross_amount(period_to_use=12) ) }
-  * **net per year:** ${ currency( x.net_amount() ) }
-  * **net per month:** ${ currency( x.net_amount(period_to_use=12) ) }
+  Type | Period | Amount
+  --- | --- | ---
+  Gross | yearly | ${ currency( x.gross_amount() ) }
+  Gross | monthly | ${ currency( x.gross_amount(period_to_use=12) ) }
+  Net | yearly | ${ currency( x.net_amount() ) }
+  Net | monthly | ${ currency( x.net_amount(period_to_use=12) ) }
   
   **Hours for hourly job:**[BR]
   % if x.is_hourly:
@@ -689,8 +719,58 @@ content: |
 generic object: ALSimpleValue
 template: x.output
 content: |
-  **As a string:** ${ x }[BR]
-  **Amount:** ${ currency( x.amount()) }
+  Functionality | Value 
+  - | -
+  As string | ${ x }
+  Amount | ${ currency(x.amount()) }
+---
+generic object: ALValueList
+template: x.output
+content: |
+  * **sources:** ${ x.sources() }
+  * **total:** ${ currency(x.total()) }
+  * **total of sources called "car":** ${ currency(x.total(source=['car'])) }
+  
+  An item's `.amount()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
+  
+  % for val in x:
+  #### ${ val.source }:
+  
+  ${ val.output }
+  
+  % endfor
+---
+generic object: ALLedger
+template: x.output
+content: |
+  * **sources:** ${ x.sources() }
+  * **total:** ${ currency(x.total()) }
+  * **total of sources called "car":** ${ currency(x.total(source=['car'])) }
+  
+  An item's `.amount()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
+  
+  % for val in x:
+  #### ${ val.source }:
+  
+  ${ val.output }
+  
+  % endfor
+---
+#table: x.display_table
+#generic object: ALedger
+#rows: x
+# TypeError: 'Decimal' object is not callable`
+#table: al_ledger.display_table
+#rows: al_ledger
+#columns:
+#  - Date: |
+#      row_item.date
+#  - Source: |
+#      row_item.source
+#  - Amount: |
+#      currency( float(row_item.amount()) )
+#  - Total: |
+#      currency( row_item.running_total() )
 ---
 # TRANSLATIONS
 ---
