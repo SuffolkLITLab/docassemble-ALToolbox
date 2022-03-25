@@ -114,24 +114,14 @@ fields:
       #- non_wage_income_list: non_wage_income_list
       #- expense_source_list: expense_source_list
 ---
-code: |
-  job_source_transaction_types = {
-    'tips': 'payment',
-    'deductions': 'deduction',
-    'garnishments': 'deduction'
-  }
----
-code: |
-  # commission, bonus, hourly wage, salary, overtime
-  # https://fingercheck.com/the-difference-between-a-paycheck-and-a-pay-stub/
-  #Deductions are the amounts subtracted or withheld from the total pay, including the income tax percentage of an employee’s gross wages.
-  #Social security and Medicare are deducted based on the income over the set threshold.
-  #Other deductions can include state and local income taxes, employee 401K contributions, insurance payments, profit sharing, union dues, garnishments and unemployment insurance etc.
-  job_income_choices = [
-    ('tips', 'Tips'),
-    ('deductions', 'Deductions'),
-    ('garnishments', 'Garnishments')
-  ]
+comment: |
+  Notes on itemized job items:
+  
+  - commission, bonus, hourly wage, salary, overtime
+  - https://fingercheck.com/the-difference-between-a-paycheck-and-a-pay-stub/
+  - Deductions are the amounts subtracted or withheld from the total pay, including the income tax percentage of an employee’s gross wages.
+  - Social security and Medicare are deducted based on the income over the set threshold.
+  - Other deductions can include state and local income taxes, employee 401K contributions, insurance payments, profit sharing, union dues, garnishments and unemployment insurance etc.
 ---
 # SHARED BY ALItemizedJob AND ALItemizedJobList
 ---
