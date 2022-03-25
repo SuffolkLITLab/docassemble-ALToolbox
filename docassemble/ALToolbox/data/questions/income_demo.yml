@@ -21,6 +21,10 @@ objects:
   - alincome: ALIncome
   #- alincome_list: ALIncomeList.using(complete_attribute='complete', ask_number=False)
   - alincome_list: ALIncomeList.using(auto_gather=False)
+  - al_simple_value: ALSimpleValue
+  - al_value_list: ALValueList.using(
+      complete_attribute='complete',
+      ask_number=True)
 ---
 id: interview order
 mandatory: True
@@ -48,6 +52,12 @@ code: |
     alincome_list.gathered  # get sources in the list
     get_alincome_list_item_values
   
+  if to_run['ALSimpleValue'] or to_run['all']:
+    al_simple_value.value
+  
+  if to_run['ALValueList'] or to_run['all']:
+    al_value_list.gather()
+  
   before_end_so_answers_are_saved
   end
 ---
@@ -64,7 +74,8 @@ subquestion: |
   * `ALItemizedJobList` covers all the same functionality as `ALItemizedJob`.
   * `ALJob` covers all the same functionality as `ALIncome`.
   * `ALJobList` covers all the same functionality as `ALJob` and `ALIncome`.
-  * `ALIncomeList` covers all the same functionality as `ALIncome`. 
+  * `ALIncomeList` covers all the same functionality as `ALIncome`.
+  * `ALValueList` covers all the same functionality as `ALSimpleValue`.
 
 fields:
   - no label: to_run
@@ -72,14 +83,14 @@ fields:
     none of the above: False
     choices:
       - All of the them: all
-      #- ALSimpleValue: ALSimpleValue
-      #- ALValueList: ALValueList
       - ALItemizedJob: ALItemizedJob
       - ALItemizedJobList: ALItemizedJobList
       - ALJob: ALJob
       - ALJobList: ALJobList
       - ALIncome: ALIncome
       - ALIncomeList: ALIncomeList
+      - ALSimpleValue: ALSimpleValue
+      - ALValueList: ALValueList
       #- ALLedger: ALLedger
       #- ALVehicle: ALVehicle
       #- ALVehicleList: ALVehicleList
@@ -282,15 +293,9 @@ fields:
 ---
 generic object: ALIncome
 code: |
-  #x.source
+  #x.source  # assigned where object is added to list
   x.value
   x.complete = True
----
-#generic object: ALIncomeList
-#code: |
-#  #x[i].source
-#  x[i].value
-#  x[i].complete = True
 ---
 id: income value
 generic object: ALIncome
@@ -406,6 +411,57 @@ subquestion: |
 fields:
   - Job name: x[i].name
 ---
+# UNIQUE FOR ALSimpleValue
+---
+id: simple value
+generic object: ALSimpleValue
+question: |
+  Tell us about the simple value
+subquestion: |
+  Note: An ALSimpleValue doesn't require a transaction type in order to function.
+fields:
+  - Value: x.value
+    datatype: currency
+  - Transaction type: x.transaction_type
+    datatype: radio
+    required: False
+    choices:
+      - Expense: expense
+      - Income: income
+---
+# UNIQUE FOR ALValueList
+---
+generic object: ALValueList
+code: |
+  x[i].value
+  x[i].complete = True
+---
+id: how many simple values
+generic object: ALValueList
+question: |
+  How many simple values do you have?
+fields:
+  - no label: x.target_number
+    datatype: number
+    default: 2
+---
+id: value list item value
+generic object: ALValueList
+question: |
+  Tell us about your ${ ordinal(i) } simple value
+subquestion: |
+  Note: An ALSimpleValue doesn't require a transaction type in order to function.
+fields:
+  - Source: x[i].source
+  - Value: x[i].value
+    datatype: currency
+  - Transaction type: x[i].transaction_type
+    datatype: radio
+    required: False
+    choices:
+      - Expense: expense
+      - Income: income
+---
 # ENDING SCREENS
 ---
 id: before_end_so_answers_are_saved
@@ -499,13 +555,22 @@ subquestion: |
   
   % endif
   
+  % if to_run['ALIncome'] or to_run['all']:
+  ### A single ALIncome: ${ alincome.source }
+  
+  ${ alincome.output }
+  
+  ---
+  
+  % endif
+  
   % if to_run['ALIncomeList'] or to_run['all']:
   ### ALIncomeList
   
   **Sources**: ${ alincome_list.sources() }[BR]
-  **Matches for source called "TAFDC":** ${ alincome_list.matches("TAFDC") }[BR]
+  **Matches for source called "SSR" (Social Security Retirement Benefits):** ${ alincome_list.matches('SSR') }[BR]
   **Total per year of everything:** ${ currency(alincome_list.total()) }[BR]
-  **Total per month of owners called "me":** ${ currency(alincome_list.total(period_to_use=12, owner=["me"])) }[BR]
+  **Total per month of owners called "me":** ${ currency(alincome_list.total(period_to_use=12, owner=['me'])) }[BR]
   **Income list json for Legal Server:**[BR]
   ```
   ${ alincome_list.to_json() }
@@ -520,7 +585,40 @@ subquestion: |
   ---
   
   % endif
+  
+  % if to_run['ALSimpleValue'] or to_run['all']:
+  ### A single ALSimpleValue
+  
+  It is not a periodic value. Its `.amount()` is negative if its `transaction_type` is an "expense", otherwise it's positive.
+  
+  ${ al_simple_value.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALValueList'] or to_run['all']:
+  ### ALValueList
+  
+  * **sources:** ${ al_value_list.sources() }
+  * **total:** ${ al_value_list.total() }
+  * **total of sources called "car":** ${ al_value_list.total(source=['car']) }
+  
+  Individual items' `.amount()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
+  
+  % for val in al_value_list:
+  
+  ${ val.output }
+  
+  % endfor
+  
+  ---
+  
+  % endif
 comment: |
+  ### ALSimpleValue and ALValueList
+  amount
+  __str__
 
   sldkf
 
@@ -587,6 +685,12 @@ content: |
   % else:
   **${ x.source }** is not hourly
   % endif
+---
+generic object: ALSimpleValue
+template: x.output
+content: |
+  **As a string:** ${ x }[BR]
+  **Amount:** ${ currency( x.amount()) }
 ---
 # TRANSLATIONS
 ---

@@ -416,6 +416,7 @@ class ALSimpleValue(DAObject):
     Like a Value object, but no fiddling around with .exists attribute because
     this is designed to be stored in a list, not a dictionary.
     """
+    # Q: This is not per period. It's adding multiple meanings to the name `amount`
     def amount(self):
         """
         If desired, to use as a ledger, values can be signed. Setting
