@@ -14,13 +14,13 @@ objects:
   - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
       ask_number=True)
+  - alincome: ALIncome
+  - alincome_list: ALIncomeList.using(auto_gather=False)
   - aljob: ALJob
   - aljob_list: ALJobList.using(
       complete_attribute='complete',
       ask_number=True)
-  - alincome: ALIncome
-  #- alincome_list: ALIncomeList.using(complete_attribute='complete', ask_number=False)
-  - alincome_list: ALIncomeList.using(auto_gather=False)
+  - al_asset: ALAsset
   - al_simple_value: ALSimpleValue
   - al_value_list: ALValueList.using(
       complete_attribute='complete',
@@ -39,13 +39,6 @@ code: |
   if to_run['ALItemizedJobList'] or to_run['all']:
     itemized_job_list.gather()
   
-  if to_run['ALJob'] or to_run['all']:
-    aljob.name = 'Some Unitemized Job'
-    aljob.complete
-  
-  if to_run['ALJobList'] or to_run['all']:
-    aljob_list.gather()
-  
   if to_run['ALIncome'] or to_run['all']:
     alincome.source = 'Some Income'
     alincome.complete
@@ -54,6 +47,17 @@ code: |
     income_sources
     alincome_list.gathered  # get sources in the list
     get_alincome_list_item_values
+  
+  if to_run['ALAsset'] or to_run['all']:
+    al_asset.source = 'Single Asset'
+    al_asset.complete
+  
+  if to_run['ALJob'] or to_run['all']:
+    aljob.name = 'Some Unitemized Job'
+    aljob.complete
+  
+  if to_run['ALJobList'] or to_run['all']:
+    aljob_list.gather()
   
   if to_run['ALSimpleValue'] or to_run['all']:
     al_simple_value.value
@@ -94,17 +98,17 @@ fields:
       - All of the them: all
       - ALItemizedJob: ALItemizedJob
       - ALItemizedJobList: ALItemizedJobList
-      - ALJob: ALJob
-      - ALJobList: ALJobList
       - ALIncome: ALIncome
       - ALIncomeList: ALIncomeList
+      - ALJob: ALJob
+      - ALJobList: ALJobList
+      - ALAsset: ALAsset
+      #- ALAssetList: ALAssetList
+      #- ALVehicle: ALVehicle
+      #- ALVehicleList: ALVehicleList
       - ALSimpleValue: ALSimpleValue
       - ALValueList: ALValueList
       - ALLedger: ALLedger
-      #- ALVehicle: ALVehicle
-      #- ALVehicleList: ALVehicleList
-      #- ALAsset: ALAsset
-      #- ALAssetList: ALAssetList
       #- flatten: flatten
       #- income_period_list: income_period_list
       #- income_period: income_period
@@ -292,7 +296,7 @@ fields:
 ---
 generic object: ALIncome
 code: |
-  #x.source  # assigned where object is added to list
+  x.source  # assigned where object is added to list
   x.value
   x.complete = True
 ---
@@ -409,6 +413,15 @@ subquestion: |
   % endif
 fields:
   - Job name: x[i].name
+---
+# UNIQUE FOR ALAsset
+---
+id: asset source
+generic object: ALIncome
+question: |
+  What is the source of your asset?
+fields:
+  - no label: x.source
 ---
 # UNIQUE FOR ALSimpleValue
 ---
@@ -546,39 +559,6 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALJob'] or to_run['all']:
-  
-  ### Single ALJob: ${ aljob.source }
-  
-  ${ aljob.output }
-  
-  ---
-  
-  % endif
-  
-  % if to_run['ALJobList'] or to_run['all']:
-  ### ALJobList
-  
-  Calculation Type | Frequency | Amount
-  - | - | -
-  Gross | Yearly | ${ currency(aljob_list.gross_total()) }
-  Gross | Monthly | ${ currency(aljob_list.gross_total(period_to_use=12)) }
-  Net | Yearly | ${ currency(aljob_list.net_total()) }
-  Net | Monthly | ${ currency(aljob_list.net_total(period_to_use=12)) }
-  
-  One item value:[BR]
-  ${ [item for item in aljob_list.sources()][0] } base pay per year: ${ currency(aljob_list.net_total(source=[item for item in aljob_list.sources()][0])) }
-  
-  % for one_job in aljob_list:
-  #### ${ one_job.source }
-  
-  ${ one_job.output }
-  % endfor
-  
-  ---
-  
-  % endif
-  
   % if to_run['ALIncome'] or to_run['all']:
   ### A single ALIncome:
   
@@ -613,13 +593,57 @@ subquestion: |
   
   % endif
   
+  % if to_run['ALJob'] or to_run['all']:
+  
+  ### Single ALJob: ${ aljob.source }
+  
+  ${ aljob.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALJobList'] or to_run['all']:
+  ### ALJobList
+  
+  Calculation Type | Frequency | Amount
+  - | - | -
+  Gross | Yearly | ${ currency(aljob_list.gross_total()) }
+  Gross | Monthly | ${ currency(aljob_list.gross_total(period_to_use=12)) }
+  Net | Yearly | ${ currency(aljob_list.net_total()) }
+  Net | Monthly | ${ currency(aljob_list.net_total(period_to_use=12)) }
+  
+  One item value:[BR]
+  ${ [item for item in aljob_list.sources()][0] } base pay per year: ${ currency(aljob_list.net_total(source=[item for item in aljob_list.sources()][0])) }
+  
+  % for one_job in aljob_list:
+  #### ${ one_job.source }
+  
+  ${ one_job.output }
+  % endfor
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALAsset'] or to_run['all']:
+  ### A single ALAsset:
+  
+  Source | Period | Amount
+  - | - | -
+  ${ al_asset.output }
+  
+  ---
+  
+  % endif
+  
   % if to_run['ALSimpleValue'] or to_run['all']:
   ### A single ALSimpleValue
   
   An ALSimpleValue is not a periodic value. Its `.amount()` is negative if its `transaction_type` is an "expense", otherwise it's positive.
   
   As a string: ${ al_simple_value }[BR]
-  Amount: ${ currency(al_simple_value.amount()) }
+  Amount as currency: ${ currency(al_simple_value.amount()) }
   
   ---
   
@@ -675,7 +699,8 @@ content: |
   ${ job_items_names.get(name, name) } | Total out | Monthly | ${ currency(x.total_out( source=name, period_to_use=12 )) }
   % endfor
   
-  **Hours for hourly job:**[BR]
+  **Hours for hourly job:**
+  
   % if x.is_hourly:
   * ${ x.normalized_hours() } hours per year
   * ${ x.normalized_hours(period_to_use=52) } hours per week
@@ -702,7 +727,8 @@ content: |
   Net | Yearly | ${ currency( x.net_amount() ) }
   Net | Monthly | ${ currency( x.net_amount(period_to_use=12) ) }
   
-  **Hours for hourly job:**[BR]
+  **Hours for hourly job:**
+  
   % if x.is_hourly:
   * ${ x.normalized_hours() } hours per year
   * ${ x.normalized_hours(period_to_use=52) } hours per week
@@ -725,7 +751,7 @@ content: |
   - | - | -
   % for val in x:
   ${ val.source } | As string | ${ val }
-  ${ val.source } | Amount | ${ currency(val.amount()) }
+  ${ val.source } | Amount currency | ${ currency(val.amount()) }
   % endfor
 ---
 table: x.display_table
@@ -736,7 +762,7 @@ columns:
       row_item.date
   - Source: |
       row_item.source
-  - Amount: |
+  - Amount currency: |
       currency( row_item.amount() )
   - Total: |
       currency( row_item.running_total )
