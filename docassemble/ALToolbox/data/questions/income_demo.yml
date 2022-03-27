@@ -36,14 +36,14 @@ id: interview order
 mandatory: True
 code: |
   if to_run['ALItemizedJob'] or to_run['all']:
-    itemized_job.name = 'Some Itemized Job'
+    itemized_job.name = 'itemized taxi driver'
     itemized_job.complete
   
   if to_run['ALItemizedJobList'] or to_run['all']:
     itemized_job_list.gather()
   
   if to_run['ALIncome'] or to_run['all']:
-    alincome.source = 'Some Income'
+    alincome.source = 'pension'
     alincome.complete
   
   if to_run['ALIncomeList'] or to_run['all']:
@@ -52,14 +52,14 @@ code: |
     get_alincome_list_item_values
   
   if to_run['ALAsset'] or to_run['all']:
-    al_asset.source = 'Single Asset'
+    al_asset.source = 'real estate'
     al_asset.complete
   
   if to_run['ALAssetList'] or to_run['all']:
     al_asset_list.gather()
   
   if to_run['ALJob'] or to_run['all']:
-    aljob.name = 'Some Unitemized Job'
+    aljob.name = 'unitemized flight attendant'
     aljob.complete
   
   if to_run['ALJobList'] or to_run['all']:
@@ -90,11 +90,15 @@ subquestion: |
   Before choosing what to test:
   
   * `ALItemizedJobList` covers all the same functionality as `ALItemizedJob`.
+  * `ALIncomeList` covers all the same functionality as `ALIncome`.
+  * `ALAsset` covers all the same functionality as `ALIncome`.
+  * `ALAssetList` covers all the same functionality as `ALAsset`, `ALIncomeList`, `ALIncome`.
   * `ALJob` covers all the same functionality as `ALIncome`.
   * `ALJobList` covers all the same functionality as `ALJob` and `ALIncome`.
-  * `ALIncomeList` covers all the same functionality as `ALIncome`.
   * `ALValueList` covers all the same functionality as `ALSimpleValue`.
   * `ALLedger` covers all the same functionality as `ALValueList` and `ALSimpleValue`.
+  
+  Each item will only show its own capabilities and those of the classes from which it inherits.
 
 fields:
   - no label: to_run
@@ -427,12 +431,16 @@ generic object: ALAsset
 question: |
   Tell us about this asset
 fields:
-  - What is this asset coming from?: x.source
-  - Period: x.period
+  - What type of asset is it?: x.source
+    code: |
+      asset_source_list()
+    exclude: |
+      ['vehicle']
+  - How often do you get this income?: x.period
     input type: radio
     code: |
       income_period_list()
-  - Value: x.value
+  - Interest or other income from the asset: x.value
     datatype: currency
   - Who owns this?: x.owner
     required: False
@@ -457,12 +465,14 @@ fields:
 id: info for each asset
 generic object: ALAssetList
 question: |
-  Tell us about the value of the ${ x[i].source } asset
+  Tell us about the values of the ${ x[i].source } asset
 fields:
   - Market value: x[i].market_value
     datatype: currency
+    required: False
   - Balance: x[i].balance
     datatype: currency
+    required: False
 ---
 # UNIQUE FOR ALSimpleValue
 ---
@@ -670,8 +680,8 @@ subquestion: |
   % if to_run['ALAsset'] or to_run['all']:
   ### A single ALAsset:
   
-  Source | Period | Amount
-  - | - | -
+  Source | Owner | Period | Amount
+  - | - | - | -
   ${ al_asset.output }
   
   ---
@@ -682,9 +692,9 @@ subquestion: |
   ### ALAssetList:
   
   **Sources:** ${ al_asset_list.sources() }[BR]
-  **Matches for source called "House":** ${ al_asset_list.matches('An Asset') }[BR]
+  **Matches for source called "real estate":** ${ al_asset_list.matches('real estate') }[BR]
   **Owners:** ${ al_asset_list.owners() }[BR]
-  **Owners for source called "House":** ${ al_asset_list.owners(source=['House']) }
+  **Owners for source called "real estate":** ${ al_asset_list.owners(source=['real estate']) }
   
   #### Each asset
   
@@ -699,11 +709,11 @@ subquestion: |
   Calculation Type | Frequency | Filters | Amount
   - | - | - | -
   Total | Yearly | None | ${ currency(al_asset_list.total()) }
-  Total | Monthly | source: "House", owner: "me" | ${ currency(al_asset_list.total(period_to_use=12, source=["House"], owner=['me'])) }
+  Total | Monthly | source: "real estate", owner: "me" | ${ currency(al_asset_list.total(period_to_use=12, source=["real estate"], owner=['me'])) }
   Market value | NA | None | ${ currency(al_asset_list.market_value()) }
-  Market value | NA | source: "House" | ${ currency(al_asset_list.market_value(source=["House"])) }
+  Market value | NA | source: "real estate" | ${ currency(al_asset_list.market_value(source=["real estate"])) }
   Balance | NA | None | ${ currency(al_asset_list.balance()) }
-  Balance | NA | source: "House" | ${ currency(al_asset_list.balance(source=["House"])) }
+  Balance | NA | source: "real estate" | ${ currency(al_asset_list.balance(source=["real estate"])) }
   
   ---
   
