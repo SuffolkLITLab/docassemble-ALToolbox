@@ -21,6 +21,9 @@ objects:
       complete_attribute='complete',
       ask_number=True)
   - al_asset: ALAsset
+  - al_asset_list: ALAssetList.using(
+      complete_attribute='complete',
+      ask_number=True)
   - al_simple_value: ALSimpleValue
   - al_value_list: ALValueList.using(
       complete_attribute='complete',
@@ -51,6 +54,9 @@ code: |
   if to_run['ALAsset'] or to_run['all']:
     al_asset.source = 'Single Asset'
     al_asset.complete
+  
+  if to_run['ALAssetList'] or to_run['all']:
+    al_asset_list.gather()
   
   if to_run['ALJob'] or to_run['all']:
     aljob.name = 'Some Unitemized Job'
@@ -103,7 +109,7 @@ fields:
       - ALJob: ALJob
       - ALJobList: ALJobList
       - ALAsset: ALAsset
-      #- ALAssetList: ALAssetList
+      - ALAssetList: ALAssetList
       #- ALVehicle: ALVehicle
       #- ALVehicleList: ALVehicleList
       - ALSimpleValue: ALSimpleValue
@@ -232,7 +238,7 @@ generic object: ALItemizedJob
 question: |
   Other incomes
 subquestion: |
-  You've already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
+  You have already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
 fields:
   - Income name: x.in_values.new_item_name
 validation code: |
@@ -292,7 +298,7 @@ subquestion: |
 fields:
   - Job name: x[i].name
 ---
-# SHARED CODE FOR ALIncome and ALIncomeList
+# SHARED CODE FOR ALIncome and ALIncomeList and single ALAsset
 ---
 generic object: ALIncome
 code: |
@@ -300,7 +306,7 @@ code: |
   x.value
   x.complete = True
 ---
-id: income value
+id: income info
 generic object: ALIncome
 question: |
   What how much do you get from ${ x.source }?
@@ -316,7 +322,7 @@ fields:
     show if: x.is_hourly
   - Amount: x.value
     datatype: currency
-  - Who are the owners?: x.owners
+  - Who owns this?: x.owner
     required: False
 ---
 # UNIQUE CODE FOR ALIncomeList
@@ -414,14 +420,49 @@ subquestion: |
 fields:
   - Job name: x[i].name
 ---
-# UNIQUE FOR ALAsset
+# SHARED BY ALAsset AND ALAssetList
 ---
-id: asset source
-generic object: ALIncome
+id: asset info
+generic object: ALAsset
 question: |
-  What is the source of your asset?
+  Tell us about this asset
 fields:
-  - no label: x.source
+  - What is this asset coming from?: x.source
+  - Period: x.period
+    input type: radio
+    code: |
+      income_period_list()
+  - Value: x.value
+    datatype: currency
+  - Who owns this?: x.owner
+    required: False
+---
+# UNIQUE FOR ALAssetList
+---
+generic object: ALAssetList
+code: |
+  x[i].source
+  x[i].is_hourly
+  x[i].market_value
+  x[i].complete = True
+---
+id: number of assets
+generic object: ALAssetList
+question: |
+  How many assets do you have in this asset list?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: info for each asset
+generic object: ALAssetList
+question: |
+  Tell us about the value of the ${ x[i].source } asset
+fields:
+  - Market value: x[i].market_value
+    datatype: currency
+  - Balance: x[i].balance
+    datatype: currency
 ---
 # UNIQUE FOR ALSimpleValue
 ---
@@ -573,10 +614,10 @@ subquestion: |
   % if to_run['ALIncomeList'] or to_run['all']:
   ### ALIncomeList
   
-  **Sources**: ${ alincome_list.sources() }[BR]
+  **Sources:** ${ alincome_list.sources() }[BR]
   **Matches for source called "SSR" (Social Security Retirement Benefits):** ${ alincome_list.matches('SSR') }[BR]
   **Total per year of everything:** ${ currency(alincome_list.total()) }[BR]
-  **Total per month of owners called "me":** ${ currency(alincome_list.total(period_to_use=12, owner=['me'])) }[BR]
+  **Total per month of an owner called "me" from source called "SSR":** ${ currency(alincome_list.total(period_to_use=12, source=["SSR"], owner=['me'])) }[BR]
   
   Source | Period | Amount
   - | - | -
@@ -632,6 +673,37 @@ subquestion: |
   Source | Period | Amount
   - | - | -
   ${ al_asset.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALAssetList'] or to_run['all']:
+  ### ALAssetList:
+  
+  **Sources:** ${ al_asset_list.sources() }[BR]
+  **Matches for source called "House":** ${ al_asset_list.matches('An Asset') }[BR]
+  **Owners:** ${ al_asset_list.owners() }[BR]
+  **Owners for source called "House":** ${ al_asset_list.owners(source=['House']) }
+  
+  #### Each asset
+  
+  Source | Owner | Period | Amount
+  - | - | - | -
+  % for one_asset in al_asset_list:
+  ${ one_asset.output }
+  % endfor
+  
+  #### Asset totals and filters
+  
+  Calculation Type | Frequency | Filters | Amount
+  - | - | - | -
+  Total | Yearly | None | ${ currency(al_asset_list.total()) }
+  Total | Monthly | source: "House", owner: "me" | ${ currency(al_asset_list.total(period_to_use=12, source=["House"], owner=['me'])) }
+  Market value | NA | None | ${ currency(al_asset_list.market_value()) }
+  Market value | NA | source: "House" | ${ currency(al_asset_list.market_value(source=["House"])) }
+  Balance | NA | None | ${ currency(al_asset_list.balance()) }
+  Balance | NA | source: "House" | ${ currency(al_asset_list.balance(source=["House"])) }
   
   ---
   
@@ -735,6 +807,12 @@ content: |
   % else:
   **${ x.source }** is not hourly
   % endif
+---
+generic object: ALAsset
+template: x.output
+content: |
+  ${ x.source } | ${ x.owner } | Yearly | ${ currency( x.amount() ) }
+  ${ x.source } | ${ x.owner } | Fortnightly | ${ currency( x.amount(period_to_use=26) ) }
 ---
 generic object: ALValueList
 template: x.output
