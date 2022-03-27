@@ -397,6 +397,11 @@ class ALAssetList(ALIncomeList):
 
 class ALVehicle(ALAsset):
     """Extends ALAsset. Vehicles have a .year_make_model() method."""
+    def init(self, *pargs, **kwargs):
+      super().init(*pargs, **kwargs)
+      if not hasattr(self, 'source'):
+        self.source = 'vehicle'
+      
     def year_make_model(self):
         return self.year + ' / ' + self.make + ' / ' + self.model
 

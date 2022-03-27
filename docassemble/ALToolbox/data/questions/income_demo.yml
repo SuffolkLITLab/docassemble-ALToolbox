@@ -24,6 +24,10 @@ objects:
   - al_asset_list: ALAssetList.using(
       complete_attribute='complete',
       ask_number=True)
+  - al_vehicle: ALVehicle
+  - al_vehicle_list: ALVehicleList.using(
+      complete_attribute='complete',
+      ask_number=True)
   - al_simple_value: ALSimpleValue
   - al_value_list: ALValueList.using(
       complete_attribute='complete',
@@ -48,15 +52,8 @@ code: |
   
   if to_run['ALIncomeList'] or to_run['all']:
     income_sources
-    alincome_list.gathered  # get sources in the list
+    alincome_list.gathered  # get which sources in the list to use
     get_alincome_list_item_values
-  
-  if to_run['ALAsset'] or to_run['all']:
-    al_asset.source = 'real estate'
-    al_asset.complete
-  
-  if to_run['ALAssetList'] or to_run['all']:
-    al_asset_list.gather()
   
   if to_run['ALJob'] or to_run['all']:
     aljob.name = 'unitemized flight attendant'
@@ -64,6 +61,19 @@ code: |
   
   if to_run['ALJobList'] or to_run['all']:
     aljob_list.gather()
+  
+  if to_run['ALAsset'] or to_run['all']:
+    al_asset.source = 'real estate'
+    al_asset.complete
+  
+  if to_run['ALAssetList'] or to_run['all']:
+    al_asset_list.gather()
+    
+  if to_run['ALVehicle'] or to_run['all']:
+    al_vehicle.complete
+  
+  if to_run['ALVehicleList'] or to_run['all']:
+    al_vehicle_list.gather()
   
   if to_run['ALSimpleValue'] or to_run['all']:
     al_simple_value.value
@@ -84,6 +94,7 @@ code: |
 ---
 id: which to test
 # TODO: Accumulate them all in one ALIncomeList at the end to test the ability of ALIncomeList to run its functions appropriately on all types of values (other than ALIncomeLists themselves)
+# TODO: Check these: Does ALAssetList cover all of ALIncomeList? Does ALAsset cover all of ALIncome?
 question: |
   Which functionality do you want to try?
 subquestion: |
@@ -95,10 +106,13 @@ subquestion: |
   * `ALAssetList` covers all the same functionality as `ALAsset`, `ALIncomeList`, `ALIncome`.
   * `ALJob` covers all the same functionality as `ALIncome`.
   * `ALJobList` covers all the same functionality as `ALJob` and `ALIncome`.
+  * `ALAsset` covers all the same functionality as `ALIncome`.
+  * `ALAssetList` covers all the same functionality as `ALAsset` and `ALIncome`.
+  * `ALVehicleList` covers all the same functionality as `ALVehicle`.
   * `ALValueList` covers all the same functionality as `ALSimpleValue`.
   * `ALLedger` covers all the same functionality as `ALValueList` and `ALSimpleValue`.
   
-  Each item will only show its own capabilities and those of the classes from which it inherits.
+  Each item will only demo its own capabilities and those of the classes from which it inherits. It does not show additional features that you can add. For example, an individual ALAsset won't ask for a market value as it has no methods for calculating a market value. An ALAssetList, though, will demo summing up market values using the filters it has in its method.
 
 fields:
   - no label: to_run
@@ -114,8 +128,8 @@ fields:
       - ALJobList: ALJobList
       - ALAsset: ALAsset
       - ALAssetList: ALAssetList
-      #- ALVehicle: ALVehicle
-      #- ALVehicleList: ALVehicleList
+      - ALVehicle: ALVehicle
+      - ALVehicleList: ALVehicleList
       - ALSimpleValue: ALSimpleValue
       - ALValueList: ALValueList
       - ALLedger: ALLedger
@@ -422,7 +436,7 @@ subquestion: |
   You've already told us about ${ comma_and_list([job.source for job in x.complete_elements()]) }.
   % endif
 fields:
-  - Job name: x[i].name
+  - Job name: x[i].source
 ---
 # SHARED BY ALAsset AND ALAssetList
 ---
@@ -450,7 +464,6 @@ fields:
 generic object: ALAssetList
 code: |
   x[i].source
-  x[i].is_hourly
   x[i].market_value
   x[i].complete = True
 ---
@@ -465,14 +478,99 @@ fields:
 id: info for each asset
 generic object: ALAssetList
 question: |
-  Tell us about the values of the ${ x[i].source } asset
+  Tell us about the values of the ${ x[i].source }
 fields:
+  - How often do you get money from this?: x[i].period
+    input type: radio
+    code: |
+      income_period_list()
   - Market value: x[i].market_value
     datatype: currency
     required: False
   - Balance: x[i].balance
     datatype: currency
     required: False
+---
+# UNIQUE FOR ALVehicle
+---
+generic object: ALVehicle
+code: |
+  # .source is automatically 'vehicle'
+  x.value
+  x.complete = True
+---
+id: one vehicle info
+generic object: ALVehicle
+question: |
+  Tell us about your one vehicle
+subquestion: |
+  Notes:
+  
+  * Do not try to use the `amount()` method with an ALVehicle.
+  * A single ALVehical doesn't have methods for a loan balance. That's part of ALVehicleList.
+  * The `.source` attribute is automatically 'vehicle'
+  
+fields:
+  - Year: x.year
+    input type: combobox
+    code: |
+      recent_years()
+  - Make: x.make
+    hint: e.g, Ford, Honda 
+  - Model: x.model
+    hint: e.g., Fusion, Civic
+  - Current value: x.value
+    datatype: currency
+  - Who owns this?: x.owner
+---
+# UNIQUE FOR ALVehicleList
+---
+# Has to have its own. Othwerwise it's overriden by ALAssetList.
+generic object: ALVehicleList
+code: |
+  # .source is automatically 'vehicle'
+  x[i].value
+  x[i].complete = True
+---
+id: how many vehicles
+generic object: ALVehicleList
+question: |
+  How many vehicles do you have?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: vehicle in list info
+generic object: ALVehicleList
+question: |
+  Tell us about your ${ ordinal( i ) } vehicle
+subquestion: |
+  % if len(x.complete_elements()) > 0:
+  So far you have told us about:
+  
+  % for item in x.complete_elements():
+  * ${ item.year_make_model() }
+  % endfor
+  % endif
+  
+  Notes:
+  
+  * Do not try to use the `amount()` method with an ALVehicle. ALVehicleList.
+  * The `.source` attribute is automatically 'vehicle'
+fields:
+  - Year: x[i].year
+    input type: combobox
+    code: |
+      recent_years()
+  - Make: x[i].make
+    hint: e.g, Ford, Honda 
+  - Model: x[i].model
+    hint: e.g., Fusion, Civic
+  - Current value: x[i].value
+    datatype: currency
+  - Loan balance: x[i].balance    
+    datatype: currency
+  - Who owns this?: x[i].owner
 ---
 # UNIQUE FOR ALSimpleValue
 ---
@@ -547,7 +645,7 @@ fields:
 ---
 id: before_end_so_answers_are_saved
 question: |
-  Avoid re-entering the answers
+  Avoid re-entering the answers during development
 continue button field: before_end_so_answers_are_saved
 ---
 id: end
@@ -719,6 +817,26 @@ subquestion: |
   
   % endif
   
+  % if to_run['ALVehicle'] or to_run['all']:
+  ### A single ALVehicle:
+  
+  Owner | Year/Make/Model | Value
+  - | - | -
+  ${ al_vehicle.owner } | ${ al_vehicle.year + ', ' +  al_vehicle.make + ', ' + al_vehicle.model } | ${ currency( al_vehicle.value ) }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALVehicleList'] or to_run['all']:
+  ### ALVehicleList:
+  
+  ${ al_vehicle_list.output }
+  
+  ---
+  
+  % endif
+  
   % if to_run['ALSimpleValue'] or to_run['all']:
   ### A single ALSimpleValue
   
@@ -823,6 +941,17 @@ template: x.output
 content: |
   ${ x.source } | ${ x.owner } | Yearly | ${ currency( x.amount() ) }
   ${ x.source } | ${ x.owner } | Fortnightly | ${ currency( x.amount(period_to_use=26) ) }
+---
+table: x.output
+generic object: ALVehicleList
+rows: x
+columns:
+  - Owner: |
+      row_item.owner
+  - Year/Make/Model: |
+      row_item.year + ', ' +  row_item.make + ', ' + row_item.model
+  - Value: |
+      currency(row_item.value)
 ---
 generic object: ALValueList
 template: x.output
