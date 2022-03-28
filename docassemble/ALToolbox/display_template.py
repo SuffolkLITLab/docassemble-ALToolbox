@@ -10,7 +10,7 @@ def display_template(template, scrollable=True, collapse=False, copy=False, clas
     scroll_class = ''
     adjust_height = f'onmouseover="this.style.height = (this.scrollHeight) + \'px\';"'       
 
-  class_name = ' ' + class_name.strip()  
+  class_name = class_name.strip()
 
   the_id = re.sub(r'[^A-Za-z0-9]', '', template.instanceName)  
 
@@ -29,7 +29,7 @@ def display_template(template, scrollable=True, collapse=False, copy=False, clas
   # 3. If not copiable, generate the whole output 
   else:    
     if not collapse:     
-      return f'<div class="{scroll_class} card card-body{class_name} pb-1" id="{the_id}"><div class="panel-heading"><h3>{template.subject_as_html(trim=True)}</h3></div>{template.content_as_html()}</div>'
+      return f'<div class="{scroll_class} card card-body {class_name} pb-1" id="{the_id}"><div class="panel-heading"><h3>{template.subject_as_html(trim=True)}</h3></div>{template.content_as_html()}</div>'
 
     else:   
-      return f'<a class="collapsed" data-bs-toggle="collapse" href="#{the_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="pdcaretclosed"><i class="fas fa-caret-right"></i></span> {template.subject_as_html(trim=True)}</a><div class="collapse" id="{the_id}"><div class="{scroll_class} card card-body{class_name} pb-1">{template.content_as_html()}</div></div>'
+      return f'<a class="collapsed" data-bs-toggle="collapse" href="#{the_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="pdcaretclosed"><i class="fas fa-caret-right"></i></span>{template.subject_as_html(trim=True)}</a><div class="collapse" id="{the_id}"><div class="{scroll_class} card card-body {class_name} pb-1">{template.content_as_html()}</div></div>'
