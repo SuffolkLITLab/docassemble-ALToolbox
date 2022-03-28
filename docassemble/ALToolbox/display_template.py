@@ -7,8 +7,8 @@ def display_template(template, scrollable=True, collapse=False, copy=False, clas
     scroll_class = 'scrollable-panel'
     adjust_height = ''
   else:
-    scroll_class = ''
-    adjust_height = f'onmouseover="this.style.height = (this.scrollHeight) + \'px\';"'       
+    scroll_class = 'not-scrollable'
+    adjust_height = f'onmouseover="this.style.height = (this.scrollHeight) + \'px\';"'     
 
   class_name = class_name.strip()
 

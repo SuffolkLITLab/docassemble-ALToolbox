@@ -3,10 +3,10 @@
   overflow-y:scroll;
   width:100%;
 }
-/* For the expansion of the copy_button_html() function*/
+/* For expansion of the copy_button_html() function*/
 textarea {
   width: 100%;
-  /*The following rule takes effect only with the inline onmouseover event as generated in 
+  /*The following rule takes effect only with the inline onmouseover event generated in 
   display_template() for a specific scenario */  
   overflow: hidden;
 }
@@ -16,4 +16,7 @@ textarea {
 }
 .al_copy_button span {
   display: inline-block;
+}
+.not-scrollable {
+  margin-bottom: 0.5rem;
 }
