@@ -17,6 +17,6 @@ textarea {
 .al_copy_button span {
   display: inline-block;
 }
-.not-scrollable {
+.scrollable-panel, .not-scrollable {
   margin-bottom: 0.5rem;
 }
