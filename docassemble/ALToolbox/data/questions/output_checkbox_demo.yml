@@ -1,0 +1,23 @@
+metadata:
+  title: ALToolbox - Output a conditional checkbox
+---
+modules:
+  - .misc
+---
+question: |
+  Function output_checkbox() generates a conditional checkbox
+subquestion: |
+  The checkbox is either checked or unchecked depending on the input parameter, in this case `fresh_air`
+fields: 
+  - Is there fresh air?: fresh_air
+    datatype: yesnoradio 
+    default: true  
+---
+mandatory: true
+question: |
+  Checkbox as an output
+subquestion: |   
+  Is there fresh air? ${fresh_air} ${output_checkbox(fresh_air) }
+attachment:
+  - filename: output checkbox
+    docx template file: output-checkbox.docx
