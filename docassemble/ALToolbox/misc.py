@@ -2,13 +2,11 @@ import docassemble.base.functions
 from docassemble.base.util import defined, value, showifdef, space_to_underscore
 import re
 
-
 class shortenMe:
     def __init__(self, originalURL):
         self.shortenedURL = docassemble.base.functions.temp_redirect(
             originalURL, 60 * 60 * 24 * 7, False, False
         )
-
 
 # The following three functions are from Quinten
 # format a float number to a whole number with thousands separator
@@ -174,3 +172,10 @@ def add_records(obj, labels):
         obj[index].reference = val[1]
         index += 1
     return obj
+
+def output_checkbox(value_to_check:bool, checked_value:str="[X]", unchecked_value:str="[  ]"):
+    """Generate a conditional checkbox for docx templates"""
+    if value_to_check:
+        return checked_value
+    else:
+        return unchecked_value

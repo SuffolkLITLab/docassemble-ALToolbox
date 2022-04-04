@@ -64,6 +64,7 @@ code: |
     "copy_button_demo": ['Add a copy button with tooltip', 'copy_button.yml'],
     "display_template_demo": ['Display the subject and content of a markdown template with/without a scroll bar; add a copy button; make it collapsible; optional css class', 'display_template.yml'], 
     "phone_number_validation_demo": ['Validate international phone number input', 'phone-number-validation.yml'],
+    "output_checkbox_demo": ['Generate a conditional checkbox output for docx templates', 'output_checkbox_demo.yml'],
     "Shorten a url": ['Shorten a long url for neater display on the screen', 'misc.py'],
     "TextCounter": ['Text input with a counter', 'TextCounter.js'], 
     "ThreePartsDate": ['Date input with month, day, year as separate parts', 'ThreePartsDate.py'],
