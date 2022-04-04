@@ -173,9 +173,9 @@ def add_records(obj, labels):
         index += 1
     return obj
 
-def output_checkbox(value:bool=None):
+def output_checkbox(value_to_check:bool, checked_value:str="[X]", unchecked_value:str="[  ]"):
     """Generate a conditional checkbox for docx templates"""
-    if value:
-      return '[X]'
+    if value_to_check:
+        return checked_value
     else:
-      return '[  ]'  
+        return unchecked_value
