@@ -124,31 +124,6 @@ def collapse_template(template, classname=None):
     )
 
 
-def display_template(template, scrollable=True, class_name=None):
-    """
-    Display the subject and content of a markdown template in a scrollable way.
-    """
-    if scrollable:
-        scroll_class = "scrollable-panel"
-    else:
-        scroll_class = ""
-
-    if class_name is None:
-        class_name = " bg-light"
-    else:
-        class_name = " " + class_name.strip()
-    the_id = re.sub(r"[^A-Za-z0-9]", "", template.instanceName)
-    return """\
-<div class="{} card card-body{} pb-1" id="{}"><div class="panel-heading"><h3>{}</h3></div>{}</div>\
-""".format(
-        scroll_class,
-        class_name,
-        the_id,
-        template.subject_as_html(trim=True),
-        template.content_as_html(),
-    )
-
-
 def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
     """
     Provided a list of templates, create Bootstrap v 4.5 tabs with the `subject` as the tab label.
@@ -166,6 +141,7 @@ def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
             tabs += f'<a class="nav-link active" id="{tab_group_name}-{tab_id}-tab" data-bs-toggle="tab" href="#{tab_group_name}-{tab_id}" role="tab" aria-controls="{tab_id}" aria-selected="true">{templ.subject}</a>\n'
             tab_content += f'<div class="tab-pane fade show active" id="{tab_group_name}-{tab_id}" role="tabpanel" aria-labelledby="{tab_group_name}-{tab_id}-tab">\n'
             tab_content += templ.content_as_html()
+
             tab_content += "\n</div>\n"
         else:
             tabs += f'<a class="nav-link" id="{tab_group_name}-{tab_id}-tab" data-bs-toggle="tab" href="#{tab_group_name}-{tab_id}" role="tab" aria-controls="{tab_id}" aria-selected="false">{templ.subject}</a>\n'
