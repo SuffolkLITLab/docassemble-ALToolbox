@@ -138,6 +138,14 @@ class ThreePartsDate(CustomDataType):
             # sure this format is created if the user gives valid info.
             matches_date_pattern = re.search(r"^\d{1,2}\/\d{1,2}\/\d{4}$", item)
             if matches_date_pattern:
+                try:
+                  date = as_datetime(item)
+                except Exception as error:
+                  msg = (
+                      f"{ item } {word('is not a valid date')}"
+                  )
+                  raise DAValidationError(msg)
+                  
                 return True
             else:
                 raise DAValidationError(f"{ item } {word('is not a valid date')}")
@@ -171,8 +179,15 @@ class BirthDate(ThreePartsDate):
             # Otherwise it needs to be a date on or before today and after the year 1000.
             # We ourselves create this format if the user gives valid info.
             matches_date_pattern = re.search(r"^\d{1,2}\/\d{1,2}\/\d{4}$", item)
+            try:
+              date = as_datetime(item)
+            except Exception as error:
+              msg = (
+                  f"{ item } {word('is not a valid date')}"
+              )
+              raise DAValidationError(msg)
             if matches_date_pattern:
-                date_diff = date_difference(starting=as_datetime(item), ending=today())
+                date_diff = date_difference(starting=date, ending=today())
                 if date_diff.days >= 0.0:
                     return True
                 else:
