@@ -19,12 +19,13 @@ def flatten(listname, index=1):
 def income_period_list():
     # Q: Is the current order common? If not, can we do decreasing order?
     return [
-        [12,"Monthly"],
-        [1,"Yearly"],
-        [52,"Weekly"],
-        [24,"Twice per month"],  # bimonthly?
-        [26,"Once every two weeks"],  # fortnightly
-        [4,"Once every 3 months"]  # quarterly
+        
+        [52,"Every week"],
+        [26,"Every 2 weeks"], 
+        [24,"Twice a month"],  
+        [12,"Once a month"],
+        [4,"Every 3 months, 'quarterly'"],  
+        [1,"Once a year"]
     ]
 
 def income_period(index):
