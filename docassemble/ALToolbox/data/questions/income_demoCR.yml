@@ -1,0 +1,341 @@
+metadata:
+  title:  ALToolbox - Income
+---
+modules: 
+  - .income
+---
+include:
+  - docassemble.AssemblyLine:al_package.yml
+---
+comment: |
+  translation options:
+    - map dict/lookup from key to lang word. See https://github.com/nonprofittechy/docassemble-HousingCodeChecklist/blob/0cbfe02b29bbec66b8a2b925b36b3c67bb300e84/docassemble/HousingCodeChecklist/data/questions/language.yml#L41
+    - ???
+---
+objects:
+  - itemized_job_list: ALItemizedJobList.using(
+      complete_attribute='complete',
+      ask_number=True)
+---
+id: interview order
+mandatory: True
+code: |
+  impound
+  itemized_job_list.gather()
+  before_end_so_answers_are_saved
+  end
+---
+generic object: ALItemizedJob
+code: |
+  x.name
+  if impound:
+    x.employer.name.first = f"Boss for { x.name }"
+  else:
+    x.employer.name.first
+  x.is_part_time
+  x.period
+  x.in_values.complete_attribute = 'complete'
+  x.out_values.complete_attribute = 'complete'
+  if x.is_part_time:
+    x.in_values["part time"].is_hourly = x.is_hourly
+  else:
+    x.in_values["full time"].is_hourly = x.is_hourly
+  x.in_values.gather()
+  x.out_values.gather()
+  x.complete = True
+---
+generic object: ALItemizedJob
+code: |
+  x.in_values[i].value
+  x.in_values[i].complete = True
+---
+generic object: ALItemizedJob
+code: |
+  x.out_values[i].value
+  x.out_values[i].complete = True
+---
+id: impound 
+question: |
+  Do you need to keep the name of your employer and workplace information not in the FS?
+yesno: impound
+---
+id: itemized job employer
+generic object: ALItemizedJob
+question: |
+  Who do you work for as a ${ x.name }
+fields:
+  - Employer name: x.employer.name.first
+  - street: x.employer.address.address
+    required: False
+  - unit: x.employer.address.unit
+    required: False
+  - city: x.employer.address.city
+    required: False
+  - state: x.employer.address.state
+    required: False
+  - zip: x.employer.address.zip
+    required: False
+  - Phone number: x.employer.phone_number
+    required: False
+---
+id: itemized job part-time question
+generic object: ALItemizedJob
+question: |
+  Is your ${ x.name } job part-time?
+yesno: x.is_part_time
+---
+id: itemized job pay frequency
+generic object: ALItemizedJob
+question: |
+  How often do you get paid?
+fields:
+  - pay period: x.period
+    code: |
+      income_period_list()
+---
+id: itemized job wages or salary
+generic object: ALItemizedJob
+question: |
+  Do you get paid by the hour or do you get a salary?: 
+fields: 
+  - no label: x.is_hourly
+    choices:
+      - By the hour.: True
+      - I have a salary.: False
+  - "How much do you get an hour?": x.rate_amount
+    datatype: currency
+    show if: x.is_hourly
+  - note: Do not include overtime.
+    show if: x.is_hourly
+  - "How many hours do you usually work ${period_to_text[x.period]}?": x.hours_per_period
+    input type: number
+    show if: x.is_hourly
+  - "How much do you get paid ${period_to_text[x.period]}?": x.in_values['part time'].value
+    datatype: currency
+    show if:  
+      variable: x.is_hourly
+      is: False
+      code: | 
+         x.is_part_time
+  - "How much do you get paid ${period_to_text[x.period]}?": x.in_values['full time'].value
+    datatype: currency
+    show if:  
+      variable: x.is_hourly
+      is: False
+      code: |
+        not x.is_part_time
+---
+code: |
+  period_to_text = {
+    "1":"once a year",
+    "4": "every 3 months",
+    "12": "every month",
+    "24": "twice a month",
+    "26": "every 2 weeks",
+    "52":"every week",
+    "365": "every day"
+  }
+---
+generic object: ALItemizedJob
+depends on: 
+  - x.is_hourly
+  - x.is_part_time
+  - x.rate_amount
+code: |
+  if x.is_hourly:
+    if x.is_part_time: 
+      x.in_values['part time'].value = x.rate_amount
+    else:
+      x.in_values['full time'].value = x.rate_amount
+---
+
+# id: itemized job line items
+# generic object: ALItemizedJob
+# question: |
+#     Enter info from your paystub for your ${ x.name } job
+# fields:
+#     - How much do you get paid ${period_to_text[x.period]}?: x.in_values['full time'].value
+#       datatype: currency
+#     - What are your wages for this part time job?: x.in_values['part time'].value
+#       datatype: currency
+---
+id: itemized job line items deductions
+generic object: ALItemizedJob
+question: |
+  Deductions
+subquestion: |
+  How much comes out of your pay for:  
+fields:
+  - Federal taxes: x.out_values['federal_taxes'].value
+    datatype: currency
+    required: False
+  - State taxes: x.out_values['state_taxes'].value
+    datatype: currency
+    required: False
+  - Social Security: x.out_values['social security'].value
+    datatype: currency
+    required: False
+  - FICA or Medicare: x.out_values['medicare'].value
+    datatype: currency
+    required: False
+---
+id: itemized job line items other income
+generic object: ALItemizedJob
+question: |
+  Do you get these any of these other kinds of income from your ${x.name} job?
+fields:
+  - tips: x.tips
+    datatype: yesnowide
+  - how much: x.in_values['tips'].value
+    datatype: currency
+    show if: x.tips
+  - how often: x.in_values['tips'].period
+    code: |
+      income_period_list()
+    show if: x.tips
+  - commissions: x.commissions
+    datatype: yesnowide
+  - how much: x.in_values['commissions'].value
+    datatype: currency
+    show if: x.commissions
+  - how often: x.in_values['commissions'].period
+    code: |
+      income_period_list()
+    show if: x.commissions
+  - bonuses: x.bonuses
+    datatype: yesnowide
+  - how much: x.in_values['bonuses'].value
+    datatype: currency
+    show if: x.bonuses
+  - how often: x.in_values['bonuses'].period
+    code: |
+      income_period_list()
+    show if: x.bonuses
+---
+id: itemized job line items other deductions
+generic object: ALItemizedJob
+question: |
+  Does ${x.employer.name.first} take any of these other deductions out of your pay?
+fields: 
+  - Health insurance: x.health_insurance
+    datatype: yesnowide
+  - how much: x.out_values['health_insurance'].value
+    datatype: currency
+    show if: x.health_insurance
+  - Life insurance: x.life_insurance
+    datatype: yesnowide
+  - how much: x.out_values['life_insurance'].value
+    datatype: currency
+    show if: x.life_insurance
+  - Disability insurance: x.disability_insurance
+    datatype: yesnowide
+  - how much: x.out_values['disability_insurance'].value
+    datatype: currency
+    show if: x.disability_insurance
+  - Union dues: x.union_dues
+    datatype: yesnowide
+  - how much: x.out_values['union_dues'].value
+    datatype: currency
+    show if: x.union_dues
+  - Retirement (401k): x.retirement
+    datatype: yesnowide
+  - how much: x.out_values['retirement'].value
+    datatype: currency
+    show if: x.retirement
+  - Other: x.out_values.there_is_another
+    datatype: yesnowide
+---
+#id: other itemized job income name
+# skip this question - 
+# generic object: ALItemizedJob
+# question: |
+#   Other incomes
+# subquestion: |
+#   You already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
+# fields:
+#   - Income name: x.in_values.new_item_name
+# validation code: |
+#   if x.in_values.new_item_name in x.in_values.complete_elements().keys():
+#     validation_error(f'You already told us about your <strong>{ job_items_names.get(x.in_values.new_item_name, x.in_values.new_item_name) }</strong> that pay { currency( x.in_values[ x.in_values.new_item_name ].value )}. Pick a different name.')
+---
+# id: other itemized job income value
+# generic object: ALItemizedJob
+# question: |
+#   What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
+# fields:
+#   - Amount: x.in_values[i].value
+#     datatype: currency
+#   - Do you have another source of income?: x.in_values.there_is_another
+#     datatype: yesnoradio
+---
+id: other itemized job deduction name
+generic object: ALItemizedJob
+question: |
+  Other deductions from your ${x.name} pay
+subquestion: |
+  You already told us about what gets taken out for **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.out_values.complete_elements().keys()] )}**. 
+
+  What else gets taken out?
+fields:
+  - Deduction: x.out_values.new_item_name
+validation code: |
+  if x.out_values.new_item_name in x.out_values.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.out_values.new_item_name, x.out_values.new_item_name) }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
+---
+id: other itemized job deduction value
+generic object: ALItemizedJob
+question: |
+  How much in ${ job_items_names.get(i, i) } does ${x.employer.name.first} deduct from your pay?
+fields:
+  - Amount: x.out_values[i].value
+    datatype: currency
+  - Does ${x.employer.name.first} deduct anything else?: x.out_values.there_is_another
+    datatype: yesnoradio
+---
+# UNIQUE ITEMS FOR ALItemizedJobList
+---
+id: how many jobs
+generic object: ALItemizedJobList
+question: |
+  How many jobs do you have?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: name of one itemized job in list
+generic object: ALItemizedJobList
+question: |
+  % if x.target_number == 1:
+  What is your job title?
+  % else:
+  What is your ${ordinal(i)} job?
+  % endif
+subquestion: |
+  % if len(x.complete_elements()) > 0:
+  You've already told us about ${ comma_and_list([job.name for job in x.complete_elements()]) }.
+  % endif
+fields:
+  - Job title: x[i].name
+---
+depends on:
+  - user_language
+language: en
+variable name: job_items_names
+data:
+  full time: Full time wages
+  part time: Part time wages
+  tips: Tips
+  insurance: Insurance
+  federal_taxes: Federal taxes
+---
+id: before_end_so_answers_are_saved
+question: |
+  Avoid re-entering the answers during development
+continue button field: before_end_so_answers_are_saved
+---
+id: end
+event: end
+question: |
+  Your answers
+buttons:
+  - Restart: restart
