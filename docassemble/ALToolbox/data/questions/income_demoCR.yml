@@ -15,7 +15,7 @@ comment: |
 objects:
   - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
-      ask_number=True,)
+      ask_number=True)
 ---
 id: interview order
 mandatory: True
@@ -34,22 +34,26 @@ code: |
     x.employer.name.first
   x.is_part_time
   x.period
+  x.in_values.auto_gather = False
   x.in_values.complete_attribute = 'complete'
   x.out_values.complete_attribute = 'complete'
   if x.is_part_time:
     x.in_values['part time'].is_hourly = x.is_hourly
   else:
     x.in_values['full time'].is_hourly = x.is_hourly
-  x.in_values.gather()
+  x.tips
+  # x.in_values.gathered
+  x.out_values['health_insurance'].exists  
+  x.out_values.there_are_any = True
   x.out_values.gather()
   x.complete = True
 ---
-  generic object: ALItemizedJob
-  code: |
-    if x.is_part_time:
-      x.in_values['part time'].is_hourly = x.is_hourly
-    else:
-      x.in_values['full time'].is_hourly = x.is_hourly
+generic object: ALItemizedJob
+code: |
+  if x.is_part_time:
+    x.in_values['part time'].is_hourly = x.is_hourly
+  else:
+    x.in_values['full time'].is_hourly = x.is_hourly
 ---
 generic object: ALItemizedJob
 code: |
@@ -60,8 +64,8 @@ code: |
 generic object: ALItemizedJob
 code: |
   x.out_values[i].value
-  x.out_values[i].complete = True  
-  x.out_values[i].gathered = True 
+  x.out_values[i].complete = True 
+  #  x.out_values[i].gathered = True 
 ---
 id: impound 
 question: |
@@ -153,9 +157,9 @@ generic object: ALItemizedJob
 code: |
   if x.is_hourly:
     if x.is_part_time: 
-      x.in_values['part time'].value = x.rate_amount * x.hours_per_period
+      x.in_values['part time'].value = x.rate_amount
     else:
-      x.in_values['full time'].value = x.rate_amount * x.hours_per_period
+      x.in_values['full time'].value = x.rate_amount
 ---
 
 # id: itemized job line items
@@ -226,31 +230,31 @@ generic object: ALItemizedJob
 question: |
   Does ${x.employer.name.first} take any of these other deductions out of your pay?
 fields: 
-  - Health insurance: x.health_insurance
+  - Health insurance: x.out_values['health_insurance'].exists
     datatype: yesnowide
   - how much: x.out_values['health_insurance'].value
     datatype: currency
-    show if: x.health_insurance
-  - Life insurance: x.life_insurance
+    show if: x.out_values['health_insurance'].exists
+  - Life insurance: x.out_values['life_insurance'].exists
     datatype: yesnowide
   - how much: x.out_values['life_insurance'].value
     datatype: currency
-    show if: x.life_insurance
-  - Disability insurance: x.disability_insurance
+    show if: x.out_values['life_insurance'].exists
+  - Disability insurance: x.out_values['disability_insurance'].exists
     datatype: yesnowide
   - how much: x.out_values['disability_insurance'].value
     datatype: currency
-    show if: x.disability_insurance
-  - Union dues: x.union_dues
+    show if: x.out_values['disability_insurance'].exists
+  - Union dues: x.out_values['union_dues'].exists
     datatype: yesnowide
   - how much: x.out_values['union_dues'].value
     datatype: currency
-    show if: x.union_dues
-  - Retirement (401k): x.retirement
+    show if: x.out_values['union_dues'].exists
+  - Retirement (401k): x.out_values['retirement'].exists
     datatype: yesnowide
   - how much: x.out_values['retirement'].value
     datatype: currency
-    show if: x.retirement
+    show if: x.out_values['retirement'].exists
   - Other: x.out_values.there_is_another
     datatype: yesnowide
 ---
@@ -348,3 +352,28 @@ question: |
   Your answers
 buttons:
   - Restart: restart
+---
+if: |
+  not x.out_values['health_insurance'].exists
+code: |
+  x.out_values['health_insurance'].value = 0
+---
+if: |
+  not x.out_values['life_insurance'].exists
+code: |
+  x.out_values['life_insurance'].value = 0
+---
+if: |
+  not x.out_values['disability_insurance'].exists
+code: |
+  x.out_values['disability_insurance'].value = 0
+---
+if: |
+  not x.out_values['retirement'].exists
+code: |
+  x.out_values['retirement'].value = 0
+---
+if: |
+  not x.out_values['union_dues'].exists
+code: |
+  x.out_values['union_dues'].value = 0
