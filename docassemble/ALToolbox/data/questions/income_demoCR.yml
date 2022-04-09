@@ -15,7 +15,7 @@ comment: |
 objects:
   - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
-      ask_number=True)
+      ask_number=True,)
 ---
 id: interview order
 mandatory: True
@@ -37,22 +37,31 @@ code: |
   x.in_values.complete_attribute = 'complete'
   x.out_values.complete_attribute = 'complete'
   if x.is_part_time:
-    x.in_values["part time"].is_hourly = x.is_hourly
+    x.in_values['part time'].is_hourly = x.is_hourly
   else:
-    x.in_values["full time"].is_hourly = x.is_hourly
+    x.in_values['full time'].is_hourly = x.is_hourly
   x.in_values.gather()
   x.out_values.gather()
   x.complete = True
+---
+  generic object: ALItemizedJob
+  code: |
+    if x.is_part_time:
+      x.in_values['part time'].is_hourly = x.is_hourly
+    else:
+      x.in_values['full time'].is_hourly = x.is_hourly
 ---
 generic object: ALItemizedJob
 code: |
   x.in_values[i].value
   x.in_values[i].complete = True
+  x.in_values[i].gathered = True 
 ---
 generic object: ALItemizedJob
 code: |
   x.out_values[i].value
-  x.out_values[i].complete = True
+  x.out_values[i].complete = True  
+  x.out_values[i].gathered = True 
 ---
 id: impound 
 question: |
@@ -137,16 +146,16 @@ code: |
   }
 ---
 generic object: ALItemizedJob
-depends on: 
-  - x.is_hourly
-  - x.is_part_time
-  - x.rate_amount
+  # depends on: 
+  #   - x.is_hourly
+  #   - x.is_part_time
+  #   - x.rate_amount
 code: |
   if x.is_hourly:
     if x.is_part_time: 
-      x.in_values['part time'].value = x.rate_amount
+      x.in_values['part time'].value = x.rate_amount * x.hours_per_period
     else:
-      x.in_values['full time'].value = x.rate_amount
+      x.in_values['full time'].value = x.rate_amount * x.hours_per_period
 ---
 
 # id: itemized job line items
