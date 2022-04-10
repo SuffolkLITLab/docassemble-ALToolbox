@@ -42,10 +42,50 @@ code: |
   else:
     x.in_values['full time'].is_hourly = x.is_hourly
   x.tips
-  # x.in_values.gathered
-  x.out_values['health_insurance'].exists  
-  x.out_values.there_are_any = True
+  
+  ## Attempt 1
+  #x.out_values['health_insurance'].exists  
+  #x.out_values.there_are_any = True
+  #x.out_values.gather()
+  
+  ## Attempt 2
+  #x.out_values['health_insurance'].value = 0
+  #x.out_values['life_insurance'].value = 0
+  #x.out_values['disability_insurance'].value = 0
+  #x.out_values['union_dues'].value = 0
+  #x.out_values['retirement'].value = 0
+  #if x.out_values.there_are_custom_values:
+  #  x.out_values.there_are_any = True
+  #  x.out_values.gather()
+  #else:
+  #  x.gathered = True
+  
+  ## Attempt 3 worked with default values
+  #x.out_values['health_insurance'].value = 0
+  #x.out_values['life_insurance'].value = 0
+  #x.out_values['disability_insurance'].value = 0
+  #x.out_values['union_dues'].value = 0
+  #x.out_values['retirement'].value = 0
+  #x.out_values['health_insurance'].exists
+  #if x.out_values.there_are_any:
+  #  x.out_values.gather()
+  #else:
+  #  x.gathered = True
+  
+  # Attempt 4 works without default values
+  if not x.out_values['health_insurance'].exists:
+    x.out_values['health_insurance'].value = 0
+  if not x.out_values['life_insurance'].exists:
+    x.out_values['life_insurance'].value = 0
+  if not x.out_values['disability_insurance'].exists:
+    x.out_values['disability_insurance'].value = 0
+  if not x.out_values['union_dues'].exists:
+    x.out_values['union_dues'].value = 0
+  if not x.out_values['retirement'].exists:
+    x.out_values['retirement'].value = 0
   x.out_values.gather()
+  
+  # Every attempt
   x.complete = True
 ---
 generic object: ALItemizedJob
@@ -64,8 +104,7 @@ code: |
 generic object: ALItemizedJob
 code: |
   x.out_values[i].value
-  x.out_values[i].complete = True 
-  #  x.out_values[i].gathered = True 
+  x.out_values[i].complete = True
 ---
 id: impound 
 question: |
@@ -161,7 +200,6 @@ code: |
     else:
       x.in_values['full time'].value = x.rate_amount
 ---
-
 # id: itemized job line items
 # generic object: ALItemizedJob
 # question: |
