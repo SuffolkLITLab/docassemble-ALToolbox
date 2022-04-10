@@ -39,40 +39,12 @@ code: |
   x.out_values.complete_attribute = 'complete'
   if x.is_part_time:
     x.in_values['part time'].is_hourly = x.is_hourly
+    x.in_values['part time'].value
   else:
     x.in_values['full time'].is_hourly = x.is_hourly
+    x.in_values['full time'].value
   x.tips
-  
-  ## Attempt 1
-  #x.out_values['health_insurance'].exists  
-  #x.out_values.there_are_any = True
-  #x.out_values.gather()
-  
-  ## Attempt 2
-  #x.out_values['health_insurance'].value = 0
-  #x.out_values['life_insurance'].value = 0
-  #x.out_values['disability_insurance'].value = 0
-  #x.out_values['union_dues'].value = 0
-  #x.out_values['retirement'].value = 0
-  #if x.out_values.there_are_custom_values:
-  #  x.out_values.there_are_any = True
-  #  x.out_values.gather()
-  #else:
-  #  x.gathered = True
-  
-  ## Attempt 3 worked with default values
-  #x.out_values['health_insurance'].value = 0
-  #x.out_values['life_insurance'].value = 0
-  #x.out_values['disability_insurance'].value = 0
-  #x.out_values['union_dues'].value = 0
-  #x.out_values['retirement'].value = 0
-  #x.out_values['health_insurance'].exists
-  #if x.out_values.there_are_any:
-  #  x.out_values.gather()
-  #else:
-  #  x.gathered = True
-  
-  # Attempt 4 works without default values
+  x.out_values['federal_taxes'].value
   if not x.out_values['health_insurance'].exists:
     x.out_values['health_insurance'].value = 0
   if not x.out_values['life_insurance'].exists:
@@ -84,8 +56,6 @@ code: |
   if not x.out_values['retirement'].exists:
     x.out_values['retirement'].value = 0
   x.out_values.gather()
-  
-  # Every attempt
   x.complete = True
 ---
 generic object: ALItemizedJob
@@ -189,6 +159,7 @@ code: |
   }
 ---
 generic object: ALItemizedJob
+# comment: waiting for Jonathan to fix bug in docassemble v. 1.3.30
   # depends on: 
   #   - x.is_hourly
   #   - x.is_part_time
@@ -199,16 +170,6 @@ code: |
       x.in_values['part time'].value = x.rate_amount
     else:
       x.in_values['full time'].value = x.rate_amount
----
-# id: itemized job line items
-# generic object: ALItemizedJob
-# question: |
-#     Enter info from your paystub for your ${ x.name } job
-# fields:
-#     - How much do you get paid ${period_to_text[x.period]}?: x.in_values['full time'].value
-#       datatype: currency
-#     - What are your wages for this part time job?: x.in_values['part time'].value
-#       datatype: currency
 ---
 id: itemized job line items deductions
 generic object: ALItemizedJob
@@ -296,29 +257,6 @@ fields:
   - Other: x.out_values.there_is_another
     datatype: yesnowide
 ---
-#id: other itemized job income name
-# skip this question - 
-# generic object: ALItemizedJob
-# question: |
-#   Other incomes
-# subquestion: |
-#   You already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
-# fields:
-#   - Income name: x.in_values.new_item_name
-# validation code: |
-#   if x.in_values.new_item_name in x.in_values.complete_elements().keys():
-#     validation_error(f'You already told us about your <strong>{ job_items_names.get(x.in_values.new_item_name, x.in_values.new_item_name) }</strong> that pay { currency( x.in_values[ x.in_values.new_item_name ].value )}. Pick a different name.')
----
-# id: other itemized job income value
-# generic object: ALItemizedJob
-# question: |
-#   What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
-# fields:
-#   - Amount: x.in_values[i].value
-#     datatype: currency
-#   - Do you have another source of income?: x.in_values.there_is_another
-#     datatype: yesnoradio
----
 id: other itemized job deduction name
 generic object: ALItemizedJob
 question: |
@@ -388,30 +326,37 @@ id: end
 event: end
 question: |
   Your answers
+subquestion: |
+ Calculations:
+  
+  Calcuation type | Frequency | Amount
+  - | - | -
+  Gross | Yearly | ${currency( itemized_job_list.gross_amount() )}
+  Gross | Monthly | ${currency( itemized_job_list.gross_amount(period_to_use=12) )}
+  Net | Yearly | ${currency( itemized_job_list.net_amount() )}
+  Net | Weekly | ${currency( itemized_job_list.net_amount(period_to_use=52) )}
+  Money out | Yearly | ${currency(itemized_job_list.total_out())}
+  
+  **Getting base pay amounts by `source`:**
+  
+  The below only shows useful amounts when both base pay and `federal_taxes` have amounts. "Base pay" refers to either `full time` or `part time` values.
+  
+  All rows should be the same except the last row, where `federal_taxes` is being subtracted from the base pay.
+  
+  Calcuation type | Sources | Amount
+  - | - | -
+  Gross | Base pay | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
+  Gross | full time Base pay | ${currency( itemized_job_list.gross_amount(source=['full time']) )}
+  Gross | part time Base pay | ${currency( itemized_job_list.gross_amount(source=['part time']) )}
+  Gross | Base pay and `federal_taxes` | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )}
+  Net | Base pay | ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )}
+  Net | Base pay and `federal_taxes` | ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )}
+  
+  * **base pay gross:** ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
+  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+  * **base pay net:** (same) ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )} per year
+  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+ 
 buttons:
   - Restart: restart
 ---
-if: |
-  not x.out_values['health_insurance'].exists
-code: |
-  x.out_values['health_insurance'].value = 0
----
-if: |
-  not x.out_values['life_insurance'].exists
-code: |
-  x.out_values['life_insurance'].value = 0
----
-if: |
-  not x.out_values['disability_insurance'].exists
-code: |
-  x.out_values['disability_insurance'].value = 0
----
-if: |
-  not x.out_values['retirement'].exists
-code: |
-  x.out_values['retirement'].value = 0
----
-if: |
-  not x.out_values['union_dues'].exists
-code: |
-  x.out_values['union_dues'].value = 0
