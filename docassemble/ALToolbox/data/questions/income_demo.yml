@@ -1,0 +1,1010 @@
+metadata:
+  title:  ALToolbox - Income
+---
+modules: 
+  - .income
+---
+comment: |
+  translation options:
+    - map dict/lookup from key to lang word. See https://github.com/nonprofittechy/docassemble-HousingCodeChecklist/blob/0cbfe02b29bbec66b8a2b925b36b3c67bb300e84/docassemble/HousingCodeChecklist/data/questions/language.yml#L41
+    - ???
+---
+objects:
+  - itemized_job: ALItemizedJob.using()
+  - itemized_job_list: ALItemizedJobList.using(
+      complete_attribute='complete',
+      ask_number=True)
+  - alincome: ALIncome
+  - alincome_list: ALIncomeList.using(auto_gather=False)
+  - aljob: ALJob
+  - aljob_list: ALJobList.using(
+      complete_attribute='complete',
+      ask_number=True)
+  - al_asset: ALAsset
+  - al_asset_list: ALAssetList.using(
+      complete_attribute='complete',
+      ask_number=True)
+  - al_vehicle: ALVehicle
+  - al_vehicle_list: ALVehicleList.using(
+      complete_attribute='complete',
+      ask_number=True)
+  - al_simple_value: ALSimpleValue
+  - al_value_list: ALValueList.using(
+      complete_attribute='complete',
+      ask_number=True)
+  - al_ledger: ALLedger.using(
+      complete_attribute='complete',
+      ask_number=True)
+---
+id: interview order
+mandatory: True
+code: |
+  if to_run['ALItemizedJob'] or to_run['all']:
+    itemized_job.name = 'itemized taxi driver'
+    itemized_job.complete
+  
+  if to_run['ALItemizedJobList'] or to_run['all']:
+    itemized_job_list.gather()
+  
+  if to_run['ALIncome'] or to_run['all']:
+    alincome.source = 'pension'
+    alincome.complete
+  
+  if to_run['ALIncomeList'] or to_run['all']:
+    income_sources
+    alincome_list.gathered  # get which sources in the list to use
+    get_alincome_list_item_values
+  
+  if to_run['ALJob'] or to_run['all']:
+    aljob.name = 'unitemized flight attendant'
+    aljob.complete
+  
+  if to_run['ALJobList'] or to_run['all']:
+    aljob_list.gather()
+  
+  if to_run['ALAsset'] or to_run['all']:
+    al_asset.source = 'real estate'
+    al_asset.complete
+  
+  if to_run['ALAssetList'] or to_run['all']:
+    al_asset_list.gather()
+    
+  if to_run['ALVehicle'] or to_run['all']:
+    al_vehicle.complete
+  
+  if to_run['ALVehicleList'] or to_run['all']:
+    al_vehicle_list.gather()
+  
+  if to_run['ALSimpleValue'] or to_run['all']:
+    al_simple_value.value
+  
+  if to_run['ALValueList'] or to_run['all']:
+    al_value_list.gather()
+  
+  if to_run['ALLedger'] or to_run['all']:
+    al_ledger.gather()
+    al_ledger.calculate()
+  
+  before_end_so_answers_are_saved
+  end
+---
+code: |
+    alincome_list.there_are_any = income_sources.any_true
+    alincome_list.target_number = len(income_sources.true_values())
+---
+id: which to test
+# TODO: Accumulate them all in one ALIncomeList at the end to test the ability of ALIncomeList to run its functions appropriately on all types of values (other than ALIncomeLists themselves)
+# TODO: Check these: Does ALAssetList cover all of ALIncomeList? Does ALAsset cover all of ALIncome?
+question: |
+  Which functionality do you want to try?
+subquestion: |
+  Before choosing what to test:
+  
+  * `ALItemizedJobList` covers all the same functionality as `ALItemizedJob`.
+  * `ALIncomeList` covers all the same functionality as `ALIncome`.
+  * `ALAsset` covers all the same functionality as `ALIncome`.
+  * `ALAssetList` covers all the same functionality as `ALAsset`, `ALIncomeList`, `ALIncome`.
+  * `ALJob` covers all the same functionality as `ALIncome`.
+  * `ALJobList` covers all the same functionality as `ALJob` and `ALIncome`.
+  * `ALAsset` covers all the same functionality as `ALIncome`.
+  * `ALAssetList` covers all the same functionality as `ALAsset` and `ALIncome`.
+  * `ALVehicleList` covers all the same functionality as `ALVehicle`.
+  * `ALValueList` covers all the same functionality as `ALSimpleValue`.
+  * `ALLedger` covers all the same functionality as `ALValueList` and `ALSimpleValue`.
+  
+  Each item will only demo its own capabilities and those of the classes from which it inherits. It does not show additional features that you can add. For example, an individual ALAsset won't ask for a market value as it has no methods for calculating a market value. An ALAssetList, though, will demo summing up market values using the filters it has in its method.
+
+fields:
+  - no label: to_run
+    datatype: checkboxes
+    none of the above: False
+    choices:
+      - All of the them: all
+      - ALItemizedJob: ALItemizedJob
+      - ALItemizedJobList: ALItemizedJobList
+      - ALIncome: ALIncome
+      - ALIncomeList: ALIncomeList
+      - ALJob: ALJob
+      - ALJobList: ALJobList
+      - ALAsset: ALAsset
+      - ALAssetList: ALAssetList
+      - ALVehicle: ALVehicle
+      - ALVehicleList: ALVehicleList
+      - ALSimpleValue: ALSimpleValue
+      - ALValueList: ALValueList
+      - ALLedger: ALLedger
+      #- flatten: flatten
+      #- income_period_list: income_period_list
+      #- income_period: income_period
+      #- recent_years: recent_years
+      #- asset_source_list: asset_source_list
+      #- income_source_list: income_source_list
+      #- non_wage_income_list: non_wage_income_list
+      #- expense_source_list: expense_source_list
+---
+comment: |
+  Notes on itemized job items:
+  
+  - commission, bonus, hourly wage, salary, overtime
+  - https://fingercheck.com/the-difference-between-a-paycheck-and-a-pay-stub/
+  - Deductions are the amounts subtracted or withheld from the total pay, including the income tax percentage of an employee’s gross wages.
+  - Social security and Medicare are deducted based on the income over the set threshold.
+  - Other deductions can include state and local income taxes, employee 401K contributions, insurance payments, profit sharing, union dues, garnishments and unemployment insurance etc.
+---
+# SHARED BY ALItemizedJob AND ALItemizedJobList
+---
+generic object: ALItemizedJob
+code: |
+  x.name
+  x.employer.name.first
+  x.period
+  x.in_values.complete_attribute = 'complete'
+  x.out_values.complete_attribute = 'complete'
+  if x.is_part_time:
+    x.in_values["part time"].is_hourly = x.is_hourly
+  else:
+    x.in_values["full time"].is_hourly = x.is_hourly
+  x.in_values.gather()
+  x.out_values.gather()
+  x.complete = True
+---
+generic object: ALItemizedJob
+code: |
+  x.in_values[i].value
+  x.in_values[i].complete = True
+---
+generic object: ALItemizedJob
+code: |
+  x.out_values[i].value
+  x.out_values[i].complete = True
+---
+id: itemized job name
+generic object: ALItemizedJob
+question: |
+  What is the name of this itemized job?
+fields:
+  - Job name: x.name
+---
+id: employer
+generic object: ALItemizedJob
+question: |
+  Tell us about your employer for ${ x.name }
+fields:
+  - Name: x.employer.name.first
+  - street: x.employer.address.address
+    required: False
+  - unit: x.employer.address.unit
+    required: False
+  - city: x.employer.address.city
+    required: False
+  - state: x.employer.address.state
+    required: False
+  - zip: x.employer.address.zip
+    required: False
+  - Phone number: x.employer.phone_number
+    required: False
+---
+id: itemized job line items
+generic object: ALItemizedJob
+question: |
+    Enter info from your paystub for your ${ x.name } job
+fields:
+    - What are your wages for this full time job?: x.in_values['full time'].value
+      datatype: currency
+      show if:
+        code: x.is_part_time is False
+    - What are your wages for this part time job?: x.in_values['part time'].value
+      datatype: currency
+      show if:
+        code: x.is_part_time is True
+    - What are your tips for this job?: x.in_values['tips'].value
+      datatype: currency
+      required: False
+    - What is your federal tax amount?: x.out_values['federal_taxes'].value
+      datatype: currency
+      required: False
+    - What do you pay for insurance?: x.out_values['insurance'].value
+      datatype: currency
+      required: False
+    - Does the job have other incomes?: x.in_values.there_is_another
+      datatype: yesnoradio
+    - Does the job have other deductions?: x.out_values.there_is_another
+      datatype: yesnoradio
+---
+id: itemized job period
+generic object: ALItemizedJob
+question: |
+  Tell us about your ${ x.name }'s job hours
+fields:
+  - Is this a part time job: x.is_part_time
+    datatype: yesnoradio
+  - Hourly or salary?: x.is_hourly
+    input type: radio
+    choices:
+      - Hourly: True
+      - Salary: False
+  - How often do you get paid?: x.period
+    input type: radio
+    code: |
+      income_period_list()
+  - How many hours do you work during that time?: x.hours_per_period
+    input type: number
+    show if: x.is_hourly
+---
+#id: other itemized job income name
+generic object: ALItemizedJob
+question: |
+  Other incomes
+subquestion: |
+  You have already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
+fields:
+  - Income name: x.in_values.new_item_name
+validation code: |
+  if x.in_values.new_item_name in x.in_values.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.in_values.new_item_name, x.in_values.new_item_name) }</strong> that pay { currency( x.in_values[ x.in_values.new_item_name ].value )}. Pick a different name.')
+---
+id: other itemized job income value
+generic object: ALItemizedJob
+question: |
+  What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
+fields:
+  - Amount: x.in_values[i].value
+    datatype: currency
+  - Do you have another source of income?: x.in_values.there_is_another
+    datatype: yesnoradio
+---
+id: other itemized job reduction name
+generic object: ALItemizedJob
+question: |
+  Other deductions
+subquestion: |
+  You've already told us about what gets taken out for **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.out_values.complete_elements().keys()] )}**.
+fields:
+  - Deduction name: x.out_values.new_item_name
+validation code: |
+  if x.out_values.new_item_name in x.out_values.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.out_values.new_item_name, x.out_values.new_item_name) }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
+---
+id: other itemized job reduction value
+generic object: ALItemizedJob
+question: |
+  What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
+fields:
+  - Amount: x.out_values[i].value
+    datatype: currency
+  - Is there other money being taken out?: x.out_values.there_is_another
+    datatype: yesnoradio
+---
+# UNIQUE ITEMS FOR ALItemizedJobList
+---
+id: how many itemized jobs
+generic object: ALItemizedJobList
+question: |
+  How many itemized jobs do you have?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: name of one itemized job in list
+generic object: ALItemizedJobList
+question: |
+  What is the name of this itemized job?
+subquestion: |
+  % if len(x.complete_elements()) > 0:
+  You've already told us about ${ comma_and_list([job.name for job in x.complete_elements()]) }.
+  % endif
+fields:
+  - Job name: x[i].name
+---
+# SHARED CODE FOR ALIncome and ALIncomeList and single ALAsset
+---
+generic object: ALIncome
+code: |
+  x.source  # assigned where object is added to list
+  x.value
+  x.complete = True
+---
+id: income info
+generic object: ALIncome
+question: |
+  What how much do you get from ${ x.source }?
+fields:
+  - Is it an hourly amount?: x.is_hourly
+    datatype: yesnoradio
+  - Period: x.period
+    input type: radio
+    code: |
+      income_period_list()
+  - How many hours do you work per period?: x.hours_per_period
+    datatype: number
+    show if: x.is_hourly
+  - Amount: x.value
+    datatype: currency
+  - Who owns this?: x.owner
+    required: False
+---
+# UNIQUE CODE FOR ALIncomeList
+---
+code: |
+  if income_sources.any_true():
+    for source in income_sources.true_values():
+      one_income = alincome_list.appendObject(source=source)
+      # Never put anything else in here
+  alincome_list.gathered = True
+---
+code: |
+  for income in alincome_list.elements:
+    income.complete
+  get_alincome_list_item_values = True
+---
+id: which incomes
+question: |
+  What are your sources of income?
+fields:
+  - no label: income_sources
+    datatype: checkboxes
+    code: |
+      income_source_list()
+---
+# SHARED BY ALJob AND ALJobList
+---
+generic object: ALJob
+code: |
+  # Q: aljob.source vs. itemized_job.name
+  x.source
+  x.employer
+  x.value
+  x.complete = True
+---
+id: regular job name
+generic object: ALJob
+question: |
+  What is the name of this regular job?
+fields:
+  - Name: x.source
+---
+id: regular job employer
+generic object: ALJob
+question: |
+  Tell us about your employer for ${ x.source }
+fields:
+  - Name: x.employer
+  - Address: x.employer_address
+  - Phone: x.employer_phone
+---
+id: regular job value
+generic object: ALJob
+question: |
+  What how much do you get paid for ${ x.source }?
+fields:
+  - Is the job hourly?: x.is_hourly
+    datatype: yesnoradio
+  - How often do you get paid?: x.period
+    input type: radio
+    code: |
+      income_period_list()
+  - How many hours do you work in each period?: x.hours_per_period
+    datatype: number
+    show if: x.is_hourly
+  - What do you get paid?: x.value
+    datatype: currency
+    show if: x.is_hourly
+  - Amount you get paid: x.value
+    datatype: currency
+    show if:
+      variable: x.is_hourly
+      is: False
+  - What is the net income of the job?: x.net
+    datatype: currency
+---
+# UNIQUE ITEMS FOR ALJobList
+---
+id: how many regular jobs
+generic object: ALJobList
+question: |
+  How many non-itemized jobs do you have?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: name of one regular job in list
+generic object: ALJobList
+question: |
+  What is the name of this non-itemized job?
+subquestion: |
+  % if len(x.complete_elements()) > 0:
+  You've already told us about ${ comma_and_list([job.source for job in x.complete_elements()]) }.
+  % endif
+fields:
+  - Job name: x[i].source
+---
+# SHARED BY ALAsset AND ALAssetList
+---
+id: asset info
+generic object: ALAsset
+question: |
+  Tell us about this asset
+fields:
+  - What type of asset is it?: x.source
+    code: |
+      asset_source_list()
+    exclude: |
+      ['vehicle']
+  - How often do you get this income?: x.period
+    input type: radio
+    code: |
+      income_period_list()
+  - Interest or other income from the asset: x.value
+    datatype: currency
+  - Who owns this?: x.owner
+    required: False
+---
+# UNIQUE FOR ALAssetList
+---
+generic object: ALAssetList
+code: |
+  x[i].source
+  x[i].market_value
+  x[i].complete = True
+---
+id: number of assets
+generic object: ALAssetList
+question: |
+  How many assets do you have in this asset list?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: info for each asset
+generic object: ALAssetList
+question: |
+  Tell us about the values of the ${ x[i].source }
+fields:
+  - How often do you get money from this?: x[i].period
+    input type: radio
+    code: |
+      income_period_list()
+  - Market value: x[i].market_value
+    datatype: currency
+    required: False
+  - Balance: x[i].balance
+    datatype: currency
+    required: False
+---
+# UNIQUE FOR ALVehicle
+---
+generic object: ALVehicle
+code: |
+  # .source is automatically 'vehicle'
+  x.value
+  x.complete = True
+---
+id: one vehicle info
+generic object: ALVehicle
+question: |
+  Tell us about your one vehicle
+subquestion: |
+  Notes:
+  
+  * Do not try to use the `amount()` method with an ALVehicle.
+  * A single ALVehical doesn't have methods for a loan balance. That's part of ALVehicleList.
+  * The `.source` attribute is automatically 'vehicle'
+  
+fields:
+  - Year: x.year
+    input type: combobox
+    code: |
+      recent_years()
+  - Make: x.make
+    hint: e.g, Ford, Honda 
+  - Model: x.model
+    hint: e.g., Fusion, Civic
+  - Current value: x.value
+    datatype: currency
+  - Who owns this?: x.owner
+---
+# UNIQUE FOR ALVehicleList
+---
+# Has to have its own. Othwerwise it's overriden by ALAssetList.
+generic object: ALVehicleList
+code: |
+  # .source is automatically 'vehicle'
+  x[i].value
+  x[i].complete = True
+---
+id: how many vehicles
+generic object: ALVehicleList
+question: |
+  How many vehicles do you have?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: vehicle in list info
+generic object: ALVehicleList
+question: |
+  Tell us about your ${ ordinal( i ) } vehicle
+subquestion: |
+  % if len(x.complete_elements()) > 0:
+  So far you have told us about:
+  
+  % for item in x.complete_elements():
+  * ${ item.year_make_model() }
+  % endfor
+  % endif
+  
+  Notes:
+  
+  * Do not try to use the `amount()` method with an ALVehicle. ALVehicleList.
+  * The `.source` attribute is automatically 'vehicle'
+fields:
+  - Year: x[i].year
+    input type: combobox
+    code: |
+      recent_years()
+  - Make: x[i].make
+    hint: e.g, Ford, Honda 
+  - Model: x[i].model
+    hint: e.g., Fusion, Civic
+  - Current value: x[i].value
+    datatype: currency
+  - Loan balance: x[i].balance    
+    datatype: currency
+  - Who owns this?: x[i].owner
+---
+# UNIQUE FOR ALSimpleValue
+---
+id: simple value
+generic object: ALSimpleValue
+question: |
+  Tell us about the simple value
+subquestion: |
+  Note: An ALSimpleValue doesn't require a transaction type in order to work.
+fields:
+  - Value: x.value
+    datatype: currency
+  - Transaction type: x.transaction_type
+    datatype: radio
+    required: False
+    choices:
+      - Expense: expense
+      - Income: income
+---
+# SHARED BY ALValueList and ALLedger
+---
+id: how many simple values
+generic object: ALValueList
+question: |
+  How many simple values do you have in your ${ x.object_name() } ${ x.__class__.__name__ }?
+fields:
+  - no label: x.target_number
+    datatype: number
+    default: 2
+---
+# UNIQUE TO ALValueList
+---
+generic object: ALValueList
+code: |
+  x[i].value
+  x[i].complete = True
+---
+id: value list item value
+generic object: ALValueList
+question: |
+  Tell us about your ${ ordinal(i) } simple value for your ${ x.object_name() } ${ x.__class__.__name__ }
+subquestion: |
+  Note: An ALSimpleValue doesn't require a transaction type in order to work.
+fields:
+  - Source: x[i].source
+  - Value: x[i].value
+    datatype: currency
+  - Transaction type: x[i].transaction_type
+    datatype: radio
+    required: False
+    choices:
+      - Expense: expense
+      - Income: income
+---
+# UNIQUE TO ALLedger
+---
+generic object: ALLedger
+code: |
+  x[i].value
+  x[i].date
+  x[i].complete = True
+---
+id: ledger value date
+generic object: ALLedger
+question: |
+  When did the transaction for your ${ x.object_name() } ${ x.__class__.__name__ } occur?
+fields:
+  - Date: x[i].date
+    datatype: date
+---
+# ENDING SCREENS
+---
+id: before_end_so_answers_are_saved
+question: |
+  Avoid re-entering the answers during development
+continue button field: before_end_so_answers_are_saved
+---
+id: end
+event: end
+question: |
+  Your answers
+buttons:
+  - Restart: restart
+subquestion: |
+  
+  % if to_run['ALItemizedJob'] or to_run['all']:
+  ## Single ALItemizedJob: ${ itemized_job.name }
+  
+  ${ itemized_job.output }
+  
+  ---
+  
+  % endif
+
+  % if to_run['ALItemizedJobList'] or to_run['all']:
+  ### Itemized jobs list
+  
+  Calculations:
+  
+  Calcuation type | Frequency | Amount
+  - | - | -
+  Gross | Yearly | ${currency( itemized_job_list.gross_amount() )}
+  Gross | Monthly | ${currency( itemized_job_list.gross_amount(period_to_use=12) )}
+  Net | Yearly | ${currency( itemized_job_list.net_amount() )}
+  Net | Weekly | ${currency( itemized_job_list.net_amount(period_to_use=52) )}
+  Money out | Yearly | ${currency(itemized_job_list.total_out())}
+  
+  **Getting base pay amounts by `source`:**
+  
+  The below only shows useful amounts when both base pay and `federal_taxes` have amounts. "Base pay" refers to either `full time` or `part time` values.
+  
+  All rows should be the same except the last row, where `federal_taxes` is being subtracted from the base pay.
+  
+  Calcuation type | Sources | Amount
+  - | - | -
+  Gross | Base pay | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
+  Gross | Base pay and `federal_taxes` | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )}
+  Net | Base pay | ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )}
+  Net | Base pay and `federal_taxes` | ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )}
+  
+  * **base pay gross:** ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
+  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+  * **base pay net:** (same) ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )} per year
+  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+  
+  
+  % for one_itemized_job in itemized_job_list:
+  #### ${ one_itemized_job.name }
+  
+  ${ one_itemized_job.output }
+  
+  % endfor
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALIncome'] or to_run['all']:
+  ### A single ALIncome:
+  
+  Source | Period | Amount
+  - | - | -
+  ${ alincome.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALIncomeList'] or to_run['all']:
+  ### ALIncomeList
+  
+  **Sources:** ${ alincome_list.sources() }[BR]
+  **Matches for source called "SSR" (Social Security Retirement Benefits):** ${ alincome_list.matches('SSR') }[BR]
+  **Total per year of everything:** ${ currency(alincome_list.total()) }[BR]
+  **Total per month of an owner called "me" from source called "SSR":** ${ currency(alincome_list.total(period_to_use=12, source=["SSR"], owner=['me'])) }[BR]
+  
+  Source | Period | Amount
+  - | - | -
+  % for one_income in alincome_list:
+  ${ one_income.output }
+  % endfor
+  
+  **Income list JSON string for Legal Server:**[BR]
+  ```
+  ${ alincome_list.to_json() }
+  ```
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALJob'] or to_run['all']:
+  
+  ### Single ALJob: ${ aljob.source }
+  
+  ${ aljob.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALJobList'] or to_run['all']:
+  ### ALJobList
+  
+  Calculation Type | Frequency | Amount
+  - | - | -
+  Gross | Yearly | ${ currency(aljob_list.gross_total()) }
+  Gross | Monthly | ${ currency(aljob_list.gross_total(period_to_use=12)) }
+  Net | Yearly | ${ currency(aljob_list.net_total()) }
+  Net | Monthly | ${ currency(aljob_list.net_total(period_to_use=12)) }
+  
+  One item value:[BR]
+  ${ [item for item in aljob_list.sources()][0] } base pay per year: ${ currency(aljob_list.net_total(source=[item for item in aljob_list.sources()][0])) }
+  
+  % for one_job in aljob_list:
+  #### ${ one_job.source }
+  
+  ${ one_job.output }
+  % endfor
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALAsset'] or to_run['all']:
+  ### A single ALAsset:
+  
+  Source | Owner | Period | Amount
+  - | - | - | -
+  ${ al_asset.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALAssetList'] or to_run['all']:
+  ### ALAssetList:
+  
+  **Sources:** ${ al_asset_list.sources() }[BR]
+  **Matches for source called "real estate":** ${ al_asset_list.matches('real estate') }[BR]
+  **Owners:** ${ al_asset_list.owners() }[BR]
+  **Owners for source called "real estate":** ${ al_asset_list.owners(source=['real estate']) }
+  
+  #### Each asset
+  
+  Source | Owner | Period | Amount
+  - | - | - | -
+  % for one_asset in al_asset_list:
+  ${ one_asset.output }
+  % endfor
+  
+  #### Asset totals and filters
+  
+  Calculation Type | Frequency | Filters | Amount
+  - | - | - | -
+  Total | Yearly | None | ${ currency(al_asset_list.total()) }
+  Total | Monthly | source: "real estate", owner: "me" | ${ currency(al_asset_list.total(period_to_use=12, source=["real estate"], owner=['me'])) }
+  Market value | NA | None | ${ currency(al_asset_list.market_value()) }
+  Market value | NA | source: "real estate" | ${ currency(al_asset_list.market_value(source=["real estate"])) }
+  Balance | NA | None | ${ currency(al_asset_list.balance()) }
+  Balance | NA | source: "real estate" | ${ currency(al_asset_list.balance(source=["real estate"])) }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALVehicle'] or to_run['all']:
+  ### A single ALVehicle:
+  
+  Owner | Year/Make/Model | Value
+  - | - | -
+  ${ al_vehicle.owner } | ${ al_vehicle.year + ', ' +  al_vehicle.make + ', ' + al_vehicle.model } | ${ currency( al_vehicle.value ) }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALVehicleList'] or to_run['all']:
+  ### ALVehicleList:
+  
+  ${ al_vehicle_list.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALSimpleValue'] or to_run['all']:
+  ### A single ALSimpleValue
+  
+  An ALSimpleValue is not a periodic value. Its `.amount()` is negative if its `transaction_type` is an "expense", otherwise it's positive.
+  
+  As a string: ${ al_simple_value }[BR]
+  Amount as currency: ${ currency(al_simple_value.amount()) }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALValueList'] or to_run['all']:
+  ### ALValueList
+  
+  ${ al_value_list.output }
+  
+  ---
+  
+  % endif
+  
+  % if to_run['ALLedger'] or to_run['all']:
+  ### ALLedger running totals
+  
+  ${ al_ledger.display_table }
+  
+  ---
+  
+  % endif
+comment: |
+  Causes infinite loop:
+  ${ al_ledger.output }
+
+  keep the comments alive!
+
+---
+# OUTPUT TEMPLATES
+---
+generic object: ALItemizedJob
+template: x.output
+content: |
+  **Employer info:**[BR]
+  ${ x.employer_name_address_phone() }
+  
+  Calculation Type | Period | Amount
+  --- | --- | ---
+  Gross | Yearly | ${ currency( x.gross_amount() ) }
+  Gross | Weekly | ${ currency( x.gross_amount(period_to_use=12) ) }
+  Total out | Yearly | ${currency(x.total_out())}
+  Total out | Fortnightly | ${currency(x.total_out(period_to_use=26))}
+  Net | Yearly | ${currency( x.net_amount() )}
+  Net | Quarterly | ${currency( x.net_amount(period_to_use=4) )}
+  
+  **Specifying by item `source`:**
+  
+  Name | Calculation Type | Frequency | Gross amount
+  - | - | - | -
+  % for name, item in x.in_values.complete_elements().items():
+  ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_amount( source=name, period_to_use=12 )) }
+  ${ job_items_names.get(name, name) } | Total out | Monthly | ${ currency(x.total_out( source=name, period_to_use=12 )) }
+  % endfor
+  
+  **Hours for hourly job:**
+  
+  % if x.is_hourly:
+  * ${ x.normalized_hours() } hours per year
+  * ${ x.normalized_hours(period_to_use=52) } hours per week
+  % else:
+  **${ x.name }** is not hourly
+  % endif
+---
+generic object: ALIncome
+template: x.output
+content: |
+  ${ x.source } | Yearly | ${ currency( x.amount() ) }
+  ${ x.source } | Fortnightly | ${ currency( x.amount(period_to_use=26) ) }
+---
+generic object: ALJob
+template: x.output
+content: |
+  **Employer info:**[BR]
+  ${ x.employer_name_address_phone() }
+  
+  Type | Period | Amount
+  --- | --- | ---
+  Gross | Yearly | ${ currency( x.gross_amount() ) }
+  Gross | Monthly | ${ currency( x.gross_amount(period_to_use=12) ) }
+  Net | Yearly | ${ currency( x.net_amount() ) }
+  Net | Monthly | ${ currency( x.net_amount(period_to_use=12) ) }
+  
+  **Hours for hourly job:**
+  
+  % if x.is_hourly:
+  * ${ x.normalized_hours() } hours per year
+  * ${ x.normalized_hours(period_to_use=52) } hours per week
+  % else:
+  **${ x.source }** is not hourly
+  % endif
+---
+generic object: ALAsset
+template: x.output
+content: |
+  ${ x.source } | ${ x.owner } | Yearly | ${ currency( x.amount() ) }
+  ${ x.source } | ${ x.owner } | Fortnightly | ${ currency( x.amount(period_to_use=26) ) }
+---
+table: x.output
+generic object: ALVehicleList
+rows: x
+columns:
+  - Owner: |
+      row_item.owner
+  - Year/Make/Model: |
+      row_item.year + ', ' +  row_item.make + ', ' + row_item.model
+  - Value: |
+      currency(row_item.value)
+---
+generic object: ALValueList
+template: x.output
+content: |
+  * **sources:** ${ x.sources() }
+  * **total:** ${ currency(x.total()) }
+  * **total of sources called "cash":** ${ currency(x.total(source=['cash'])) }
+  
+  An item's `.amount()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
+  
+  **Simple values:**
+  
+  Source | Functionality | Value 
+  - | - | -
+  % for val in x:
+  ${ val.source } | As string | ${ val }
+  ${ val.source } | Amount currency | ${ currency(val.amount()) }
+  % endfor
+---
+table: x.display_table
+generic object: ALLedger
+rows: x
+columns:
+  - Date: |
+      row_item.date
+  - Source: |
+      row_item.source
+  - Amount currency: |
+      currency( row_item.amount() )
+  - Total: |
+      currency( row_item.running_total )
+---
+# TRANSLATIONS
+---
+depends on:
+  - user_language
+language: en
+variable name: job_items_names
+data:
+  full time: Full time wages
+  part time: Part time wages
+  tips: Tips
+  insurance: Insurance
+  federal_taxes: Federal taxes
+---
+depends on:
+  - user_language
+language: es
+variable name: job_items_names
+data:
+  full time: salario del el trabajo de tiempo completo
+  part time: salario del el trabajo de medio tiempo
+  tips: Propinas
+  insurance: Seguro
+  federal_taxes: Impuestos federales
+---

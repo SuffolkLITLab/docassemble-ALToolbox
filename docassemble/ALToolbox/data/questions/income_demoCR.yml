@@ -1,0 +1,372 @@
+metadata:
+  title:  ALToolbox - Income
+---
+modules: 
+  - .income
+---
+include:
+  - docassemble.AssemblyLine:al_package.yml
+---
+comment: |
+  translation options:
+    - map dict/lookup from key to lang word. See https://github.com/nonprofittechy/docassemble-HousingCodeChecklist/blob/0cbfe02b29bbec66b8a2b925b36b3c67bb300e84/docassemble/HousingCodeChecklist/data/questions/language.yml#L41
+    - ???
+---
+objects:
+  - itemized_job_list: ALItemizedJobList.using(
+      complete_attribute='complete',
+      ask_number=True)
+---
+id: interview order
+mandatory: True
+code: |
+  impound
+  itemized_job_list.gather()
+  before_end_so_answers_are_saved
+  end
+---
+generic object: ALItemizedJob
+code: |
+  x.name
+  if impound:
+    x.employer.name.first = f"Boss for { x.name }"
+  else:
+    x.employer.name.first
+  x.is_part_time
+  x.period
+  x.in_values.auto_gather = False
+  x.in_values.complete_attribute = 'complete'
+  x.out_values.complete_attribute = 'complete'
+  if x.is_part_time:
+    x.in_values['part time'].is_hourly = x.is_hourly
+    x.in_values['part time'].value
+  else:
+    x.in_values['full time'].is_hourly = x.is_hourly
+    x.in_values['full time'].value
+  x.tips
+  
+  # Ways to try to handle gathering items in this way
+  # alt: intermediate variable for "other" values
+  # Also possibly let edit interface be different than the question itself
+  # alt 2: see if dadict keys don't get instantiated if they're not shown (answer: keys still get instatiated)
+  # alt 3: hook_on_gather or hook_after_gather method: https://docassemble.org/docs/groups.html#hook
+  # alt 4: validation code to delete extra objects
+  # I believe 4 with 3 might be the best bet to get ideal behavior
+  
+  # Required deductions
+  x.out_values['federal_taxes'].value
+  # Optional deductions.
+  x.get_optional_deductions
+  # Custom deductions
+  x.out_values.gather()
+  x.complete = True
+---
+generic object: ALItemizedJob
+code: |
+  if x.is_part_time:
+    x.in_values['part time'].is_hourly = x.is_hourly
+  else:
+    x.in_values['full time'].is_hourly = x.is_hourly
+---
+generic object: ALItemizedJob
+code: |
+  if not hasattr(x.out_values[i], 'exists'):
+    x.out_values[i].value
+  x.out_values[i].complete = True
+---
+id: impound 
+question: |
+  Do you need to keep the name of your employer and workplace information not in the FS?
+yesno: impound
+---
+id: itemized job employer
+generic object: ALItemizedJob
+question: |
+  Who do you work for as a ${ x.name }
+fields:
+  - Employer name: x.employer.name.first
+  - street: x.employer.address.address
+    required: False
+  - unit: x.employer.address.unit
+    required: False
+  - city: x.employer.address.city
+    required: False
+  - state: x.employer.address.state
+    required: False
+  - zip: x.employer.address.zip
+    required: False
+  - Phone number: x.employer.phone_number
+    required: False
+---
+id: itemized job part-time question
+generic object: ALItemizedJob
+question: |
+  Is your ${ x.name } job part-time?
+yesno: x.is_part_time
+---
+id: itemized job pay frequency
+generic object: ALItemizedJob
+question: |
+  How often do you get paid?
+fields:
+  - pay period: x.period
+    code: |
+      income_period_list()
+---
+id: itemized job wages or salary
+generic object: ALItemizedJob
+question: |
+  Do you get paid by the hour or do you get a salary?: 
+fields: 
+  - no label: x.is_hourly
+    choices:
+      - By the hour.: True
+      - I have a salary.: False
+  - "How much do you get an hour?": x.rate_amount
+    datatype: currency
+    show if: x.is_hourly
+  - note: Do not include overtime.
+    show if: x.is_hourly
+  - "How many hours do you usually work ${period_to_text[x.period]}?": x.hours_per_period
+    input type: number
+    show if: x.is_hourly
+  - "How much do you get paid ${period_to_text[x.period]}?": x.in_values['part time'].value
+    datatype: currency
+    show if:  
+      variable: x.is_hourly
+      is: False
+      code: | 
+         x.is_part_time
+  - "How much do you get paid ${period_to_text[x.period]}?": x.in_values['full time'].value
+    datatype: currency
+    show if:  
+      variable: x.is_hourly
+      is: False
+      code: |
+        not x.is_part_time
+---
+code: |
+  period_to_text = {
+    "1":"once a year",
+    "4": "every 3 months",
+    "12": "every month",
+    "24": "twice a month",
+    "26": "every 2 weeks",
+    "52":"every week",
+    "365": "every day"
+  }
+---
+generic object: ALItemizedJob
+# comment: waiting for Jonathan to fix bug in docassemble v. 1.3.30
+  # depends on: 
+  #   - x.is_hourly
+  #   - x.is_part_time
+  #   - x.rate_amount
+code: |
+  if x.is_hourly:
+    if x.is_part_time: 
+      x.in_values['part time'].value = x.rate_amount
+    else:
+      x.in_values['full time'].value = x.rate_amount
+---
+id: itemized job line items deductions
+generic object: ALItemizedJob
+question: |
+  Deductions
+subquestion: |
+  How much comes out of your pay for:  
+fields:
+  - Federal taxes: x.out_values['federal_taxes'].value
+    datatype: currency
+    required: False
+  - State taxes: x.out_values['state_taxes'].value
+    datatype: currency
+    required: False
+  - Social Security: x.out_values['social security'].value
+    datatype: currency
+    required: False
+  - FICA or Medicare: x.out_values['medicare'].value
+    datatype: currency
+    required: False
+---
+id: itemized job line items other income
+generic object: ALItemizedJob
+question: |
+  Do you get these any of these other kinds of income from your ${x.name} job?
+fields:
+  - tips: x.tips
+    datatype: yesnowide
+  - how much: x.in_values['tips'].value
+    datatype: currency
+    show if: x.tips
+  - how often: x.in_values['tips'].period
+    code: |
+      income_period_list()
+    show if: x.tips
+  - commissions: x.commissions
+    datatype: yesnowide
+  - how much: x.in_values['commissions'].value
+    datatype: currency
+    show if: x.commissions
+  - how often: x.in_values['commissions'].period
+    code: |
+      income_period_list()
+    show if: x.commissions
+  - bonuses: x.bonuses
+    datatype: yesnowide
+  - how much: x.in_values['bonuses'].value
+    datatype: currency
+    show if: x.bonuses
+  - how often: x.in_values['bonuses'].period
+    code: |
+      income_period_list()
+    show if: x.bonuses
+---
+id: itemized job line items other deductions
+generic object: ALItemizedJob
+continue button field: x.get_optional_deductions
+question: |
+  Does ${x.employer.name.first} take any of these other deductions out of your pay?
+fields: 
+  - Health insurance: x.out_values['health_insurance'].exists
+    datatype: yesnowide
+  - how much: x.out_values['health_insurance'].value
+    datatype: currency
+    show if: x.out_values['health_insurance'].exists
+  - Life insurance: x.out_values['life_insurance'].exists
+    datatype: yesnowide
+  - how much: x.out_values['life_insurance'].value
+    datatype: currency
+    show if: x.out_values['life_insurance'].exists
+  - Disability insurance: x.out_values['disability_insurance'].exists
+    datatype: yesnowide
+  - how much: x.out_values['disability_insurance'].value
+    datatype: currency
+    show if: x.out_values['disability_insurance'].exists
+  - Union dues: x.out_values['union_dues'].exists
+    datatype: yesnowide
+  - how much: x.out_values['union_dues'].value
+    datatype: currency
+    show if: x.out_values['union_dues'].exists
+  - Retirement (401k): x.out_values['retirement'].exists
+    datatype: yesnowide
+  - how much: x.out_values['retirement'].value
+    datatype: currency
+    show if: x.out_values['retirement'].exists
+  - Other: x.out_values.there_is_another
+    datatype: yesnowide
+validation code: |
+  # delete non-existant items, making sure they don't appear on the following pages
+  keys_to_delete = []
+  # Avoid deleting individual items while we're still looping through all of them
+  for key, item in x.out_values.elements.items():
+    if hasattr(item, 'exists') and item.exists is False:
+      keys_to_delete.append( key )
+  # Delete the keys
+  for key in keys_to_delete:
+    log( key, 'console' )
+    x.out_values.delitem( key )
+---
+id: other itemized job deduction name
+generic object: ALItemizedJob
+question: |
+  Other deductions from your ${x.name} pay
+subquestion: |
+  You already told us about what gets taken out for **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.out_values.complete_elements().keys()] )}**. 
+
+  What else gets taken out?
+fields:
+  - Deduction: x.out_values.new_item_name
+validation code: |
+  if x.out_values.new_item_name in x.out_values.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.out_values.new_item_name, x.out_values.new_item_name) }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
+---
+id: other itemized job deduction value
+generic object: ALItemizedJob
+question: |
+  How much in ${ job_items_names.get(i, i) } does ${x.employer.name.first} deduct from your pay?
+fields:
+  - Amount: x.out_values[i].value
+    datatype: currency
+  - Does ${x.employer.name.first} deduct anything else?: x.out_values.there_is_another
+    datatype: yesnoradio
+---
+# UNIQUE ITEMS FOR ALItemizedJobList
+---
+id: how many jobs
+generic object: ALItemizedJobList
+question: |
+  How many jobs do you have?
+fields:
+  - no label: x.target_number
+    datatype: number
+---
+id: name of one itemized job in list
+generic object: ALItemizedJobList
+question: |
+  % if x.target_number == 1:
+  What is your job title?
+  % else:
+  What is your ${ordinal(i)} job?
+  % endif
+subquestion: |
+  % if len(x.complete_elements()) > 0:
+  You've already told us about ${ comma_and_list([job.name for job in x.complete_elements()]) }.
+  % endif
+fields:
+  - Job title: x[i].name
+---
+depends on:
+  - user_language
+language: en
+variable name: job_items_names
+data:
+  full time: Full time wages
+  part time: Part time wages
+  tips: Tips
+  insurance: Insurance
+  federal_taxes: Federal taxes
+---
+id: before_end_so_answers_are_saved
+question: |
+  Avoid re-entering the answers during development
+continue button field: before_end_so_answers_are_saved
+---
+id: end
+event: end
+question: |
+  Your answers
+subquestion: |
+ Calculations:
+  
+  Calcuation type | Frequency | Amount
+  - | - | -
+  Gross | Yearly | ${currency( itemized_job_list.gross_amount() )}
+  Gross | Monthly | ${currency( itemized_job_list.gross_amount(period_to_use=12) )}
+  Net | Yearly | ${currency( itemized_job_list.net_amount() )}
+  Net | Weekly | ${currency( itemized_job_list.net_amount(period_to_use=52) )}
+  Money out | Yearly | ${currency(itemized_job_list.total_out())}
+  
+  **Getting base pay amounts by `source`:**
+  
+  The below only shows useful amounts when both base pay and `federal_taxes` have amounts. "Base pay" refers to either `full time` or `part time` values.
+  
+  All rows should be the same except the last row, where `federal_taxes` is being subtracted from the base pay.
+  
+  Calcuation type | Sources | Amount
+  - | - | -
+  Gross | Base pay | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
+  Gross | full time Base pay | ${currency( itemized_job_list.gross_amount(source=['full time']) )}
+  Gross | part time Base pay | ${currency( itemized_job_list.gross_amount(source=['part time']) )}
+  Gross | Base pay and `federal_taxes` | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )}
+  Net | Base pay | ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )}
+  Net | Base pay and `federal_taxes` | ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )}
+  
+  * **base pay gross:** ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
+  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+  * **base pay net:** (same) ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )} per year
+  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+ 
+buttons:
+  - Restart: restart
+---

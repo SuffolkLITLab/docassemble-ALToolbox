@@ -13,23 +13,12 @@ code: |
 # May be more robust to use Bootstrap tooltip (needs popper.js): https://getbootstrap.com/docs/4.1/components/tooltips/
 id: copy button demo
 question: |
-  Button to copy text
-subquestion: |
-  This demo calls the **copy_button_html()** function to add a copy button to any text you specified. The text is displayed as a readonly **text input field**.
-  
-  This function is intended to provide a convenient way for mobile users to copy that text.  
-  
-  &#128276 To add this copy button to a markdown template, use the **display_template()** function and turn on its **copy** feature. See [Display template demo](${interview_url(i=user_info().package + ":display_template_demo.yml")}).
-  
-  ---
-fields:  
+  Copy text
+fields:
   - note: |
-     1. This example displays current interview's URL:
-      ${ copy_button_html( interview_url(i=user_info().filename, style="short", new_session=1) ) }    
+      ${ copy_button_html( interview_url(i=user_info().filename, style="short", new_session=1) ) }
   - note: |
-     2. This example displays the specified text, also overrides the default values for _text_before, label, tooltip_inert_text and tooltip_copied_text_:
       ${ copy_button_html( "some text", text_before="Text before: ", label="Copy this text", tooltip_inert_text="Best tooltip", tooltip_copied_text="I'm copied!"  ) }
-     3. This example hides/shows a copy button:
   - Show hidden copy button: show_hidden_button
     datatype: yesnowide
   - note: |

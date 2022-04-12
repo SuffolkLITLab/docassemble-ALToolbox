@@ -1,82 +1,37 @@
 metadata:
   title: ALToolbox - Display Template
 ---
-include:
+include: 
   - display_template.yml
 ---
-# This css file is used for the demo only, do not include it in your interview
-features:
-  css: styles.css
----
 mandatory: true
-code: |
-  intro  
-  scrollable_only_examples
-  collapse_n_scrollable_examples
-  copy_button_examples    
----
-id: intro
-continue button field: intro
 question: |
   Display a markdown template 
 subquestion: |
-  When it comes to display a markdown template on the screen, you can use the **display_template()** function for the following features. 
+  ####Use cases:
+  
+  1. If your markdown template content is long, you can use this tool to display it with a stroll bar on the screen. 
+  1. If your markown template has a subject line in addition to content, this tool will display both with one line of code rather than two. 
+  
+  ####Notes:
+  
+  1. Template's "subject" line will be displayed automatically, but it's NOT required to use this tool. Your template can have just "content".
+  1. You can turn off the scrollable feature for short content.
+  1. To style the panel, add a class name in the call, then add your css rules either on the screen (like in this demo) or add them to a .css file.
     
-  1. **scrollable** (default=True) 
-      - The default is to display the template with a scroll bar. This is helpful if your markdown template content is long.
-      - If your markdown template has a subject line, it will be displayed automatically. The subject line is not required for this feature.
-  1. **collapse** (default=False) 
-      - Change it to True to collapse/show youre template in order to save screen space. Template subject line is required.
-      - This feature is similar to the **collapse_template()** function. It is combined into this function so that your can mix it with the other features. You can still call that function independently. See [collapse template demo](${interview_url(i=user_info().package + ":collapse_template_demo.yml")}).
-  1. **copy** (default=False) 
-      - It adds a copy button under the template for users to copy/share the template content.
-      - This feature applies the **copy_button_html()** function to template content. See [copy button demo](${interview_url(i=user_info().package + ":copy_button_demo.yml")}).
-  1. **class_name** (default=None) 
-      - To style your template, include a class_name input in the call, and add your css rules either on the screen or to a .css file.  
-      
-  You can mix and match these features. The following screens will show you how. 
-  
-  &#128276 To implement this function, add **display_template.yml** in the _include_ section of your interview and follow the examples in this demo.
+  ${ display_template(my_template, scrollable=True, class_name="my_color") }<br>
+    
+  ${ display_template(my_template, scrollable=False) }  
+css: |
+  <style>
+    .my_color {
+      background: lightcyan; 
+      color: darkgreen;      
+    }
+  </style>
+
 ---
-id: scrollable only examples
-continue button field: scrollable_only_examples
-question: |  
-  Scrollable examples
-subquestion: |    
-  ##### Srollable only
-  ${ display_template(my_template1) }<br>
-  
-  ##### Style only
-  ${ display_template(my_template2, scrollable=False, class_name="my_color")}
----
-id: collapse and scrollable examples
-continue button field: collapse_n_scrollable_examples
-question: |  
-  Collase and scrollable examples
-subquestion: |
-  ##### Collapse only with a style
-  ${ display_template(my_template1, scrollable=False, collapse=True, class_name="my_color") }
-  
-  ##### Collapse and scrollable, without the copy button
-  ${ display_template(my_template2, collapse=True) }
----
-id: copy button examples
-continue button field: copy_button_examples
-question: |
-  Copy button examples
-fields:  
-  - html: <h5>Copy and scrollable</h5>
-  - note: |      
-      ${ display_template(my_template1, copy=True) }
-  - html: <h5>Copy and collapse but not scrollable</h5> 
-  - note: | 
-      _(Hover over the box to see the full template content. If this is annoying, keep the default value scrollable=True as shown in the very last example.)_<br><br>
-      ${ display_template(my_template1, scrollable=False, collapse=True, copy=True) }  
-  - html: <h5>Copy and collapse and scrollable</h5>
-  - note: |      
-      ${ display_template(my_template2, collapse=True, copy=True) }  
----
-template: my_template1
+template: my_template
 subject: |
   A perfect day
 content: |  
@@ -85,13 +40,3 @@ content: |
   Laudem libris lucilius has at. Nec decore fuisset persecuti id. Mel et saperet detracto, ne pri homero ubique facilisi. Feugait minimum inciderint ei has. Facer alterum ut nec. Et est admodum interesset.
   
   Laudem libris lucilius has at. Nec decore fuisset persecuti id. Mel et saperet detracto, ne pri homero ubique facilisi. Feugait minimum inciderint ei has. Facer alterum ut nec. Et est admodum interesset.
----
-template: my_template2
-subject: |
-  Another perfect day
-content: |  
-  Pertinax tractatos ex nec, ius id everti accusamus honestatis. Cu quis malis eos, nisl aeque scripserit vel in, ad mei errem postea prompta. No atqui omnesque ius, wisi convenire vix ut. Doctus insolens consectetuer his ne, mei et velit electram intellegam, pri habeo elitr ex.
-
-  Est ad autem vitae, ius graeco delicata eu. Vim quod postea ad. Vero omnis iuvaret in ius. Eu noster volumus sed.
-
-  Qui eu dictas senserit. Ne affert doctus his. Eius dicta utinam ex pri, tota equidem vel at. Cu nec habemus definitiones, eos oratio impedit mediocrem ex, inermis necessitatibus duo et. Malis graeco dicunt ei mea. Ei idque cetero est.
