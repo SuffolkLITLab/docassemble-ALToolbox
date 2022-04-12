@@ -395,6 +395,7 @@ class ALAssetList(ALIncomeList):
         return owners
 
 
+# Q: Why is this an ALAsset when it doesn't have the same signature - it doesn't use the only method, which is `.amount()`. ALVehicleList can still inherit from ALAssetList without this inheritance here.
 class ALVehicle(ALAsset):
     """Extends ALAsset. Vehicles have a .year_make_model() method."""
     def init(self, *pargs, **kwargs):
@@ -429,6 +430,7 @@ class ALSimpleValue(DAObject):
         case.
         """
         # Q: Why does `ALSimpleValue.amount()` not use Decimal?
+        # Q: `ALSimpleValue.amount()` doesn't have a period, which seems like a different signature. What does `amount` mean?
         if hasattr(self, 'transaction_type'):
             return Decimal(self.value * -1) if (self.transaction_type == 'expense') else Decimal(self.value)
         else:
@@ -515,6 +517,38 @@ class _ALItemizedValue(DAObject):
     return isolated_name
 
 
+class ALItemizedValueDict(DAOrderedDict):
+  """
+  Contains values going into or coming out of ALItemizedJobs. Also manages hooks to
+  update items when they're gathered or edited. E.g. removing non-existent items.
+  """
+  def init(self, *pargs, **kwargs):
+    super().init(*pargs, **kwargs)
+    self.object_type = _ALItemizedValue
+    
+  def hook_after_gather(self):
+    """
+    Update items after they've been gathered or edited to remove non-existant items. Allows
+    the developer to set `auto_gather=False` if they want without affecting functionality.
+    See https://docassemble.org/docs/objects.html#DAList.hook_after_gather.
+    If you want to remove items before gathering is finished, use similar code in validation
+    code to delete items that don't have values (i.e. don't exist).
+    """
+    keys_to_delete = []
+    # Avoid deleting individual items while we're still looping through all of them
+    # while providing an example that wouldn't gather items at the same time.
+    for key, item in self.elements.items():
+      if hasattr(item, 'exists') and item.exists is False:
+        keys_to_delete.append( key )
+    # Delete the keys
+    for key in keys_to_delete:
+      self.delitem( key )
+      
+  ## Try this as well
+  #def hook_on_item_complete(self):
+  #  pass
+      
+
 class ALItemizedJob(DAObject):
     """
     Represents a job that can have multiple sources of earned income and
@@ -528,9 +562,9 @@ class ALItemizedJob(DAObject):
     .hours_per_period {int} If the job is hourly, how many hours the user works
         per period.
     .employer {Individual} Individual assumed to have an address and name.
-    .in_values {DAOrderedDict} Dict of _ALItemizedValues of money coming in. Use
+    .in_values {ALItemizedValueDict} Dict of _ALItemizedValues of money coming in. Use
         ALItemizedJob methods to calcuate amounts.
-    .out_values {DAOrderedDict} Dict of _ALItemizedValues of money going out.
+    .out_values {ALItemizedValueDict} Dict of _ALItemizedValues of money going out.
         Use ALItemizedJob methods to calcuate amounts.
     """
     """
@@ -576,11 +610,11 @@ class ALItemizedJob(DAObject):
         # Money coming in
         # Names: in_values -> values_in, money_in, income, incomes
         if not hasattr(self, 'in_values'):
-          self.initializeAttribute('in_values', DAOrderedDict.using(object_type=_ALItemizedValue))
+          self.initializeAttribute('in_values', ALItemizedValueDict)
         # Money being taken out
         # Names: in_values -> values_out, money_out, deductions ("an amount that you can use to reduce your income-tax liability")
         if not hasattr(self, 'out_values'):
-          self.initializeAttribute('out_values', DAOrderedDict.using(object_type=_ALItemizedValue))
+          self.initializeAttribute('out_values', ALItemizedValueDict)
     
     # Names: change .period to .frequency or .annual_frequency? Or job has a period while asking for `amount` has a frequency?
     # Names: divided_by = 52, annual_frequency=52/desired_frequency
@@ -679,7 +713,6 @@ class ALItemizedJob(DAObject):
             express hours/week, use 52.
         kwarg source {str or [str]} Name or list of names of desired item(s).
         """
-        #self._trigger_gather()
         #self.in_values._trigger_gather()
         total = Decimal(0)
         if period_to_use == 0:
@@ -708,6 +741,7 @@ class ALItemizedJob(DAObject):
             express hours/week, use 52.
         kwarg source {str or [str]} Name or list of names of desired item(s).
         """
+        #self.out_values._trigger_gather()
         total = Decimal(0)
         if period_to_use == 0:
           return total
@@ -731,8 +765,6 @@ class ALItemizedJob(DAObject):
             express hours/week, use 52.
         kwarg source {str or [str]} Name or list of names of desired item(s).
         """
-        # Cannot trigger gather for DAObject?
-        #self._trigger_gather()
         #self.in_values._trigger_gather()
         #self.out_values._trigger_gather()
         total = Decimal(0)

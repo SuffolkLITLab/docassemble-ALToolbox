@@ -357,6 +357,7 @@ code: |
     income.complete
   get_alincome_list_item_values = True
 ---
+# Why is this not being triggered
 id: which incomes
 question: |
   What are your sources of income?
@@ -668,7 +669,7 @@ subquestion: |
   % if to_run['ALItemizedJobList'] or to_run['all']:
   ### Itemized jobs list
   
-  Calculations:
+  #### All jobs
   
   Calcuation type | Frequency | Amount
   - | - | -
@@ -686,10 +687,13 @@ subquestion: |
   
   Calcuation type | Sources | Amount
   - | - | -
+  Gross | Part time | ${currency( itemized_job_list.gross_amount(source=['part time']) )}
+  Gross | Full time | ${currency( itemized_job_list.gross_amount(source=['full time']) )}
   Gross | Base pay | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
-  Gross | Base pay and `federal_taxes` | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )}
+  Gross | Base pay (and `federal_taxes` "accidentally", which is therefore correctly excluded from "gross" calculations) | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )}
   Net | Base pay | ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )}
   Net | Base pay and `federal_taxes` | ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )}
+  Total Net | All | ${currency( itemized_job_list.net_amount() )}
   
   * **base pay gross:** ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
   * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
@@ -833,6 +837,10 @@ subquestion: |
   
   ${ al_vehicle_list.output }
   
+  % for a_v in al_vehicle_list:
+  ${ a_v.output1 }
+  % endfor
+  
   ---
   
   % endif
@@ -875,6 +883,17 @@ comment: |
 ---
 # OUTPUT TEMPLATES
 ---
+table: x.output1
+generic object: ALVehicle
+rows: list(x)
+columns:
+  - Owner: |
+      row_item.owner
+  - Year/Make/Model: |
+      row_item.year + ', ' +  row_item.make + ', ' + row_item.model
+  - Value: |
+      currency(row_item.value)
+---
 generic object: ALItemizedJob
 template: x.output
 content: |
@@ -896,7 +915,9 @@ content: |
   - | - | - | -
   % for name, item in x.in_values.complete_elements().items():
   ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_amount( source=name, period_to_use=12 )) }
-  ${ job_items_names.get(name, name) } | Total out | Monthly | ${ currency(x.total_out( source=name, period_to_use=12 )) }
+  % endfor
+  % for name, item in x.out_values.complete_elements().items():
+  ${ job_items_names.get(name, name) } | Net | Monthly | ${ currency(x.net_amount( source=name, period_to_use=12 )) }
   % endfor
   
   **Hours for hourly job:**
