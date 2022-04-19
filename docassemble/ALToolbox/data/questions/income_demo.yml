@@ -2,7 +2,7 @@ metadata:
   title:  ALToolbox - Income
 ---
 modules: 
-  - .income
+  - .al_income
 ---
 comment: |
   translation options:
@@ -14,10 +14,10 @@ objects:
   - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
       ask_number=True)
-  - alincome: ALIncome
-  - alincome_list: ALIncomeList.using(auto_gather=False)
-  - aljob: ALJob
-  - aljob_list: ALJobList.using(
+  - al_income: ALIncome
+  - al_income_list: ALIncomeList.using(auto_gather=False)
+  - al_job: ALJob
+  - al_job_list: ALJobList.using(
       complete_attribute='complete',
       ask_number=True)
   - al_asset: ALAsset
@@ -47,20 +47,20 @@ code: |
     itemized_job_list.gather()
   
   if to_run['ALIncome'] or to_run['all']:
-    alincome.source = 'pension'
-    alincome.complete
+    al_income.source = 'pension'
+    al_income.complete
   
   if to_run['ALIncomeList'] or to_run['all']:
     income_sources
-    alincome_list.gathered  # get which sources in the list to use
+    al_income_list.gathered  # get which sources in the list to use
     get_alincome_list_item_values
   
   if to_run['ALJob'] or to_run['all']:
-    aljob.name = 'unitemized flight attendant'
-    aljob.complete
+    al_job.name = 'unitemized flight attendant'
+    al_job.complete
   
   if to_run['ALJobList'] or to_run['all']:
-    aljob_list.gather()
+    al_job_list.gather()
   
   if to_run['ALAsset'] or to_run['all']:
     al_asset.source = 'real estate'
@@ -83,14 +83,14 @@ code: |
   
   if to_run['ALLedger'] or to_run['all']:
     al_ledger.gather()
-    al_ledger.calculate()
+    al_ledger.running_total()
   
   before_end_so_answers_are_saved
   end
 ---
 code: |
-    alincome_list.there_are_any = income_sources.any_true
-    alincome_list.target_number = len(income_sources.true_values())
+    al_income_list.there_are_any = income_sources.any_true
+    al_income_list.target_number = len(income_sources.true_values())
 ---
 id: which to test
 # TODO: Accumulate them all in one ALIncomeList at the end to test the ability of ALIncomeList to run its functions appropriately on all types of values (other than ALIncomeLists themselves)
@@ -133,14 +133,14 @@ fields:
       - ALSimpleValue: ALSimpleValue
       - ALValueList: ALValueList
       - ALLedger: ALLedger
-      #- flatten: flatten
-      #- income_period_list: income_period_list
-      #- income_period: income_period
-      #- recent_years: recent_years
-      #- asset_source_list: asset_source_list
-      #- income_source_list: income_source_list
-      #- non_wage_income_list: non_wage_income_list
-      #- expense_source_list: expense_source_list
+      #- al_flatten: al_flatten
+      #- al_income_period_list: al_income_period_list
+      #- al_period_times_per_year: al_period_times_per_year
+      #- al_recent_years: al_recent_years
+      #- al_asset_source_list: al_asset_source_list
+      #- al_income_source_list: al_income_source_list
+      #- al_non_wage_income_list: al_non_wage_income_list
+      #- al_expense_source_list: al_expense_source_list
 ---
 comment: |
   Notes on itemized job items:
@@ -246,7 +246,7 @@ fields:
   - How often do you get paid?: x.period
     input type: radio
     code: |
-      income_period_list()
+      al_income_period_list()
   - How many hours do you work during that time?: x.hours_per_period
     input type: number
     show if: x.is_hourly
@@ -334,7 +334,7 @@ fields:
   - Period: x.period
     input type: radio
     code: |
-      income_period_list()
+      al_income_period_list()
   - How many hours do you work per period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
@@ -348,12 +348,12 @@ fields:
 code: |
   if income_sources.any_true():
     for source in income_sources.true_values():
-      one_income = alincome_list.appendObject(source=source)
+      one_income = al_income_list.appendObject(source=source)
       # Never put anything else in here
-  alincome_list.gathered = True
+  al_income_list.gathered = True
 ---
 code: |
-  for income in alincome_list.elements:
+  for income in al_income_list.elements:
     income.complete
   get_alincome_list_item_values = True
 ---
@@ -365,13 +365,13 @@ fields:
   - no label: income_sources
     datatype: checkboxes
     code: |
-      income_source_list()
+      al_income_source_list()
 ---
 # SHARED BY ALJob AND ALJobList
 ---
 generic object: ALJob
 code: |
-  # Q: aljob.source vs. itemized_job.name
+  # Q: al_job.source vs. itemized_job.name
   x.source
   x.employer
   x.value
@@ -403,7 +403,7 @@ fields:
   - How often do you get paid?: x.period
     input type: radio
     code: |
-      income_period_list()
+      al_income_period_list()
   - How many hours do you work in each period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
@@ -448,13 +448,13 @@ question: |
 fields:
   - What type of asset is it?: x.source
     code: |
-      asset_source_list()
+      al_asset_source_list()
     exclude: |
       ['vehicle']
   - How often do you get this income?: x.period
     input type: radio
     code: |
-      income_period_list()
+      al_income_period_list()
   - Interest or other income from the asset: x.value
     datatype: currency
   - Who owns this?: x.owner
@@ -484,7 +484,7 @@ fields:
   - How often do you get money from this?: x[i].period
     input type: radio
     code: |
-      income_period_list()
+      al_income_period_list()
   - Market value: x[i].market_value
     datatype: currency
     required: False
@@ -515,7 +515,7 @@ fields:
   - Year: x.year
     input type: combobox
     code: |
-      recent_years()
+      al_recent_years()
   - Make: x.make
     hint: e.g, Ford, Honda 
   - Model: x.model
@@ -562,7 +562,7 @@ fields:
   - Year: x[i].year
     input type: combobox
     code: |
-      recent_years()
+      al_recent_years()
   - Make: x[i].make
     hint: e.g, Ford, Honda 
   - Model: x[i].model
@@ -673,11 +673,11 @@ subquestion: |
   
   Calcuation type | Frequency | Amount
   - | - | -
-  Gross | Yearly | ${currency( itemized_job_list.gross_amount() )}
-  Gross | Monthly | ${currency( itemized_job_list.gross_amount(period_to_use=12) )}
-  Net | Yearly | ${currency( itemized_job_list.net_amount() )}
-  Net | Weekly | ${currency( itemized_job_list.net_amount(period_to_use=52) )}
-  Money out | Yearly | ${currency(itemized_job_list.total_out())}
+  Gross | Yearly | ${currency( itemized_job_list.gross_income_total() )}
+  Gross | Monthly | ${currency( itemized_job_list.gross_income_total(period_to_use=12) )}
+  Net | Yearly | ${currency( itemized_job_list.net_income_total() )}
+  Net | Weekly | ${currency( itemized_job_list.net_income_total(period_to_use=52) )}
+  Money out | Yearly | ${currency(itemized_job_list.deductions_total())}
   
   **Getting base pay amounts by `source`:**
   
@@ -687,18 +687,18 @@ subquestion: |
   
   Calcuation type | Sources | Amount
   - | - | -
-  Gross | Part time | ${currency( itemized_job_list.gross_amount(source=['part time']) )}
-  Gross | Full time | ${currency( itemized_job_list.gross_amount(source=['full time']) )}
-  Gross | Base pay | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
-  Gross | Base pay (and `federal_taxes` "accidentally", which is therefore correctly excluded from "gross" calculations) | ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )}
-  Net | Base pay | ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )}
-  Net | Base pay and `federal_taxes` | ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )}
-  Total Net | All | ${currency( itemized_job_list.net_amount() )}
+  Gross | Part time | ${currency( itemized_job_list.gross_income_total(source=['part time']) )}
+  Gross | Full time | ${currency( itemized_job_list.gross_income_total(source=['full time']) )}
+  Gross | Base pay | ${currency( itemized_job_list.gross_income_total(source=['part time', 'full time']) )}
+  Gross | Base pay (and `federal_taxes` "accidentally", which is therefore correctly excluded from "gross" calculations) | ${currency( itemized_job_list.gross_income_total(source=['part time', 'full time', 'federal_taxes']) )}
+  Net | Base pay | ${currency( itemized_job_list.net_income_total(source=['part time', 'full time']) )}
+  Net | Base pay and `federal_taxes` | ${currency( itemized_job_list.net_income_total(source=['part time', 'full time', 'federal_taxes']) )}
+  Total Net | All | ${currency( itemized_job_list.net_income_total() )}
   
-  * **base pay gross:** ${currency( itemized_job_list.gross_amount(source=['part time', 'full time']) )}
-  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
-  * **base pay net:** (same) ${currency( itemized_job_list.net_amount(source=['part time', 'full time']) )} per year
-  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_amount(source=['part time', 'full time', 'federal_taxes']) )} per year
+  * **base pay gross:** ${currency( itemized_job_list.gross_income_total(source=['part time', 'full time']) )}
+  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_income_total(source=['part time', 'full time', 'federal_taxes']) )} per year
+  * **base pay net:** (same) ${currency( itemized_job_list.net_income_total(source=['part time', 'full time']) )} per year
+  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_income_total(source=['part time', 'full time', 'federal_taxes']) )} per year
   
   
   % for one_itemized_job in itemized_job_list:
@@ -717,7 +717,7 @@ subquestion: |
   
   Source | Period | Amount
   - | - | -
-  ${ alincome.output }
+  ${ al_income.output }
   
   ---
   
@@ -726,20 +726,20 @@ subquestion: |
   % if to_run['ALIncomeList'] or to_run['all']:
   ### ALIncomeList
   
-  **Sources:** ${ alincome_list.sources() }[BR]
-  **Matches for source called "SSR" (Social Security Retirement Benefits):** ${ alincome_list.matches('SSR') }[BR]
-  **Total per year of everything:** ${ currency(alincome_list.total()) }[BR]
-  **Total per month of an owner called "me" from source called "SSR":** ${ currency(alincome_list.total(period_to_use=12, source=["SSR"], owner=['me'])) }[BR]
+  **Sources:** ${ al_income_list.sources() }[BR]
+  **Matches for source called "SSR" (Social Security Retirement Benefits):** ${ al_income_list.matches('SSR') }[BR]
+  **Total per year of everything:** ${ currency(al_income_list.total()) }[BR]
+  **Total per month of an owner called "me" from source called "SSR":** ${ currency(al_income_list.total(period_to_use=12, source=["SSR"], owner=['me'])) }[BR]
   
   Source | Period | Amount
   - | - | -
-  % for one_income in alincome_list:
+  % for one_income in al_income_list:
   ${ one_income.output }
   % endfor
   
   **Income list JSON string for Legal Server:**[BR]
   ```
-  ${ alincome_list.to_json() }
+  ${ al_income_list.to_json() }
   ```
   
   ---
@@ -748,9 +748,9 @@ subquestion: |
   
   % if to_run['ALJob'] or to_run['all']:
   
-  ### Single ALJob: ${ aljob.source }
+  ### Single ALJob: ${ al_job.source }
   
-  ${ aljob.output }
+  ${ al_job.output }
   
   ---
   
@@ -761,15 +761,15 @@ subquestion: |
   
   Calculation Type | Frequency | Amount
   - | - | -
-  Gross | Yearly | ${ currency(aljob_list.gross_total()) }
-  Gross | Monthly | ${ currency(aljob_list.gross_total(period_to_use=12)) }
-  Net | Yearly | ${ currency(aljob_list.net_total()) }
-  Net | Monthly | ${ currency(aljob_list.net_total(period_to_use=12)) }
+  Gross | Yearly | ${ currency(al_job_list.gross_income_total()) }
+  Gross | Monthly | ${ currency(al_job_list.gross_income_total(period_to_use=12)) }
+  Net | Yearly | ${ currency(al_job_list.net_income_total()) }
+  Net | Monthly | ${ currency(al_job_list.net_income_total(period_to_use=12)) }
   
   One item value:[BR]
-  ${ [item for item in aljob_list.sources()][0] } base pay per year: ${ currency(aljob_list.net_total(source=[item for item in aljob_list.sources()][0])) }
+  ${ [item for item in al_job_list.sources()][0] } base pay per year: ${ currency(al_job_list.net_income_total(source=[item for item in al_job_list.sources()][0])) }
   
-  % for one_job in aljob_list:
+  % for one_job in al_job_list:
   #### ${ one_job.source }
   
   ${ one_job.output }
@@ -837,14 +837,10 @@ subquestion: |
   
   ${ al_vehicle_list.output }
   
-  % for a_v in al_vehicle_list:
-  ${ a_v.output1 }
-  % endfor
-  
   ---
   
   % endif
-  
+
   % if to_run['ALSimpleValue'] or to_run['all']:
   ### A single ALSimpleValue
   
@@ -874,25 +870,8 @@ subquestion: |
   ---
   
   % endif
-comment: |
-  Causes infinite loop:
-  ${ al_ledger.output }
-
-  keep the comments alive!
-
 ---
 # OUTPUT TEMPLATES
----
-table: x.output1
-generic object: ALVehicle
-rows: list(x)
-columns:
-  - Owner: |
-      row_item.owner
-  - Year/Make/Model: |
-      row_item.year + ', ' +  row_item.make + ', ' + row_item.model
-  - Value: |
-      currency(row_item.value)
 ---
 generic object: ALItemizedJob
 template: x.output
@@ -902,22 +881,22 @@ content: |
   
   Calculation Type | Period | Amount
   --- | --- | ---
-  Gross | Yearly | ${ currency( x.gross_amount() ) }
-  Gross | Weekly | ${ currency( x.gross_amount(period_to_use=12) ) }
-  Total out | Yearly | ${currency(x.total_out())}
-  Total out | Fortnightly | ${currency(x.total_out(period_to_use=26))}
-  Net | Yearly | ${currency( x.net_amount() )}
-  Net | Quarterly | ${currency( x.net_amount(period_to_use=4) )}
+  Gross | Yearly | ${ currency( x.gross_income() ) }
+  Gross | Weekly | ${ currency( x.gross_income(period_to_use=12) ) }
+  Total out | Yearly | ${currency(x.deductions())}
+  Total out | Fortnightly | ${currency(x.deductions(period_to_use=26))}
+  Net | Yearly | ${currency( x.net_income() )}
+  Net | Quarterly | ${currency( x.net_income(period_to_use=4) )}
   
   **Specifying by item `source`:**
   
   Name | Calculation Type | Frequency | Gross amount
   - | - | - | -
   % for name, item in x.in_values.complete_elements().items():
-  ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_amount( source=name, period_to_use=12 )) }
+  ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_income( source=name, period_to_use=12 )) }
   % endfor
   % for name, item in x.out_values.complete_elements().items():
-  ${ job_items_names.get(name, name) } | Net | Monthly | ${ currency(x.net_amount( source=name, period_to_use=12 )) }
+  ${ job_items_names.get(name, name) } | Net | Monthly | ${ currency(x.net_income( source=name, period_to_use=12 )) }
   % endfor
   
   **Hours for hourly job:**
@@ -943,10 +922,10 @@ content: |
   
   Type | Period | Amount
   --- | --- | ---
-  Gross | Yearly | ${ currency( x.gross_amount() ) }
-  Gross | Monthly | ${ currency( x.gross_amount(period_to_use=12) ) }
-  Net | Yearly | ${ currency( x.net_amount() ) }
-  Net | Monthly | ${ currency( x.net_amount(period_to_use=12) ) }
+  Gross | Yearly | ${ currency( x.gross_income() ) }
+  Gross | Monthly | ${ currency( x.gross_income(period_to_use=12) ) }
+  Net | Yearly | ${ currency( x.net_income() ) }
+  Net | Monthly | ${ currency( x.net_income(period_to_use=12) ) }
   
   **Hours for hourly job:**
   
