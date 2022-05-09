@@ -1,5 +1,5 @@
 $(document).on('daPageLoad', function(){
-  /** When the page first loads, gets the value from any `.al_intl_phone` input
+  /** When the page first loads, gets the value from any `.al_international_phone` input
   *    field, transforms it, puts the transformed value back into the input
   *    field, and adds a dropdown from which to choose a country. It
   *    can also automatically identify the country based on the phone number
@@ -30,8 +30,8 @@ $(document).on('daPageLoad', function(){
   *    1. https://github.com/google/libphonenumber/blob/master/FAQ.md
   */
   
-  // Loop through all the .al_intl_phone input fields on the current screen
-  let phoneNodes = document.querySelectorAll( '.al_intl_phone' );  // Class given by the CustomDataType
+  // Loop through all the .al_international_phone input fields on the current screen
+  let phoneNodes = document.querySelectorAll( '.al_international_phone' );  // Class given by the CustomDataType
   for ( var node of phoneNodes ) {
     var telObj = window.intlTelInput( node, {
       // The default country without any input into the plugin is 'us'

@@ -3,13 +3,13 @@ from docassemble.base.util import CustomDataType, DAValidationError
 
 
 class PhoneNumber(CustomDataType):
-    name = "al_intl_phone"
-    input_class = "al_intl_phone"
+    name = "al_international_phone"
+    input_class = "al_international_phone"
     javascript = """\
 /** When combined with the phone number javascript file shown in
 *    phone_number_validation_demo.yml, this docassemble CustomDataType
 *    will make sure a user has give valid phone numbers in input fields
-*    with the `datatype` `al_intl_phone`. This includes international
+*    with the `datatype` `al_international_phone`. This includes international
 *    numbers.
 *
 * This docassemble CustomDataType will be installed on your server along
@@ -41,9 +41,9 @@ var validatePhoneNumber = function( value, element, params ) {
   return true;
 };
 
-$.validator.addMethod( 'al_intl_phone', validatePhoneNumber );
+$.validator.addMethod( 'al_international_phone', validatePhoneNumber );
 """
-    jq_rule = "al_intl_phone"
+    jq_rule = "al_international_phone"
     # People that have just entered an invalid US phone number could find this confusing
     jq_message = 'This phone number doesn\'t look right. Note that a non-US number needs a "+" before the number.'
 
