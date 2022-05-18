@@ -13,10 +13,12 @@ from typing import Dict, List, Any
 __all__ = ["save_input_data"]
 
 
-def save_input_data(title:str = "", input_dict:Dict[str, Any] = None, tags:List[str] = None) -> None:
+def save_input_data(
+    title: str = "", input_dict: Dict[str, Any] = None, tags: List[str] = None
+) -> None:
     """
     This function is used by survey type interviews to save input data for data reporting purposes.
-    
+
     The input_dict should a dictionary where each key is a string and each value is a value from a Docassemble interview
     question. Typically that is a string, float, int, or a DADict.
     """
@@ -25,20 +27,20 @@ def save_input_data(title:str = "", input_dict:Dict[str, Any] = None, tags:List[
     for k, v in input_dict.items():
         field_dict[k] = v
         if isinstance(v, int):
-          type_dict[k] = "int"
+            type_dict[k] = "int"
         elif isinstance(v, float):
-          type_dict[k] = "float"
-        elif isinstance(v, DADict): # This covers checkboxes and multiselect
-          type_dict[k] = "checkboxes"
+            type_dict[k] = "float"
+        elif isinstance(v, DADict):  # This covers checkboxes and multiselect
+            type_dict[k] = "checkboxes"
         else:
-          type_dict[k] = "text"
-          
+            type_dict[k] = "text"
+
     data_to_save = dict()
     data_to_save["title"] = title
-    
+
     # TODO(qs): We should be able to infer type in the InterviewStats package too, eventually. But
     # leaving as-is for now
-    data_to_save["field_type_list"] = type_dict # This may not be needed
+    data_to_save["field_type_list"] = type_dict  # This may not be needed
 
     for k, v in type_dict.items():
         # If a field is of checkboxes type, flatten its elements dict
