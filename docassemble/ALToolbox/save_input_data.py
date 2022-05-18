@@ -6,28 +6,39 @@ from docassemble.webapp.jsonstore import (
 )
 from docassemble.base.generate_key import random_alphanumeric
 from docassemble.base.functions import get_current_info
-from docassemble.base.util import variables_snapshot_connection
+from docassemble.base.util import variables_snapshot_connection, user_info, DADict
 import random
+from typing import Dict, List, Any
 
 __all__ = ["save_input_data"]
 
 
-def save_input_data(title="", input_dict=None, tags=None):
+def save_input_data(title:str = "", input_dict:Dict[str, Any] = None, tags:List[str] = None) -> None:
     """
     This function is used by survey type interviews to save input data for data reporting purposes.
-    input_dict must be structured like this:
-    my_dict['fld_name'] = [fld_name, fld_type as string], e.g.
-    input_fields_dict['event_rating'] = [event_rating, 'radio']
+    
+    The input_dict should a dictionary where each key is a string and each value is a value from a Docassemble interview
+    question. Typically that is a string, float, int, or a DADict.
     """
     type_dict = dict()
     field_dict = dict()
     for k, v in input_dict.items():
-        type_dict[k] = list(v)[1]
-        field_dict[k] = list(v)[0]  # Field name without quotes
-
+        field_dict[k] = v
+        if isinstance(v, int):
+          type_dict[k] = "int"
+        elif isinstance(v, float):
+          type_dict[k] = "float"
+        elif isinstance(v, DADict): # This covers checkboxes and multiselect
+          type_dict[k] = "checkboxes"
+        else:
+          type_dict[k] = "text"
+          
     data_to_save = dict()
     data_to_save["title"] = title
-    data_to_save["field_type_list"] = type_dict  # Needed later in process_data
+    
+    # TODO(qs): We should be able to infer type in the InterviewStats package too, eventually. But
+    # leaving as-is for now
+    data_to_save["field_type_list"] = type_dict # This may not be needed
 
     for k, v in type_dict.items():
         # If a field is of checkboxes type, flatten its elements dict

@@ -106,11 +106,11 @@ code: |
   # This block saves input data to a database for reporting purposes. 
   # input_fields_dict's content must match all your variable names and datatypes.
   input_fields_dict = dict()
-  input_fields_dict['recommendation'] = [recommendation, 'radio'] 
-  input_fields_dict['event_rating'] = [event_rating, 'radio'] 
-  input_fields_dict['reason_to_like'] = [reason_to_like, 'area']
-  input_fields_dict['reason_to_dislike'] = [reason_to_dislike, 'area']
-  input_fields_dict['items_to_like'] = [items_to_like, 'checkboxes']
+  input_fields_dict['recommendation'] = recommendation
+  input_fields_dict['event_rating'] = event_rating
+  input_fields_dict['reason_to_like'] = reason_to_like
+  input_fields_dict['reason_to_dislike'] = reason_to_dislike
+  input_fields_dict['items_to_like'] = items_to_like
 
   save_input_data(title='Event Survey', input_dict = input_fields_dict)
   saved_report_data = True
