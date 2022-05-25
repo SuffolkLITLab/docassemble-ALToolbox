@@ -24,7 +24,7 @@ js_text = """\
       
       var monthParent = $('<div class="col">');
       var monthLabel = $('<div style="text-align:center">Month</div>');     
-      var monthElement = $('<select class="form-control" style="width:7.5em">');
+      var monthElement = $('<select class="form-select" style="width:7.5em">');
       monthElement.attr( 'required', required );
       monthElement.prop( 'required', required );
       
