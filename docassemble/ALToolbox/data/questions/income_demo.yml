@@ -133,7 +133,7 @@ fields:
       - ALValueList: ALValueList
       - ALLedger: ALLedger
       #- al_flatten: al_flatten
-      #- al_income_period_list: al_income_period_list
+      #- al_times_per_year_list: al_times_per_year_list
       #- al_times_per_year: al_times_per_year
       #- al_recent_years: al_recent_years
       #- al_asset_source_list: al_asset_source_list
@@ -156,7 +156,7 @@ generic object: ALItemizedJob
 code: |
   x.name
   x.employer.name.first
-  x.period
+  x.times_paid_per_year
   x.to_add.complete_attribute = 'complete'
   x.to_subtract.complete_attribute = 'complete'
   if x.is_part_time:
@@ -242,10 +242,10 @@ fields:
     choices:
       - Hourly: True
       - Salary: False
-  - How often do you get paid?: x.period
+  - How often do you get paid?: x.times_paid_per_year
     input type: radio
     code: |
-      al_income_period_list()
+      al_times_per_year_list()
   - How many hours do you work during that time?: x.hours_per_period
     input type: number
     show if: x.is_hourly
@@ -330,10 +330,10 @@ question: |
 fields:
   - Is it an hourly amount?: x.is_hourly
     datatype: yesnoradio
-  - Period: x.period
+  - Period: x.times_paid_per_year
     input type: radio
     code: |
-      al_income_period_list()
+      al_times_per_year_list()
   - How many hours do you work per period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
@@ -399,10 +399,10 @@ question: |
 fields:
   - Is the job hourly?: x.is_hourly
     datatype: yesnoradio
-  - How often do you get paid?: x.period
+  - How often do you get paid?: x.times_paid_per_year
     input type: radio
     code: |
-      al_income_period_list()
+      al_times_per_year_list()
   - How many hours do you work in each period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
@@ -450,10 +450,10 @@ fields:
       al_asset_source_list()
     exclude: |
       ['vehicle']
-  - How often do you get this income?: x.period
+  - How often do you get this income?: x.times_paid_per_year
     input type: radio
     code: |
-      al_income_period_list()
+      al_times_per_year_list()
   - Interest or other income from the asset: x.value
     datatype: currency
   - Who owns this?: x.owner
@@ -480,10 +480,10 @@ generic object: ALAssetList
 question: |
   Tell us about the values of the ${ x[i].source }
 fields:
-  - How often do you get money from this?: x[i].period
+  - How often do you get money from this?: x[i].times_paid_per_year
     input type: radio
     code: |
-      al_income_period_list()
+      al_times_per_year_list()
   - Market value: x[i].market_value
     datatype: currency
     required: False
@@ -673,9 +673,9 @@ subquestion: |
   Calcuation type | Frequency | Total
   - | - | -
   Gross | Yearly | ${currency( itemized_job_list.gross_total() )}
-  Gross | Monthly | ${currency( itemized_job_list.gross_total(period_to_use=12) )}
+  Gross | Monthly | ${currency( itemized_job_list.gross_total(times_per_year=12) )}
   Net | Yearly | ${currency( itemized_job_list.net_total() )}
-  Net | Weekly | ${currency( itemized_job_list.net_total(period_to_use=52) )}
+  Net | Weekly | ${currency( itemized_job_list.net_total(times_per_year=52) )}
   Money out | Yearly | ${currency(itemized_job_list.deduction_total())}
   
   **Getting base pay totals by `source`:**
@@ -728,7 +728,7 @@ subquestion: |
   **Sources:** ${ al_income_list.sources() }[BR]
   **Matches for source called "SSR" (Social Security Retirement Benefits):** ${ al_income_list.matches('SSR') }[BR]
   **Total per year of everything:** ${ currency(al_income_list.total()) }[BR]
-  **Total per month of an owner called "me" from source called "SSR":** ${ currency(al_income_list.total(period_to_use=12, source=["SSR"], owner=['me'])) }[BR]
+  **Total per month of an owner called "me" from source called "SSR":** ${ currency(al_income_list.total(times_per_year=12, source=["SSR"], owner=['me'])) }[BR]
   
   Source | Period | Total
   - | - | -
@@ -761,9 +761,9 @@ subquestion: |
   Calculation Type | Frequency | Total
   - | - | -
   Gross | Yearly | ${ currency(al_job_list.gross_total()) }
-  Gross | Monthly | ${ currency(al_job_list.gross_total(period_to_use=12)) }
+  Gross | Monthly | ${ currency(al_job_list.gross_total(times_per_year=12)) }
   Net | Yearly | ${ currency(al_job_list.net_total()) }
-  Net | Monthly | ${ currency(al_job_list.net_total(period_to_use=12)) }
+  Net | Monthly | ${ currency(al_job_list.net_total(times_per_year=12)) }
   
   One item value:[BR]
   ${ [item for item in al_job_list.sources()][0] } base pay per year: ${ currency(al_job_list.net_total(source=[item for item in al_job_list.sources()][0])) }
@@ -810,7 +810,7 @@ subquestion: |
   Calculation Type | Frequency | Filters | Total
   - | - | - | -
   Total | Yearly | None | ${ currency(al_asset_list.total()) }
-  Total | Monthly | source: "real estate", owner: "me" | ${ currency(al_asset_list.total(period_to_use=12, source=["real estate"], owner=['me'])) }
+  Total | Monthly | source: "real estate", owner: "me" | ${ currency(al_asset_list.total(times_per_year=12, source=["real estate"], owner=['me'])) }
   Market value | NA | None | ${ currency(al_asset_list.market_value()) }
   Market value | NA | source: "real estate" | ${ currency(al_asset_list.market_value(source=["real estate"])) }
   Balance | NA | None | ${ currency(al_asset_list.balance()) }
@@ -881,28 +881,28 @@ content: |
   Calculation Type | Period | Total
   --- | --- | ---
   Gross | Yearly | ${ currency( x.gross_total() ) }
-  Gross | Weekly | ${ currency( x.gross_total(period_to_use=12) ) }
+  Gross | Weekly | ${ currency( x.gross_total(times_per_year=12) ) }
   Total out | Yearly | ${currency(x.deduction_total())}
-  Total out | Fortnightly | ${currency(x.deduction_total(period_to_use=26))}
+  Total out | Fortnightly | ${currency(x.deduction_total(times_per_year=26))}
   Net | Yearly | ${currency( x.net_total() )}
-  Net | Quarterly | ${currency( x.net_total(period_to_use=4) )}
+  Net | Quarterly | ${currency( x.net_total(times_per_year=4) )}
   
   **Specifying by item `source`:**
   
   Name | Calculation type | Frequency | Gross amount
   - | - | - | -
   % for name, item in x.to_add.complete_elements().items():
-  ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_total( source=name, period_to_use=12 )) }
+  ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_total( source=name, times_per_year=12 )) }
   % endfor
   % for name, item in x.to_subtract.complete_elements().items():
-  ${ job_items_names.get(name, name) } | Net | Monthly | ${ currency(x.net_total( source=name, period_to_use=12 )) }
+  ${ job_items_names.get(name, name) } | Net | Monthly | ${ currency(x.net_total( source=name, times_per_year=12 )) }
   % endfor
   
   **Hours for hourly job:**
   
   % if x.is_hourly:
   * ${ x.normalized_hours() } hours per year
-  * ${ x.normalized_hours(period_to_use=52) } hours per week
+  * ${ x.normalized_hours(times_per_year=52) } hours per week
   % else:
   **${ x.name }** is not hourly
   % endif
@@ -911,7 +911,7 @@ generic object: ALIncome
 template: x.output
 content: |
   ${ x.source } | Yearly | ${ currency( x.total() ) }
-  ${ x.source } | Fortnightly | ${ currency( x.total(period_to_use=26) ) }
+  ${ x.source } | Fortnightly | ${ currency( x.total(times_per_year=26) ) }
 ---
 generic object: ALJob
 template: x.output
@@ -922,15 +922,15 @@ content: |
   Type | Period | Total
   --- | --- | ---
   Gross | Yearly | ${ currency( x.gross_total() ) }
-  Gross | Monthly | ${ currency( x.gross_total(period_to_use=12) ) }
+  Gross | Monthly | ${ currency( x.gross_total(times_per_year=12) ) }
   Net | Yearly | ${ currency( x.net_total() ) }
-  Net | Monthly | ${ currency( x.net_total(period_to_use=12) ) }
+  Net | Monthly | ${ currency( x.net_total(times_per_year=12) ) }
   
   **Hours for hourly job:**
   
   % if x.is_hourly:
   * ${ x.normalized_hours() } hours per year
-  * ${ x.normalized_hours(period_to_use=52) } hours per week
+  * ${ x.normalized_hours(times_per_year=52) } hours per week
   % else:
   **${ x.source }** is not hourly
   % endif
@@ -939,7 +939,7 @@ generic object: ALAsset
 template: x.output
 content: |
   ${ x.source } | ${ x.owner } | Yearly | ${ currency( x.total() ) }
-  ${ x.source } | ${ x.owner } | Fortnightly | ${ currency( x.total(period_to_use=26) ) }
+  ${ x.source } | ${ x.owner } | Fortnightly | ${ currency( x.total(times_per_year=26) ) }
 ---
 table: x.output
 generic object: ALVehicleList
