@@ -4,6 +4,9 @@ metadata:
 modules: 
   - .al_income
 ---
+include:
+  - income.yml
+---
 comment: |
   translation options:
     - map dict/lookup from key to lang word. See https://github.com/nonprofittechy/docassemble-HousingCodeChecklist/blob/0cbfe02b29bbec66b8a2b925b36b3c67bb300e84/docassemble/HousingCodeChecklist/data/questions/language.yml#L41
@@ -245,7 +248,7 @@ fields:
   - How often do you get paid?: x.times_paid_per_year
     input type: radio
     code: |
-      al_times_per_year_list()
+      al_times_per_year_list
   - How many hours do you work during that time?: x.hours_per_period
     input type: number
     show if: x.is_hourly
@@ -333,7 +336,7 @@ fields:
   - Period: x.times_paid_per_year
     input type: radio
     code: |
-      al_times_per_year_list()
+      al_times_per_year_list
   - How many hours do you work per period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
@@ -402,7 +405,7 @@ fields:
   - How often do you get paid?: x.times_paid_per_year
     input type: radio
     code: |
-      al_times_per_year_list()
+      al_times_per_year_list
   - How many hours do you work in each period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
@@ -453,7 +456,7 @@ fields:
   - How often do you get this income?: x.times_paid_per_year
     input type: radio
     code: |
-      al_times_per_year_list()
+      al_times_per_year_list
   - Interest or other income from the asset: x.value
     datatype: currency
   - Who owns this?: x.owner
@@ -483,7 +486,7 @@ fields:
   - How often do you get money from this?: x[i].times_paid_per_year
     input type: radio
     code: |
-      al_times_per_year_list()
+      al_times_per_year_list
   - Market value: x[i].market_value
     datatype: currency
     required: False

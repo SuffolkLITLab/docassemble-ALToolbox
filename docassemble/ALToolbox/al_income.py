@@ -1,6 +1,6 @@
 # Based on https://github.com/GBLS/docassemble-income/blob/master/docassemble/income/income.py
 
-from docassemble.base.util import DAObject, DAList, DAOrderedDict, PeriodicValue, DAEmpty, Individual, comma_list, log, object_name_convert
+from docassemble.base.util import DAObject, DAList, DAOrderedDict, PeriodicValue, DAEmpty, Individual, comma_list, log, object_name_convert, value
 from decimal import Decimal
 import re
 import datetime
@@ -16,30 +16,31 @@ def al_flatten(listname, index=1):
     """
     return [item[index] for item in listname]
 
-def al_times_per_year_list():
-    # Q: Is the current order common? If not, can we do decreasing order?
-    """
-    Returns a list of lists, each of which contains the number of times a pay
-    period fits into a year and then the English word for that period.
-    Example: [12, "Monthly"]
-    """
-    return [
-        [12, "Monthly"],
-        [1, "Yearly"],
-        [52, "Weekly"],
-        [24, "Twice per month"],  # bimonthly?
-        [26, "Once every two weeks"],  # fortnightly
-        [4, "Once every 3 months"]  # quarterly
-    ]
+#def al_times_per_year_list():
+#    # Q: Is the current order common? If not, can we do decreasing order?
+#    """
+#    Returns a list of lists, each of which contains the number of times a pay
+#    period fits into a year and then the English word for that period.
+#    Example: [12, "Monthly"]
+#    """
+#    return [
+#        [12, "Monthly"],
+#        [1, "Yearly"],
+#        [52, "Weekly"],
+#        [24, "Twice per month"],  # bimonthly?
+#        [26, "Once every two weeks"],  # fortnightly
+#        [4, "Once every 3 months"]  # quarterly
+#    ]
 
 def al_times_per_year(index):
     """
     Given the index of an item in the `al_times_per_year_list`, returns
     text describing the number of intervals of the given period in a year.
-    Example: al_times_per_year(0) will return "Twelve times per year"
+    Example: al_times_per_year(12) will return "monthly"
     """
+    times_per_year_list = value('al_times_per_year_list')
     try:
-        for row in al_times_per_year_list():
+        for row in times_per_year_list:
             if int(index) == int(row[0]):
                 return row[1].lower()
         return docassemble.base.functions.nice_number(int(index), capitalize=True) + " " + docassemble.base.functions.word("times per year")
@@ -47,7 +48,7 @@ def al_times_per_year(index):
         return ''
     return ''
 
-docassemble.base.functions.update_language_function('*', 'period_list', al_times_per_year_list)
+# docassemble.base.functions.update_language_function('*', 'period_list', al_times_per_year_list)
 
 def al_recent_years(past=15, order='descending', future=1):
     """
