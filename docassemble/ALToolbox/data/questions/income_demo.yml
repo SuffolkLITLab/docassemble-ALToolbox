@@ -157,25 +157,25 @@ code: |
   x.name
   x.employer.name.first
   x.period
-  x.in_values.complete_attribute = 'complete'
-  x.out_values.complete_attribute = 'complete'
+  x.to_add.complete_attribute = 'complete'
+  x.to_subtract.complete_attribute = 'complete'
   if x.is_part_time:
-    x.in_values["part time"].is_hourly = x.is_hourly
+    x.to_add["part time"].is_hourly = x.is_hourly
   else:
-    x.in_values["full time"].is_hourly = x.is_hourly
-  x.in_values.gather()
-  x.out_values.gather()
+    x.to_add["full time"].is_hourly = x.is_hourly
+  x.to_add.gather()
+  x.to_subtract.gather()
   x.complete = True
 ---
 generic object: ALItemizedJob
 code: |
-  x.in_values[i].value
-  x.in_values[i].complete = True
+  x.to_add[i].value
+  x.to_add[i].complete = True
 ---
 generic object: ALItemizedJob
 code: |
-  x.out_values[i].value
-  x.out_values[i].complete = True
+  x.to_subtract[i].value
+  x.to_subtract[i].complete = True
 ---
 id: itemized job name
 generic object: ALItemizedJob
@@ -208,26 +208,26 @@ generic object: ALItemizedJob
 question: |
     Enter info from your paystub for your ${ x.name } job
 fields:
-    - What are your wages for this full time job?: x.in_values['full time'].value
+    - What are your wages for this full time job?: x.to_add['full time'].value
       datatype: currency
       show if:
         code: x.is_part_time is False
-    - What are your wages for this part time job?: x.in_values['part time'].value
+    - What are your wages for this part time job?: x.to_add['part time'].value
       datatype: currency
       show if:
         code: x.is_part_time is True
-    - What are your tips for this job?: x.in_values['tips'].value
+    - What are your tips for this job?: x.to_add['tips'].value
       datatype: currency
       required: False
-    - What is your federal tax amount?: x.out_values['federal_taxes'].value
+    - What is your federal tax amount?: x.to_subtract['federal_taxes'].value
       datatype: currency
       required: False
-    - What do you pay for insurance?: x.out_values['insurance'].value
+    - What do you pay for insurance?: x.to_subtract['insurance'].value
       datatype: currency
       required: False
-    - Does the job have other incomes?: x.in_values.there_is_another
+    - Does the job have other incomes?: x.to_add.there_is_another
       datatype: yesnoradio
-    - Does the job have other deductions?: x.out_values.there_is_another
+    - Does the job have other deductions?: x.to_subtract.there_is_another
       datatype: yesnoradio
 ---
 id: itemized job period
@@ -255,21 +255,21 @@ generic object: ALItemizedJob
 question: |
   Other incomes
 subquestion: |
-  You have already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.in_values.complete_elements().keys()] )}**.
+  You have already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.to_add.complete_elements().keys()] )}**.
 fields:
-  - Income name: x.in_values.new_item_name
+  - Income name: x.to_add.new_item_name
 validation code: |
-  if x.in_values.new_item_name in x.in_values.complete_elements().keys():
-    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.in_values.new_item_name, x.in_values.new_item_name) }</strong> that pay { currency( x.in_values[ x.in_values.new_item_name ].value )}. Pick a different name.')
+  if x.to_add.new_item_name in x.to_add.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.to_add.new_item_name, x.to_add.new_item_name) }</strong> that pay { currency( x.to_add[ x.to_add.new_item_name ].value )}. Pick a different name.')
 ---
 id: other itemized job income value
 generic object: ALItemizedJob
 question: |
   What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
 fields:
-  - Amount: x.in_values[i].value
+  - Amount: x.to_add[i].value
     datatype: currency
-  - Do you have another source of income?: x.in_values.there_is_another
+  - Do you have another source of income?: x.to_add.there_is_another
     datatype: yesnoradio
 ---
 id: other itemized job reduction name
@@ -277,21 +277,21 @@ generic object: ALItemizedJob
 question: |
   Other deductions
 subquestion: |
-  You've already told us about what gets taken out for **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.out_values.complete_elements().keys()] )}**.
+  You've already told us about what gets taken out for **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.to_subtract.complete_elements().keys()] )}**.
 fields:
-  - Deduction name: x.out_values.new_item_name
+  - Deduction name: x.to_subtract.new_item_name
 validation code: |
-  if x.out_values.new_item_name in x.out_values.complete_elements().keys():
-    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.out_values.new_item_name, x.out_values.new_item_name) }</strong> that take out { currency( x.out_values[ x.out_values.new_item_name ].value )}. Pick a different name.')
+  if x.to_subtract.new_item_name in x.to_subtract.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.to_subtract.new_item_name, x.to_subtract.new_item_name) }</strong> that take out { currency( x.to_subtract[ x.to_subtract.new_item_name ].value )}. Pick a different name.')
 ---
 id: other itemized job reduction value
 generic object: ALItemizedJob
 question: |
   What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
 fields:
-  - Amount: x.out_values[i].value
+  - Amount: x.to_subtract[i].value
     datatype: currency
-  - Is there other money being taken out?: x.out_values.there_is_another
+  - Is there other money being taken out?: x.to_subtract.there_is_another
     datatype: yesnoradio
 ---
 # UNIQUE ITEMS FOR ALItemizedJobList
@@ -891,10 +891,10 @@ content: |
   
   Name | Calculation type | Frequency | Gross amount
   - | - | - | -
-  % for name, item in x.in_values.complete_elements().items():
+  % for name, item in x.to_add.complete_elements().items():
   ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_total( source=name, period_to_use=12 )) }
   % endfor
-  % for name, item in x.out_values.complete_elements().items():
+  % for name, item in x.to_subtract.complete_elements().items():
   ${ job_items_names.get(name, name) } | Net | Monthly | ${ currency(x.net_total( source=name, period_to_use=12 )) }
   % endfor
   

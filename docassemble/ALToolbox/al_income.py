@@ -614,9 +614,9 @@ class ALItemizedJob(DAObject):
     of reporting income than a plain ALJob.
     
     Attributes:
-    .in_values {ALItemizedValueDict} Dict of _ALItemizedValues of money coming in.
+    .to_add {ALItemizedValueDict} Dict of _ALItemizedValues of money coming in.
         Use ALItemizedJob methods to calcuate totals.
-    .out_values {ALItemizedValueDict} Dict of _ALItemizedValues of money going out.
+    .to_subtract {ALItemizedValueDict} Dict of _ALItemizedValues of money going out.
         Use ALItemizedJob methods to calcuate totals.
     .period {str} Actually a number, as a string, of the annual frequency of the
         job.
@@ -625,7 +625,7 @@ class ALItemizedJob(DAObject):
         user works per period.
     .employer {Individual} (Optional) Individual assumed to have an address and name.
     
-    WARNING: Individual items in `.in_values` and `.out_values` should not be used
+    WARNING: Individual items in `.to_add` and `.to_subtract` should not be used
     directly. They should only be accessed through the methods of this job.
 
     Fulfills these requirements:
@@ -648,11 +648,11 @@ class ALItemizedJob(DAObject):
         if not hasattr(self, 'employer'):
           self.initializeAttribute('employer', Individual)
         # Money coming in
-        if not hasattr(self, 'in_values'):
-          self.initializeAttribute('in_values', ALItemizedValueDict)
+        if not hasattr(self, 'to_add'):
+          self.initializeAttribute('to_add', ALItemizedValueDict)
         # Money being taken out
-        if not hasattr(self, 'out_values'):
-          self.initializeAttribute('out_values', ALItemizedValueDict)
+        if not hasattr(self, 'to_subtract'):
+          self.initializeAttribute('to_subtract', ALItemizedValueDict)
     
     def item_value_per_period(self, item, period_to_use=1):
         """
@@ -712,14 +712,14 @@ class ALItemizedJob(DAObject):
         kwarg: source {str | [str]} (Optional) Source or list of sources of desired
             item(s).
         """
-        #self.in_values._trigger_gather()
+        #self.to_add._trigger_gather()
         total = Decimal(0)
         if period_to_use == 0:
           return total
         # Make sure we're always working with a list of sources (names?)
         sources = self.source_to_list(source=source)
         # Add up all money coming in from a source
-        for key, value in self.in_values.elements.items():
+        for key, value in self.to_add.elements.items():
           if key in sources:
             total += self.item_value_per_period(value, period_to_use=period_to_use)
         return total
@@ -738,14 +738,14 @@ class ALItemizedJob(DAObject):
         kwarg: source {str | [str]} (Optional) Source or list of sources of desired
             item(s).
         """
-        #self.out_values._trigger_gather()
+        #self.to_subtract._trigger_gather()
         total = Decimal(0)
         if period_to_use == 0:
           return total
         # Make sure we're always working with a list of sources (names?)
         sources = self.source_to_list(source=source)
         # Add all the money going out
-        for key, value in self.out_values.elements.items():
+        for key, value in self.to_subtract.elements.items():
           if key in sources:
             total += self.item_value_per_period(value, period_to_use=period_to_use)
         return total
@@ -763,27 +763,27 @@ class ALItemizedJob(DAObject):
         kwarg: source {str | [str]} (Optional) Source or list of sources of desired
             item(s).
         """
-        #self.in_values._trigger_gather()
-        #self.out_values._trigger_gather()
+        #self.to_add._trigger_gather()
+        #self.to_subtract._trigger_gather()
         total = Decimal(0)
         if period_to_use == 0:
           return total
         # Make sure we're always working with a list of sources (names?)
         sources = self.source_to_list(source=source)
         # Add up all money coming in
-        for key, value in self.in_values.elements.items():
+        for key, value in self.to_add.elements.items():
           if key in sources:
             total += self.item_value_per_period(value, period_to_use=period_to_use)
         # Subtract the money going out
-        for key, value in self.out_values.elements.items():
+        for key, value in self.to_subtract.elements.items():
           if key in sources:
             total -= self.item_value_per_period(value, period_to_use=period_to_use)
         return total
     
     def source_to_list(self, source=None):
         """
-        Returns list of the job's sources from both the `in_values` and
-        `out_values`. You can filter the items by `source`. `source` can be a
+        Returns list of the job's sources from both the `to_add` and
+        `to_subtract`. You can filter the items by `source`. `source` can be a
         string or a list.
         
         This is mostly for internal use meant to ensure that `source` input is
@@ -792,8 +792,8 @@ class ALItemizedJob(DAObject):
         sources = []
         # If not filtering by anything, get all possible sources
         if source is None:
-          sources = sources + [key for key in self.in_values.elements.keys()]
-          sources = sources + [key for key in self.out_values.elements.keys()]
+          sources = sources + [key for key in self.to_add.elements.keys()]
+          sources = sources + [key for key in self.to_subtract.elements.keys()]
         elif isinstance(source, list):
           sources = source
         else:
@@ -836,8 +836,8 @@ class ALItemizedJob(DAObject):
     #      "frequency": float(self.period),
     #      "gross": float(self.gross_total(period_to_use=self.period)),
     #      "net": float(self.net_total(period_to_use=self.period)),
-    #      "in_values": self.values_json(self.in_values),
-    #      "out_values": self.values_json(self.out_values)
+    #      "to_add": self.values_json(self.to_add),
+    #      "to_subtract": self.values_json(self.to_subtract)
     #    }
     #
     #def values_json(self, values_dict):
