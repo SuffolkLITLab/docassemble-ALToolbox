@@ -7,7 +7,6 @@ modules:
 comment: |
   translation options:
     - map dict/lookup from key to lang word. See https://github.com/nonprofittechy/docassemble-HousingCodeChecklist/blob/0cbfe02b29bbec66b8a2b925b36b3c67bb300e84/docassemble/HousingCodeChecklist/data/questions/language.yml#L41
-    - ???
 ---
 objects:
   - itemized_job: ALItemizedJob.using()
@@ -135,7 +134,7 @@ fields:
       - ALLedger: ALLedger
       #- al_flatten: al_flatten
       #- al_income_period_list: al_income_period_list
-      #- al_period_times_per_year: al_period_times_per_year
+      #- al_times_per_year: al_times_per_year
       #- al_recent_years: al_recent_years
       #- al_asset_source_list: al_asset_source_list
       #- al_income_source_list: al_income_source_list
@@ -507,7 +506,7 @@ question: |
 subquestion: |
   Notes:
   
-  * Do not try to use the `amount()` method with an ALVehicle.
+  * Do not try to use the `total()` method with an ALVehicle.
   * A single ALVehical doesn't have methods for a loan balance. That's part of ALVehicleList.
   * The `.source` attribute is automatically 'vehicle'
   
@@ -556,7 +555,7 @@ subquestion: |
   
   Notes:
   
-  * Do not try to use the `amount()` method with an ALVehicle. ALVehicleList.
+  * Do not try to use the `total()` method with an ALVehicle. ALVehicleList.
   * The `.source` attribute is automatically 'vehicle'
 fields:
   - Year: x[i].year
@@ -671,34 +670,34 @@ subquestion: |
   
   #### All jobs
   
-  Calcuation type | Frequency | Amount
+  Calcuation type | Frequency | Total
   - | - | -
-  Gross | Yearly | ${currency( itemized_job_list.gross_income_total() )}
-  Gross | Monthly | ${currency( itemized_job_list.gross_income_total(period_to_use=12) )}
-  Net | Yearly | ${currency( itemized_job_list.net_income_total() )}
-  Net | Weekly | ${currency( itemized_job_list.net_income_total(period_to_use=52) )}
-  Money out | Yearly | ${currency(itemized_job_list.deductions_total())}
+  Gross | Yearly | ${currency( itemized_job_list.gross_total() )}
+  Gross | Monthly | ${currency( itemized_job_list.gross_total(period_to_use=12) )}
+  Net | Yearly | ${currency( itemized_job_list.net_total() )}
+  Net | Weekly | ${currency( itemized_job_list.net_total(period_to_use=52) )}
+  Money out | Yearly | ${currency(itemized_job_list.deduction_total())}
   
-  **Getting base pay amounts by `source`:**
+  **Getting base pay totals by `source`:**
   
-  The below only shows useful amounts when both base pay and `federal_taxes` have amounts. "Base pay" refers to either `full time` or `part time` values.
+  The below only shows useful totals when both base pay and `federal_taxes` have totals. "Base pay" refers to either `full time` or `part time` values.
   
   All rows should be the same except the last row, where `federal_taxes` is being subtracted from the base pay.
   
-  Calcuation type | Sources | Amount
+  Calcuation type | Sources | Total
   - | - | -
-  Gross | Part time | ${currency( itemized_job_list.gross_income_total(source=['part time']) )}
-  Gross | Full time | ${currency( itemized_job_list.gross_income_total(source=['full time']) )}
-  Gross | Base pay | ${currency( itemized_job_list.gross_income_total(source=['part time', 'full time']) )}
-  Gross | Base pay (and `federal_taxes` "accidentally", which is therefore correctly excluded from "gross" calculations) | ${currency( itemized_job_list.gross_income_total(source=['part time', 'full time', 'federal_taxes']) )}
-  Net | Base pay | ${currency( itemized_job_list.net_income_total(source=['part time', 'full time']) )}
-  Net | Base pay and `federal_taxes` | ${currency( itemized_job_list.net_income_total(source=['part time', 'full time', 'federal_taxes']) )}
-  Total Net | All | ${currency( itemized_job_list.net_income_total() )}
+  Gross | Part time | ${currency( itemized_job_list.gross_total(source=['part time']) )}
+  Gross | Full time | ${currency( itemized_job_list.gross_total(source=['full time']) )}
+  Gross | Base pay | ${currency( itemized_job_list.gross_total(source=['part time', 'full time']) )}
+  Gross | Base pay (and `federal_taxes` "accidentally", which is therefore correctly excluded from "gross" calculations) | ${currency( itemized_job_list.gross_total(source=['part time', 'full time', 'federal_taxes']) )}
+  Net | Base pay | ${currency( itemized_job_list.net_total(source=['part time', 'full time']) )}
+  Net | Base pay and `federal_taxes` | ${currency( itemized_job_list.net_total(source=['part time', 'full time', 'federal_taxes']) )}
+  Total Net | All | ${currency( itemized_job_list.net_total() )}
   
-  * **base pay gross:** ${currency( itemized_job_list.gross_income_total(source=['part time', 'full time']) )}
-  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_income_total(source=['part time', 'full time', 'federal_taxes']) )} per year
-  * **base pay net:** (same) ${currency( itemized_job_list.net_income_total(source=['part time', 'full time']) )} per year
-  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_income_total(source=['part time', 'full time', 'federal_taxes']) )} per year
+  * **base pay gross:** ${currency( itemized_job_list.gross_total(source=['part time', 'full time']) )}
+  * **base pay and `federal_taxes` gross:** (same) ${currency( itemized_job_list.gross_total(source=['part time', 'full time', 'federal_taxes']) )} per year
+  * **base pay net:** (same) ${currency( itemized_job_list.net_total(source=['part time', 'full time']) )} per year
+  * **base pay and `federal_taxes` net:** ${currency( itemized_job_list.net_total(source=['part time', 'full time', 'federal_taxes']) )} per year
   
   
   % for one_itemized_job in itemized_job_list:
@@ -715,7 +714,7 @@ subquestion: |
   % if to_run['ALIncome'] or to_run['all']:
   ### A single ALIncome:
   
-  Source | Period | Amount
+  Source | Period | Total
   - | - | -
   ${ al_income.output }
   
@@ -731,7 +730,7 @@ subquestion: |
   **Total per year of everything:** ${ currency(al_income_list.total()) }[BR]
   **Total per month of an owner called "me" from source called "SSR":** ${ currency(al_income_list.total(period_to_use=12, source=["SSR"], owner=['me'])) }[BR]
   
-  Source | Period | Amount
+  Source | Period | Total
   - | - | -
   % for one_income in al_income_list:
   ${ one_income.output }
@@ -759,15 +758,15 @@ subquestion: |
   % if to_run['ALJobList'] or to_run['all']:
   ### ALJobList
   
-  Calculation Type | Frequency | Amount
+  Calculation Type | Frequency | Total
   - | - | -
-  Gross | Yearly | ${ currency(al_job_list.gross_income_total()) }
-  Gross | Monthly | ${ currency(al_job_list.gross_income_total(period_to_use=12)) }
-  Net | Yearly | ${ currency(al_job_list.net_income_total()) }
-  Net | Monthly | ${ currency(al_job_list.net_income_total(period_to_use=12)) }
+  Gross | Yearly | ${ currency(al_job_list.gross_total()) }
+  Gross | Monthly | ${ currency(al_job_list.gross_total(period_to_use=12)) }
+  Net | Yearly | ${ currency(al_job_list.net_total()) }
+  Net | Monthly | ${ currency(al_job_list.net_total(period_to_use=12)) }
   
   One item value:[BR]
-  ${ [item for item in al_job_list.sources()][0] } base pay per year: ${ currency(al_job_list.net_income_total(source=[item for item in al_job_list.sources()][0])) }
+  ${ [item for item in al_job_list.sources()][0] } base pay per year: ${ currency(al_job_list.net_total(source=[item for item in al_job_list.sources()][0])) }
   
   % for one_job in al_job_list:
   #### ${ one_job.source }
@@ -782,7 +781,7 @@ subquestion: |
   % if to_run['ALAsset'] or to_run['all']:
   ### A single ALAsset:
   
-  Source | Owner | Period | Amount
+  Source | Owner | Period | Total
   - | - | - | -
   ${ al_asset.output }
   
@@ -800,7 +799,7 @@ subquestion: |
   
   #### Each asset
   
-  Source | Owner | Period | Amount
+  Source | Owner | Period | Total
   - | - | - | -
   % for one_asset in al_asset_list:
   ${ one_asset.output }
@@ -808,7 +807,7 @@ subquestion: |
   
   #### Asset totals and filters
   
-  Calculation Type | Frequency | Filters | Amount
+  Calculation Type | Frequency | Filters | Total
   - | - | - | -
   Total | Yearly | None | ${ currency(al_asset_list.total()) }
   Total | Monthly | source: "real estate", owner: "me" | ${ currency(al_asset_list.total(period_to_use=12, source=["real estate"], owner=['me'])) }
@@ -844,10 +843,10 @@ subquestion: |
   % if to_run['ALSimpleValue'] or to_run['all']:
   ### A single ALSimpleValue
   
-  An ALSimpleValue is not a periodic value. Its `.amount()` is negative if its `transaction_type` is an "expense", otherwise it's positive.
+  An ALSimpleValue is not a periodic value. Its `.total()` is negative if its `transaction_type` is an "expense", otherwise it's positive.
   
   As a string: ${ al_simple_value }[BR]
-  Amount as currency: ${ currency(al_simple_value.amount()) }
+  Amount as currency: ${ currency(al_simple_value.total()) }
   
   ---
   
@@ -879,24 +878,24 @@ content: |
   **Employer info:**[BR]
   ${ x.employer_name_address_phone() }
   
-  Calculation Type | Period | Amount
+  Calculation Type | Period | Total
   --- | --- | ---
-  Gross | Yearly | ${ currency( x.gross_income() ) }
-  Gross | Weekly | ${ currency( x.gross_income(period_to_use=12) ) }
-  Total out | Yearly | ${currency(x.deductions())}
-  Total out | Fortnightly | ${currency(x.deductions(period_to_use=26))}
-  Net | Yearly | ${currency( x.net_income() )}
-  Net | Quarterly | ${currency( x.net_income(period_to_use=4) )}
+  Gross | Yearly | ${ currency( x.gross_total() ) }
+  Gross | Weekly | ${ currency( x.gross_total(period_to_use=12) ) }
+  Total out | Yearly | ${currency(x.deduction_total())}
+  Total out | Fortnightly | ${currency(x.deduction_total(period_to_use=26))}
+  Net | Yearly | ${currency( x.net_total() )}
+  Net | Quarterly | ${currency( x.net_total(period_to_use=4) )}
   
   **Specifying by item `source`:**
   
-  Name | Calculation Type | Frequency | Gross amount
+  Name | Calculation type | Frequency | Gross amount
   - | - | - | -
   % for name, item in x.in_values.complete_elements().items():
-  ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_income( source=name, period_to_use=12 )) }
+  ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_total( source=name, period_to_use=12 )) }
   % endfor
   % for name, item in x.out_values.complete_elements().items():
-  ${ job_items_names.get(name, name) } | Net | Monthly | ${ currency(x.net_income( source=name, period_to_use=12 )) }
+  ${ job_items_names.get(name, name) } | Net | Monthly | ${ currency(x.net_total( source=name, period_to_use=12 )) }
   % endfor
   
   **Hours for hourly job:**
@@ -911,8 +910,8 @@ content: |
 generic object: ALIncome
 template: x.output
 content: |
-  ${ x.source } | Yearly | ${ currency( x.amount() ) }
-  ${ x.source } | Fortnightly | ${ currency( x.amount(period_to_use=26) ) }
+  ${ x.source } | Yearly | ${ currency( x.total() ) }
+  ${ x.source } | Fortnightly | ${ currency( x.total(period_to_use=26) ) }
 ---
 generic object: ALJob
 template: x.output
@@ -920,12 +919,12 @@ content: |
   **Employer info:**[BR]
   ${ x.employer_name_address_phone() }
   
-  Type | Period | Amount
+  Type | Period | Total
   --- | --- | ---
-  Gross | Yearly | ${ currency( x.gross_income() ) }
-  Gross | Monthly | ${ currency( x.gross_income(period_to_use=12) ) }
-  Net | Yearly | ${ currency( x.net_income() ) }
-  Net | Monthly | ${ currency( x.net_income(period_to_use=12) ) }
+  Gross | Yearly | ${ currency( x.gross_total() ) }
+  Gross | Monthly | ${ currency( x.gross_total(period_to_use=12) ) }
+  Net | Yearly | ${ currency( x.net_total() ) }
+  Net | Monthly | ${ currency( x.net_total(period_to_use=12) ) }
   
   **Hours for hourly job:**
   
@@ -939,8 +938,8 @@ content: |
 generic object: ALAsset
 template: x.output
 content: |
-  ${ x.source } | ${ x.owner } | Yearly | ${ currency( x.amount() ) }
-  ${ x.source } | ${ x.owner } | Fortnightly | ${ currency( x.amount(period_to_use=26) ) }
+  ${ x.source } | ${ x.owner } | Yearly | ${ currency( x.total() ) }
+  ${ x.source } | ${ x.owner } | Fortnightly | ${ currency( x.total(period_to_use=26) ) }
 ---
 table: x.output
 generic object: ALVehicleList
@@ -960,7 +959,7 @@ content: |
   * **total:** ${ currency(x.total()) }
   * **total of sources called "cash":** ${ currency(x.total(source=['cash'])) }
   
-  An item's `.amount()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
+  An item's `.total()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
   
   **Simple values:**
   
@@ -968,7 +967,7 @@ content: |
   - | - | -
   % for val in x:
   ${ val.source } | As string | ${ val }
-  ${ val.source } | Amount currency | ${ currency(val.amount()) }
+  ${ val.source } | Total currency | ${ currency(val.total()) }
   % endfor
 ---
 table: x.display_table
@@ -979,8 +978,8 @@ columns:
       row_item.date
   - Source: |
       row_item.source
-  - Amount currency: |
-      currency( row_item.amount() )
+  - Total currency: |
+      currency( row_item.total() )
   - Total: |
       currency( row_item.running_total )
 ---

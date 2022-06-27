@@ -32,10 +32,11 @@ def al_income_period_list():
         [4, "Once every 3 months"]  # quarterly
     ]
 
-def al_period_times_per_year(index):
+def al_times_per_year(index):
     """
-    Returns text describing the number of intervals of the given period in a year.
-    Example: "Twelve times per year"
+    Given the index of an item in the `al_income_period_list`, returns
+    text describing the number of intervals of the given period in a year.
+    Example: al_times_per_year(0) will return "Twelve times per year"
     """
     try:
         for row in al_income_period_list():
@@ -152,15 +153,13 @@ class ALIncome(PeriodicValue):
     incomes must include hours per period. Period is some demoninator of a year
     for compatibility with PeriodicFinancialList class. E.g, to express
     a weekly period, use 52. The default is 1 (a year).
-
-    The `.value` attribute is required.
     """
-    def amount(self, period_to_use=1):
+    def total(self, period_to_use=1):
         """
         Returns the income over the specified period_to_use, taking into account
         hours per period for hourly items.
 
-        To calculate `.amount()`, an ALIncome must have a `.period` and `.value`.
+        To calculate `.total()`, an ALIncome must have a `.period` and `.value`.
         It can also have `.is_hourly` and `.hours_per_period`.
         """
         if hasattr(self, 'is_hourly') and self.is_hourly:
@@ -176,7 +175,7 @@ class ALIncomeList(DAList):
 
     .source
     .owner
-    .amount()
+    .total()
     .period
     .value
     """
@@ -213,7 +212,7 @@ class ALIncomeList(DAList):
         string or a list. If you filter by `source` you can also filter by one
         `owner`.
 
-        To calculate `.total()` correctly, all items must have an `.amount()`.
+        To calculate `.total()` correctly, all items must have an `.total()`.
         Job-type incomes should automatically exclude deductions.
         """
         self._trigger_gather()
@@ -222,23 +221,23 @@ class ALIncomeList(DAList):
             return result
         if source is None:
             for item in self.elements:
-                result += Decimal(item.amount(period_to_use=period_to_use))
+                result += Decimal(item.total(period_to_use=period_to_use))
         elif isinstance(source, list):
             for item in self.elements:
                 if hasattr(item, 'source') and item.source in source:
                     if owner is None: # if the user doesn't care who the owner is
-                        result += Decimal(item.amount(period_to_use=period_to_use))
+                        result += Decimal(item.total(period_to_use=period_to_use))
                     else:
                         if not (isinstance(owner, DAEmpty)) and hasattr(item, 'owner') and item.owner == owner:
-                            result += Decimal(item.amount(period_to_use=period_to_use))
+                            result += Decimal(item.total(period_to_use=period_to_use))
         else:
             for item in self.elements:
                 if hasattr(item, 'source') and item.source == source:
                     if owner is None:
-                        result += Decimal(item.amount(period_to_use=period_to_use))
+                        result += Decimal(item.total(period_to_use=period_to_use))
                     else:
                         if not (isinstance(owner, DAEmpty)) and hasattr(item, 'owner') and item.owner == owner:
-                            result += Decimal(item.amount(period_to_use=period_to_use))
+                            result += Decimal(item.total(period_to_use=period_to_use))
         return result
     
     def to_json(self):
@@ -260,19 +259,19 @@ class ALJob(ALIncome):
     common way of reporting income than ALItemizedJob.
     """
 
-    def gross_income(self, period_to_use=1):
+    def gross_total(self, period_to_use=1):
       """
-      Same as ALIncome amount. Returns the income over the specified period_to_use.
+      Same as ALIncome total. Returns the income over the specified period_to_use.
       `period_to_use` is some demoninator of a year for compatibility with
       PeriodicFinancialList class. E.g. to express a weekly period, use 52. The default
       is 1 (a year).
       """
-      return self.amount(period_to_use=period_to_use)
+      return self.total(period_to_use=period_to_use)
 
-    def net_income(self, period_to_use=1):
+    def net_total(self, period_to_use=1):
       """
       Returns the net income divided by the time period_to_use.
-      Only returns a correct amount if the job is non-hourly.
+      Only returns a correct total if the job is non-hourly.
 
       `period_to_use` is some demoninator of a year for compatibility with
       PeriodicFinancialList class. E.g, to express a weekly period, use 52. The
@@ -305,19 +304,19 @@ class ALJob(ALIncome):
 
 class ALJobList(ALIncomeList):
     """
-    Represents a list of ALJobs. Adds the `.gross_income_total()` and
-    `.net_income_total()` methods to the ALIncomeList class. It's a more common
+    Represents a list of ALJobs. Adds the `.gross_total()` and
+    `.net_total()` methods to the ALIncomeList class. It's a more common
     way of reporting income than ALItemizedJobList.
     """
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.object_type = ALJob
     
-    def amount(self, period_to_use=1, source=None):
-      """Alias for self.gross_income_total() to integrate with ALIncomeList math."""
-      return self.gross_income_total(period_to_use=period_to_use, source=source)
+    def total(self, period_to_use=1, source=None):
+      """Alias for self.gross_total() to integrate with ALIncomeList math."""
+      return self.gross_total(period_to_use=period_to_use, source=source)
     
-    def gross_income_total(self, period_to_use=1, source=None):
+    def gross_total(self, period_to_use=1, source=None):
         """
         Returns the sum of the gross incomes of its ALJobs divided by the time
         period_to_use. You can filter the jobs by `source`. `source` can be a
@@ -333,22 +332,22 @@ class ALJobList(ALIncomeList):
             return result
         if source is None:
             for job in self.elements:
-                result += Decimal(job.gross_income(period_to_use=period_to_use))
+                result += Decimal(job.gross_total(period_to_use=period_to_use))
         elif isinstance(source, list):
             for job in self.elements:
                 if job.source in source:
-                    result += Decimal(job.gross_income(period_to_use=period_to_use))
+                    result += Decimal(job.gross_total(period_to_use=period_to_use))
         else:
             for job in self.elements:
                 if job.source == source:
-                    result += Decimal(job.gross_income(period_to_use=period_to_use))
+                    result += Decimal(job.gross_total(period_to_use=period_to_use))
         return result
     
-    def net_income_total(self, period_to_use=1, source=None):
+    def net_total(self, period_to_use=1, source=None):
         """
         Returns the sum of the net incomes of its ALJobs divided by the time
         period_to_use. You can filter the jobs by `source`. `source` can be a
-        string or a list. Only returns a correct amount if the job is non-hourly.
+        string or a list. Only returns a correct total if the job is non-hourly.
         Leaving out `source` will use all sources.
 
         `period_to_use` is some demoninator of a year for compatibility with
@@ -361,25 +360,25 @@ class ALJobList(ALIncomeList):
             return result
         if source is None:
             for job in self.elements:
-                result += Decimal(job.net_income(period_to_use=period_to_use))
+                result += Decimal(job.net_total(period_to_use=period_to_use))
         elif isinstance(source, list):
             for job in self.elements:
                 if job.source in source:
-                    result += Decimal(job.net_income(period_to_use=period_to_use))
+                    result += Decimal(job.net_total(period_to_use=period_to_use))
         else:
             for job in self.elements:
                 if job.source == source:
-                    result += Decimal(job.net_income(period_to_use=period_to_use))
+                    result += Decimal(job.net_total(period_to_use=period_to_use))
         return result
 
 
 class ALAsset(ALIncome):
     """Like ALIncome but the `value` attribute is optional."""
-    def amount(self, period_to_use=1):
+    def total(self, period_to_use=1):
       if not hasattr(self, 'value') or self.value == '':
         return Decimal(0)
       else:
-        return super(ALAsset, self).amount(period_to_use=period_to_use)
+        return super(ALAsset, self).total(period_to_use=period_to_use)
 
 
 class ALAssetList(ALIncomeList):
@@ -387,7 +386,7 @@ class ALAssetList(ALIncomeList):
       super().init(*pargs, **kwargs)  
       self.object_type = ALAsset
 
-    def amount(self, source=None):
+    def total(self, source=None):
         """
         Alias of ALAssetList.market_value() to integrate with ALIncomeList math.
         """
@@ -479,13 +478,13 @@ class ALSimpleValue(DAObject):
     Like a Value object, but no fiddling around with .exists attribute because
     this is designed to be stored in a list, not a dictionary.
     """
-    def amount(self):
+    def total(self):
         """
         If desired, to use as a ledger, values can be signed. Setting
         transaction_type = 'expense' makes the value negative. Use min=0 in that
         case.
 
-        This can't be used in an ALIncomeList because its `amount` can retrun
+        This can't be used in an ALIncomeList because its `total` can retrun
         positive and negative values, which would mess up ALIncomeList math
         to add up all positive item amounts.
         """
@@ -495,8 +494,8 @@ class ALSimpleValue(DAObject):
             return Decimal(self.value)
 
     def __str__(self):
-        """Returns own `.amount()` as string, not its own name."""
-        return str(self.amount())
+        """Returns own `.total()` as string, not its own name."""
+        return str(self.total())
 
 
 class ALValueList(DAList):
@@ -509,18 +508,13 @@ class ALValueList(DAList):
 
     def sources(self):
         """
-        Returns a set of the unique sources of values stored in the list. Will
-        fail if any items in the list leave the source field unspecified.
+        Returns a set of the unique sources of values stored in the list.
         """
         sources = set()
         for value in self.elements:
             if hasattr(value, 'source'):
                 sources.add(value.source)
         return sources
-
-    #def amount(self, source=None):
-    #    """Alias of ALAssetList.market_value() for ALIncomeList totals."""
-    #    return self.total(source=source)
     
     def total(self, source=None):
         """
@@ -532,15 +526,15 @@ class ALValueList(DAList):
         result = Decimal(0)
         if source is None:
             for value in self.elements:
-                result += Decimal(value.amount())
+                result += Decimal(value.total())
         elif isinstance(source, list):
             for value in self.elements:
                 if value.source in source:
-                    result += Decimal(value.amount())
+                    result += Decimal(value.total())
         else:
             for value in self.elements:
                 if value.source == source:
-                    result += Decimal(value.amount())
+                    result += Decimal(value.total())
         return result
 
 
@@ -559,7 +553,7 @@ class ALLedger(ALValueList):
         self.elements.sort(key=lambda y: y.date)
         running_total = Decimal(0)
         for entry in self.elements:
-            running_total += Decimal(entry.amount())
+            running_total += Decimal(entry.total())
             entry.running_total = Decimal(running_total)
 
 
@@ -621,9 +615,9 @@ class ALItemizedJob(DAObject):
     
     Attributes:
     .in_values {ALItemizedValueDict} Dict of _ALItemizedValues of money coming in.
-        Use ALItemizedJob methods to calcuate amounts.
+        Use ALItemizedJob methods to calcuate totals.
     .out_values {ALItemizedValueDict} Dict of _ALItemizedValues of money going out.
-        Use ALItemizedJob methods to calcuate amounts.
+        Use ALItemizedJob methods to calcuate totals.
     .period {str} Actually a number, as a string, of the annual frequency of the
         job.
     .is_hourly {bool} (Optional) Whether the user gets paid hourly for the job.
@@ -699,13 +693,13 @@ class ALItemizedJob(DAObject):
         else:
           return (value * Decimal(period)) / Decimal(period_to_use)
     
-    def amount(self, period_to_use=1, source=None):
+    def total(self, period_to_use=1, source=None):
         """
-        Alias for ALItemizedJob.gross_income to integrate with ALIncomeList math.
+        Alias for ALItemizedJob.gross_total to integrate with ALIncomeList math.
         """
-        return self.gross_income(period_to_use=period_to_use, source=source)
+        return self.gross_total(period_to_use=period_to_use, source=source)
     
-    def gross_income(self, period_to_use=1, source=None):
+    def gross_total(self, period_to_use=1, source=None):
         """
         Returns the sum of positive values (payments) for a given period_to_use.
         You can filter the items by `source`. `source` can be a string or a list.
@@ -730,7 +724,7 @@ class ALItemizedJob(DAObject):
             total += self.item_value_per_period(value, period_to_use=period_to_use)
         return total
     
-    def deductions(self, period_to_use=1, source=None):
+    def deduction_total(self, period_to_use=1, source=None):
         """
         Returns the sum of money going out divided by a pay period_to_use as a
         postive value. You can filter the items by `source`. `source` can be a
@@ -756,7 +750,7 @@ class ALItemizedJob(DAObject):
             total += self.item_value_per_period(value, period_to_use=period_to_use)
         return total
     
-    def net_income(self, period_to_use=1, source=None):
+    def net_total(self, period_to_use=1, source=None):
         """
         Returns the net (gross minus deductions) value of the job divided by
         `period_to_use`. You can filter the items by `source`. `source` can be a
@@ -840,8 +834,8 @@ class ALItemizedJob(DAObject):
     #    return {
     #      "name": self.name,
     #      "frequency": float(self.period),
-    #      "gross": float(self.gross_income(period_to_use=self.period)),
-    #      "net": float(self.net_income(period_to_use=self.period)),
+    #      "gross": float(self.gross_total(period_to_use=self.period)),
+    #      "net": float(self.net_total(period_to_use=self.period)),
     #      "in_values": self.values_json(self.in_values),
     #      "out_values": self.values_json(self.out_values)
     #    }
@@ -876,14 +870,14 @@ class ALItemizedJobList(DAList):
         if self.object_type is None:
             self.object_type = ALItemizedJob
     
-    def amount(self, period_to_use=1, source=None):
+    def total(self, period_to_use=1, source=None):
         """
-        Alias for ALItemizedJobList.gross_income_total to integrate with
+        Alias for ALItemizedJobList.gross_total to integrate with
         ALIncomeList math.
         """
-        return self.gross_income_total(period_to_use=period_to_use, source=source)
+        return self.gross_total(period_to_use=period_to_use, source=source)
     
-    def gross_income_total(self, period_to_use=1, source=None):
+    def gross_total(self, period_to_use=1, source=None):
         """
         Returns the sum of the gross incomes of the list's jobs divided by the
         period_to_use. You can filter the items by `source`. `source` can be a
@@ -901,12 +895,12 @@ class ALItemizedJobList(DAList):
         total = Decimal(0)
         if period_to_use == 0:
             return total
-        # Add all job gross amounts from particular sources
+        # Add all job gross totals from particular sources
         for job in self.elements:
-          total += job.gross_income(period_to_use=period_to_use, source=source)
+          total += job.gross_total(period_to_use=period_to_use, source=source)
         return total
     
-    def deductions_total(self, period_to_use=1, source=None):
+    def deduction_total(self, period_to_use=1, source=None):
         """
         Returns the sum of the deductions of the list's jobs divided by the
         period_to_use. You can filter the items by `source`. `source` can be a
@@ -926,10 +920,10 @@ class ALItemizedJobList(DAList):
           return total
         # Add all the money going out for all jobs
         for job in self.elements:
-          total += job.deductions(period_to_use=period_to_use, source=source)
+          total += job.deduction_total(period_to_use=period_to_use, source=source)
         return total
     
-    def net_income_total(self, period_to_use=1, source=None):
+    def net_total(self, period_to_use=1, source=None):
         """
         Returns the net of the list's jobs (money in minus money out) divided by
         the period_to_use. You can filter the items by `source`. `source` can be a
@@ -949,7 +943,7 @@ class ALItemizedJobList(DAList):
             return total
         # Combine all the net incomes in all the jobs from particular sources
         for job in self.elements:
-          total += job.net_income(period_to_use=period_to_use, source=source)
+          total += job.net_total(period_to_use=period_to_use, source=source)
         return total
     
     #def to_json(self):
