@@ -2,6 +2,20 @@ import docassemble.base.functions
 from docassemble.base.util import defined, value, showifdef, space_to_underscore
 import re
 
+__all__ = [
+    "shortenMe",
+    "thousands",
+    "tel",
+    "fa_icon",
+    "space",
+    "yes_no_unknown",
+    "number_to_letter",
+    "collapse_template",
+    "tabbed_templates_html",
+    "sum_if_defined",
+    "add_records",
+    "output_checkbox",
+]
 
 class shortenMe:
     def __init__(self, originalURL):
