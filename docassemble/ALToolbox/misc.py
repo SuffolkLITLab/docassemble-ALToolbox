@@ -107,6 +107,8 @@ def collapse_template(template, classname=None):
     """
     Insert HTML for a Bootstrap "collapse" div.
     """
+    if not template.subject_as_html(trim=True) and not template.content_as_html():
+        return ""
     if classname is None:
         classname = " bg-light"
     else:
