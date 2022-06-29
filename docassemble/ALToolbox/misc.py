@@ -17,6 +17,7 @@ __all__ = [
     "output_checkbox",
 ]
 
+
 class shortenMe:
     def __init__(self, originalURL):
         self.shortenedURL = docassemble.base.functions.temp_redirect(
