@@ -1,22 +1,10 @@
 ---
 variable name: al_times_per_year_list
 data:
-  - 
-    - 12
-    - "Monthly"
-  - 
-    - 1
-    - "Yearly"
-  - 
-    - 52
-    - "Weekly"
-  - 
-    - 24
-    - "Twice per month"
-  - 
-    - 26
-    - "Once every two weeks"
-  - 
-    - 4
-    - "Once every 3 months"
+  - [12, "Monthly"]
+  - [1, "Yearly"]
+  - [52, "Weekly"]
+  - [24, "Twice per month"]
+  - [26, "Once every two weeks"]
+  - [4, "Once every 3 months"]
 ---
