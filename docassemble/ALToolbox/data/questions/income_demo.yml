@@ -1,9 +1,6 @@
 metadata:
   title:  ALToolbox - Income
 ---
-modules: 
-  - .al_income
----
 include:
   - al_income.yml
 ---
