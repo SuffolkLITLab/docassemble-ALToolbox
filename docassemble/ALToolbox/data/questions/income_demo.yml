@@ -5,7 +5,7 @@ modules:
   - .al_income
 ---
 include:
-  - income.yml
+  - al_income.yml
 ---
 comment: |
   translation options:
