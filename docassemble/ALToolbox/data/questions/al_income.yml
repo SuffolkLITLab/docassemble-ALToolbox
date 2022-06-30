@@ -1,4 +1,7 @@
 ---
+modules: 
+  - .al_income
+---
 variable name: al_times_per_year_list
 data:
   - [52, "Weekly"]
