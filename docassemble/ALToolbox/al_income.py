@@ -28,23 +28,6 @@ def al_flatten(listname, index=1):
     return [item[index] for item in listname]
 
 
-# def al_times_per_year_list():
-#    # Q: Is the current order common? If not, can we do decreasing order?
-#    """
-#    Returns a list of lists, each of which contains the number of times a pay
-#    period fits into a year and then the English word for that period.
-#    Example: [12, "Monthly"]
-#    """
-#    return [
-#        [12, "Monthly"],
-#        [1, "Yearly"],
-#        [52, "Weekly"],
-#        [24, "Twice per month"],  # bimonthly?
-#        [26, "Once every two weeks"],  # fortnightly
-#        [4, "Once every 3 months"]  # quarterly
-#    ]
-
-
 def al_times_per_year(index):
     """
     Given the index of an item in the `al_times_per_year_list`, returns
