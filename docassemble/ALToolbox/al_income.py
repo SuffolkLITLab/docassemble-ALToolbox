@@ -19,22 +19,13 @@ import docassemble.base.functions
 import json
 
 
-def al_flatten(listname, index=1):
+def times_per_year(index):
     """
-    Return just the nth item in an 2D list. Intended to use for multiple choice
-    option lists in Docassemble. e.g., al_flatten(al_asset_source_list()) will
-    return ['Savings','Certificate of Deposit'...].
-    """
-    return [item[index] for item in listname]
-
-
-def al_times_per_year(index):
-    """
-    Given the index of an item in the `al_times_per_year_list`, returns
+    Given the index of an item in the `times_per_year_list`, returns
     text describing the number of intervals of the given period in a year.
-    Example: al_times_per_year(12) will return "monthly"
+    Example: times_per_year(12) will return "monthly"
     """
-    times_per_year_list = value("al_times_per_year_list")
+    times_per_year_list = value("times_per_year_list")
     try:
         for row in times_per_year_list:
             if int(index) == int(row[0]):
@@ -49,10 +40,10 @@ def al_times_per_year(index):
     return ""
 
 
-# docassemble.base.functions.update_language_function('*', 'period_list', al_times_per_year_list)
+# docassemble.base.functions.update_language_function('*', 'period_list', times_per_year_list)
 
 
-def al_recent_years(past=15, order="descending", future=1):
+def recent_years(past=15, order="descending", future=1):
     """
     Returns a list of the most recent past years, continuing into the future.
     Defaults to most recent 15 years+1. Useful to populate a combobox of years
@@ -72,7 +63,7 @@ def al_recent_years(past=15, order="descending", future=1):
         return list(range(now.year + future, now.year - past, -1))
 
 
-def al_asset_source_list():
+def asset_source_list():
     """Returns a list of asset sources for a multiple choice dropdown."""
     source_list = DAOrderedDict()
     source_list.auto_gather = False
@@ -94,19 +85,19 @@ def al_asset_source_list():
     return source_list
 
 
-def al_income_source_list():
+def income_source_list():
     """Returns a dict of income sources for a multiple choice dropdown."""
     source_list = DAOrderedDict()
     source_list["wages"] = "A job or self-employment"
 
-    source_list.elements.update(al_non_wage_income_list())
+    source_list.elements.update(non_wage_income_list())
     source_list.auto_gather = False
     source_list.gathered = True
 
     return source_list
 
 
-def al_non_wage_income_list():
+def non_wage_income_list():
     """Returns a dict of income sources, excluding wages."""
     source_list = DAOrderedDict()
     source_list.auto_gather = False
@@ -131,7 +122,7 @@ def al_non_wage_income_list():
     return source_list
 
 
-def al_expense_source_list():
+def expense_source_list():
     """Returns a dict of expense sources for a multiple choice dropdown."""
     source_list = DAOrderedDict()
     source_list.auto_gather = False
