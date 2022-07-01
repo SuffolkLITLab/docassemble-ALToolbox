@@ -225,7 +225,7 @@ class ALIncomeList(DAList):
         string or a list. If you filter by `source` you can also filter by one
         `owner`.
 
-        To calculate `.total()` correctly, all items must have an `.total()`.
+        To calculate `.total()` correctly, all items must have a `.total()` method.
         Job-type incomes should automatically exclude deductions.
         """
         self._trigger_gather()
@@ -415,7 +415,7 @@ class ALAssetList(ALIncomeList):
 
     def total(self, source=None):
         """
-        Alias of ALAssetList.market_value() to integrate with ALIncomeList math.
+        The total of an AssetList is the same as the market_value()
         """
         return self.market_value(source=source)
 
@@ -518,9 +518,8 @@ class ALSimpleValue(DAObject):
         transaction_type = 'expense' makes the value negative. Use min=0 in that
         case.
 
-        This can't be used in an ALIncomeList because its `total` can retrun
-        positive and negative values, which would mess up ALIncomeList math
-        to add up all positive item amounts.
+        If you use signed values, be cautious when placing in an ALIncomeList object.
+        The `total()` method may return unexpected results in that case.
         """
         if hasattr(self, "transaction_type"):
             return (
@@ -532,7 +531,7 @@ class ALSimpleValue(DAObject):
             return Decimal(self.value)
 
     def __str__(self):
-        """Returns own `.total()` as string, not its own name."""
+        """Returns the signed value of this individual item, formatted as a Decimal string."""
         return str(self.total())
 
 
@@ -740,13 +739,13 @@ class ALItemizedJob(DAObject):
 
     def total(self, times_per_year=1, source=None):
         """
-        Alias for ALItemizedJob.gross_total to integrate with ALIncomeList math.
+        The total of an ALItemizedJob is defined as equivalent to the `gross` total, without accounting for deductions.
         """
         return self.gross_total(times_per_year=times_per_year, source=source)
 
     def gross_total(self, times_per_year=1, source=None):
         """
-        Returns the sum of positive values (payments) for a given times_per_year.
+        Returns the sum of positive values (like wages on a paycheck) for the specified time period.
         You can filter the items by `source`. `source` can be a string or a list.
         If you use sources from deductions, they will be ignored.
 
@@ -772,8 +771,10 @@ class ALItemizedJob(DAObject):
 
     def deduction_total(self, times_per_year=1, source=None):
         """
-        Returns the sum of money going out divided by a pay times_per_year as a
-        postive value. You can filter the items by `source`. `source` can be a
+        Returns the total amount of "outgoing" values (deductions on a paycheck) for the specified time period.
+        The total will be a positive value.
+                
+        You can filter the items by `source`. `source` can be a
         string or a list. If you use sources from money coming in, they will be
         ignored.
 
@@ -954,9 +955,12 @@ class ALItemizedJobList(DAList):
     def net_total(self, times_per_year=1, source=None):
         """
         Returns the net of the list's jobs (money in minus money out) divided by
-        the times_per_year. You can filter the items by `source`. `source` can be a
-        string or a list.
-
+        the times_per_year. 
+        
+        For example, the net would reflect wages on a paycheck minus any 
+        deductions, such as for health insurance or taxes.
+        
+        You can filter the items by `source`. `source` can be a string or a list.
         Args:
         kwarg: source {str | [str]} - (Optional) Source or list of sources of
             desired job items to sum from every itemized job.
