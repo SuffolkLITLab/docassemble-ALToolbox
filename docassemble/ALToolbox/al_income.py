@@ -883,36 +883,6 @@ class ALItemizedJob(DAObject):
             / float(times_per_year)
         )
 
-    # def to_json(self):
-    #    """
-    #    Returns an itemized job's dictionary as JSON.
-    #    # Q: I couldn't find Legal Server's API for this. Link? Does this need to be a string? If so, how do we handle this with .to_json of itemized job list?
-    #    """
-    #    return {
-    #      "name": self.name,
-    #      "frequency": float(self.times_paid_per_year),
-    #      "gross": float(self.gross_total(times_per_year=self.times_paid_per_year)),
-    #      "net": float(self.net_total(times_per_year=self.times_paid_per_year)),
-    #      "to_add": self.values_json(self.to_add),
-    #      "to_subtract": self.values_json(self.to_subtract)
-    #    }
-    #
-    # def values_json(self, values_dict):
-    #    """
-    #    Return a JSON version of the given dict of ALItemizedJob "in" or "out"
-    #    objects.
-    #    """
-    #    result = {}
-    #    for key in values_dict.true_values():
-    #      value = values_dict[key]
-    #      result[key] = {}
-    #      result[key]['value'] = value.value
-    #      # Q: Include defaults for all attributes?
-    #      if hasattr(value, 'is_hourly'):
-    #        result[key]['is_hourly'] = value.is_hourly
-    #      if hasattr(value, 'times_paid_per_year'):
-    #        result[key]['times_paid_per_year'] = value.times_paid_per_year
-    #    return result
 
 
 class ALItemizedJobList(DAList):
