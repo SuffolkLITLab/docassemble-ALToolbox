@@ -903,8 +903,7 @@ class ALItemizedJobList(DAList):
 
     def total(self, times_per_year=1, source=None):
         """
-        Alias for ALItemizedJobList.gross_total to integrate with
-        ALIncomeList math.
+        The total of an ALItemizedJobList is defined as the gross total, not accounting for any deductions.
         """
         return self.gross_total(times_per_year=times_per_year, source=source)
 
