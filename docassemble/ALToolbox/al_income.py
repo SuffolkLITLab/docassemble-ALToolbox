@@ -887,8 +887,11 @@ class ALItemizedJob(DAObject):
 
 class ALItemizedJobList(DAList):
     """
-    Represents a list of jobs that can have both payments and money out. This is
-    a less common way of reporting income.
+    Represents a list of jobs that can have both payments and money out. 
+    For example: a paycheck that has both wages and deductions, such as health insurance, 
+    taxes, etc. 
+    
+    This is a less common way of reporting income.
     """
 
     def init(self, *pargs, **kwargs):
