@@ -294,9 +294,20 @@ class ALJobList(ALIncomeList):
 
 
 class ALAsset(ALIncome):
-    """Like ALIncome but the `value` attribute is optional."""
+    """
+    An ALAsset is expected to have the attributes .market_value and
+    .balance to be used correctly. It also has a .value attribute that
+    defaults to 0.
+    """
 
     def total(self, times_per_year=1):
+      """
+      Returns the .value attribute divided by the times per year
+      you want to calculate. The value defaults to 0.
+      
+      `times_per_year` is some demoninator of a year. E.g, to express a weekly
+      period, use 52. The default is 1 (a year).
+      """
         if not hasattr(self, "value") or self.value == "":
             return Decimal(0)
         else:
