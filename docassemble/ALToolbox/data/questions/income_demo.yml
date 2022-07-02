@@ -31,9 +31,6 @@ objects:
   - al_value_list: ALSimpleValueList.using(
       complete_attribute='complete',
       ask_number=True)
-  - al_ledger: ALLedger.using(
-      complete_attribute='complete',
-      ask_number=True)
 ---
 id: interview order
 mandatory: True
@@ -80,10 +77,6 @@ code: |
   if to_run['ALSimpleValueList'] or to_run['all']:
     al_value_list.gather()
   
-  if to_run['ALLedger'] or to_run['all']:
-    al_ledger.gather()
-    al_ledger.running_total()
-  
   before_end_so_answers_are_saved
   end
 ---
@@ -109,7 +102,6 @@ subquestion: |
   * `ALAssetList` covers all the same functionality as `ALAsset` and `ALIncome`.
   * `ALVehicleList` covers all the same functionality as `ALVehicle`.
   * `ALSimpleValueList` covers all the same functionality as `ALSimpleValue`.
-  * `ALLedger` covers all the same functionality as `ALSimpleValueList` and `ALSimpleValue`.
   
   Each item will only demo its own capabilities and those of the classes from which it inherits. It does not show additional features that you can add. For example, an individual ALAsset won't ask for a market value as it has no methods for calculating a market value. An ALAssetList, though, will demo summing up market values using the filters it has in its method.
 
@@ -131,7 +123,6 @@ fields:
       - ALVehicleList: ALVehicleList
       - ALSimpleValue: ALSimpleValue
       - ALSimpleValueList: ALSimpleValueList
-      - ALLedger: ALLedger
       #- times_per_year_list: times_per_year_list
       #- times_per_year: times_per_year
       #- recent_years: recent_years
@@ -589,7 +580,7 @@ fields:
       - Expense: expense
       - Income: income
 ---
-# SHARED BY ALSimpleValueList and ALLedger
+# SHARED BY ALSimpleValueList
 ---
 id: how many simple values
 generic object: ALSimpleValueList
@@ -623,22 +614,6 @@ fields:
     choices:
       - Expense: expense
       - Income: income
----
-# UNIQUE TO ALLedger
----
-generic object: ALLedger
-code: |
-  x[i].value
-  x[i].date
-  x[i].complete = True
----
-id: ledger value date
-generic object: ALLedger
-question: |
-  When did the transaction for your ${ x.object_name() } ${ x.__class__.__name__ } occur?
-fields:
-  - Date: x[i].date
-    datatype: date
 ---
 # ENDING SCREENS
 ---
@@ -734,11 +709,6 @@ subquestion: |
   % for one_income in al_income_list:
   ${ one_income.output }
   % endfor
-  
-  **Income list JSON string for Legal Server:**[BR]
-  ```
-  ${ al_income_list.to_json() }
-  ```
   
   ---
   
@@ -859,15 +829,6 @@ subquestion: |
   ---
   
   % endif
-  
-  % if to_run['ALLedger'] or to_run['all']:
-  ### ALLedger running totals
-  
-  ${ al_ledger.display_table }
-  
-  ---
-  
-  % endif
 ---
 # OUTPUT TEMPLATES
 ---
@@ -968,19 +929,6 @@ content: |
   ${ val.source } | As string | ${ val }
   ${ val.source } | Total currency | ${ currency(val.total()) }
   % endfor
----
-table: x.display_table
-generic object: ALLedger
-rows: x
-columns:
-  - Date: |
-      row_item.date
-  - Source: |
-      row_item.source
-  - Total currency: |
-      currency( row_item.total() )
-  - Total: |
-      currency( row_item.running_total )
 ---
 # TRANSLATIONS
 ---

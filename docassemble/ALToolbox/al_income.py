@@ -169,23 +169,6 @@ class ALIncomeList(DAList):
                             result += Decimal(item.total(times_per_year=times_per_year))
         return result
 
-    def to_json(self):
-        """
-        Returns the list of incomes as a string, suitable for Legal Server API.
-        This will force the gathering of the `.source`, `.times_per_year`, and `.value`
-        attributes.
-        """
-        return json.dumps(
-            [
-                {
-                    "source": income.source,
-                    "frequency": float(income.times_per_year),
-                    "value": income.value,
-                }
-                for income in self.elements
-            ]
-        )
-
 
 class ALJob(ALIncome):
     """
@@ -483,26 +466,6 @@ class ALSimpleValueList(DAList):
                 if value.source == source:
                     result += Decimal(value.total())
         return result
-
-
-class ALLedger(ALSimpleValueList):
-    """
-    Represents an account ledger. Adds .running_total() method which adds a
-    `running_total` attribute to each ledger entry.
-    """
-
-    def init(self, *pargs, **kwargs):
-        super().init(*pargs, **kwargs)
-
-    def running_total(self):
-        """
-        Sort the ledger by date, then add a .running_total to each ledger entry.
-        """
-        self.elements.sort(key=lambda y: y.date)
-        running_total = Decimal(0)
-        for entry in self.elements:
-            running_total += Decimal(entry.total())
-            entry.running_total = Decimal(running_total)
 
 
 class _ALItemizedValue(DAObject):
