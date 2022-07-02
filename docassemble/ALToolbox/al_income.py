@@ -626,11 +626,9 @@ class ALItemizedJob(DAObject):
         if hasattr(item, "times_per_year") and item.times_per_year:
             frequency_to_use = item.times_per_year
 
-        is_hourly = False
-        # Override if item should be calculated hourly (like wages). Both the job
-        # and the item itself need to declare they should be calculated hourly
-        if self.is_hourly and hasattr(item, "is_hourly"):
-            is_hourly = item.is_hourly
+        # Both the job and the item itself need to be hourly to be
+        # calculated as hourly
+        is_hourly = self.is_hourly and hasattr(item, "is_hourly") and item.is_hourly
 
         # Conform to behavior of docassemble PeriodicValue
         value = Decimal(0)
