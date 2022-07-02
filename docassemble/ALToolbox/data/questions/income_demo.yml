@@ -688,6 +688,8 @@ subquestion: |
   % if to_run['ALIncome'] or to_run['all']:
   ### A single ALIncome:
   
+  Plain `al_income` in Mako: ${ al_income }
+  
   Source | Period | Total
   - | - | -
   ${ al_income.output }

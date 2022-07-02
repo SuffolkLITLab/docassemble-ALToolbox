@@ -4,7 +4,6 @@ from docassemble.base.util import (
     DAObject,
     DAList,
     DAOrderedDict,
-    PeriodicValue,
     DAEmpty,
     Individual,
     comma_list,
@@ -59,12 +58,17 @@ def recent_years(past=15, order="descending", future=1):
         return list(range(now.year + future, now.year - past, -1))
 
 
-class ALIncome(PeriodicValue):
+class ALIncome(DAObject):
     """
     Represents an income which may have an hourly rate or a salary. Hourly rate
-    incomes must include hours per period. Period is some demoninator of a year.
-    E.g, to express a weekly period, use 52. The default is 1 (a year).
+    incomes must include hours per period (times per year). Period is some
+    demoninator of a year. E.g, to express a weekly period, use 52. The default
+    is 1 (a year).
     """
+    
+    def __str__(self):
+        """Returns the income's `.total()` as string, not its object name."""
+        return str(self.total())
 
     def total(self, times_per_year=1):
         """
@@ -594,10 +598,11 @@ class ALItemizedJob(DAObject):
         # calculated as hourly
         is_hourly = self.is_hourly and hasattr(item, "is_hourly") and item.is_hourly
 
-        # Conform to behavior of docassemble PeriodicValue
-        value = Decimal(0)
+        # If an item's value doesn't exist, use a value of 0
         if hasattr(item, "value"):
             value = Decimal(item.value)
+        else:
+            value = Decimal(0)
 
         # Use the appropriate cacluation
         if is_hourly:
