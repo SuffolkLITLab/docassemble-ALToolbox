@@ -444,7 +444,7 @@ class ALSimpleValue(DAObject):
         return str(self.total())
 
 
-class ALValueList(DAList):
+class ALSimpleValueList(DAList):
     """
     Represents a filterable DAList of ALSimpleValues.
     """
@@ -485,7 +485,7 @@ class ALValueList(DAList):
         return result
 
 
-class ALLedger(ALValueList):
+class ALLedger(ALSimpleValueList):
     """
     Represents an account ledger. Adds .running_total() method which adds a
     `running_total` attribute to each ledger entry.

@@ -28,7 +28,7 @@ objects:
       complete_attribute='complete',
       ask_number=True)
   - al_simple_value: ALSimpleValue
-  - al_value_list: ALValueList.using(
+  - al_value_list: ALSimpleValueList.using(
       complete_attribute='complete',
       ask_number=True)
   - al_ledger: ALLedger.using(
@@ -77,7 +77,7 @@ code: |
   if to_run['ALSimpleValue'] or to_run['all']:
     al_simple_value.value
   
-  if to_run['ALValueList'] or to_run['all']:
+  if to_run['ALSimpleValueList'] or to_run['all']:
     al_value_list.gather()
   
   if to_run['ALLedger'] or to_run['all']:
@@ -108,8 +108,8 @@ subquestion: |
   * `ALAsset` covers all the same functionality as `ALIncome`.
   * `ALAssetList` covers all the same functionality as `ALAsset` and `ALIncome`.
   * `ALVehicleList` covers all the same functionality as `ALVehicle`.
-  * `ALValueList` covers all the same functionality as `ALSimpleValue`.
-  * `ALLedger` covers all the same functionality as `ALValueList` and `ALSimpleValue`.
+  * `ALSimpleValueList` covers all the same functionality as `ALSimpleValue`.
+  * `ALLedger` covers all the same functionality as `ALSimpleValueList` and `ALSimpleValue`.
   
   Each item will only demo its own capabilities and those of the classes from which it inherits. It does not show additional features that you can add. For example, an individual ALAsset won't ask for a market value as it has no methods for calculating a market value. An ALAssetList, though, will demo summing up market values using the filters it has in its method.
 
@@ -130,7 +130,7 @@ fields:
       - ALVehicle: ALVehicle
       - ALVehicleList: ALVehicleList
       - ALSimpleValue: ALSimpleValue
-      - ALValueList: ALValueList
+      - ALSimpleValueList: ALSimpleValueList
       - ALLedger: ALLedger
       #- times_per_year_list: times_per_year_list
       #- times_per_year: times_per_year
@@ -589,10 +589,10 @@ fields:
       - Expense: expense
       - Income: income
 ---
-# SHARED BY ALValueList and ALLedger
+# SHARED BY ALSimpleValueList and ALLedger
 ---
 id: how many simple values
-generic object: ALValueList
+generic object: ALSimpleValueList
 question: |
   How many simple values do you have in your ${ x.object_name() } ${ x.__class__.__name__ }?
 fields:
@@ -600,15 +600,15 @@ fields:
     datatype: number
     default: 2
 ---
-# UNIQUE TO ALValueList
+# UNIQUE TO ALSimpleValueList
 ---
-generic object: ALValueList
+generic object: ALSimpleValueList
 code: |
   x[i].value
   x[i].complete = True
 ---
 id: value list item value
-generic object: ALValueList
+generic object: ALSimpleValueList
 question: |
   Tell us about your ${ ordinal(i) } simple value for your ${ x.object_name() } ${ x.__class__.__name__ }
 subquestion: |
@@ -851,8 +851,8 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALValueList'] or to_run['all']:
-  ### ALValueList
+  % if to_run['ALSimpleValueList'] or to_run['all']:
+  ### ALSimpleValueList
   
   ${ al_value_list.output }
   
@@ -951,7 +951,7 @@ columns:
   - Value: |
       currency(row_item.value)
 ---
-generic object: ALValueList
+generic object: ALSimpleValueList
 template: x.output
 content: |
   * **sources:** ${ x.sources() }
