@@ -403,8 +403,7 @@ class ALVehicleList(ALAssetList):
 
 class ALSimpleValue(DAObject):
     """
-    Like a Value object, but no fiddling around with .exists attribute because
-    this is designed to be stored in a list, not a dictionary.
+    Represents a currency value. It's meant to be stored in a list.
     """
 
     def total(self):
