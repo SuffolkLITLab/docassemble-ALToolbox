@@ -567,7 +567,7 @@ class ALItemizedJob(DAObject):
         if not hasattr(self, "to_subtract"):
             self.initializeAttribute("to_subtract", _ALItemizedValueDict)
 
-    def _item_value_per_times_paid_per_year(self, item, times_per_year=1):
+    def _item_value_per_times_per_year(self, item, times_per_year=1):
         """
         Given an item and an times_per_year, returns the value accumulated by the
         item for that `times_per_year`.
@@ -584,10 +584,11 @@ class ALItemizedJob(DAObject):
         if times_per_year == 0:
             return Decimal(0)
 
-        # If an item has its own period, use that instead
-        frequency_to_use = self.times_per_year
+        # If an item has its own period, use that
         if hasattr(item, "times_per_year") and item.times_per_year:
             frequency_to_use = item.times_per_year
+        else:
+            frequency_to_use = self.times_per_year
 
         # Both the job and the item itself need to be hourly to be
         # calculated as hourly
@@ -633,7 +634,7 @@ class ALItemizedJob(DAObject):
         # Add up all money coming in from a source
         for key, value in self.to_add.elements.items():
             if key in sources:
-                total += self._item_value_per_times_paid_per_year(
+                total += self._item_value_per_times_per_year(
                     value, times_per_year=times_per_year
                 )
         return total
@@ -660,7 +661,7 @@ class ALItemizedJob(DAObject):
         # Add all the money going out
         for key, value in self.to_subtract.elements.items():
             if key in sources:
-                total += self._item_value_per_times_paid_per_year(
+                total += self._item_value_per_times_per_year(
                     value, times_per_year=times_per_year
                 )
         return total
@@ -687,13 +688,13 @@ class ALItemizedJob(DAObject):
         # Add up all money coming in
         for key, value in self.to_add.elements.items():
             if key in sources:
-                total += self._item_value_per_times_paid_per_year(
+                total += self._item_value_per_times_per_year(
                     value, times_per_year=times_per_year
                 )
         # Subtract the money going out
         for key, value in self.to_subtract.elements.items():
             if key in sources:
-                total -= self._item_value_per_times_paid_per_year(
+                total -= self._item_value_per_times_per_year(
                     value, times_per_year=times_per_year
                 )
         return total
