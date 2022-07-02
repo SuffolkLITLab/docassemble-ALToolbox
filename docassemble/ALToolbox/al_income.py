@@ -408,13 +408,12 @@ class ALSimpleValue(DAObject):
 
     def total(self):
         """
-        If desired, to use as a ledger, values can be signed. Setting
-        transaction_type = 'expense' makes the value negative. Use min=0 in that
-        case.
+        If desired, to use as a ledger, values can be signed (mixed positive and
+        negative). Setting transaction_type = 'expense' makes the value negative.
+        Use min=0 in that case.
 
-        This can't be used in an ALIncomeList because its `total` can retrun
-        positive and negative values, which would mess up ALIncomeList math
-        to add up all positive item amounts.
+        If you use signed values, be careful when placing in an ALIncomeList
+        object. The `total()` method may return unexpected results in that case.
         """
         if hasattr(self, "transaction_type"):
             return (
