@@ -363,7 +363,7 @@ fields:
   - no label: income_sources
     datatype: checkboxes
     code: |
-      income_source_list()
+      income_source_list
 ---
 # SHARED BY ALJob AND ALJobList
 ---
@@ -446,7 +446,7 @@ question: |
 fields:
   - What type of asset is it?: x.source
     code: |
-      asset_source_list()
+      asset_source_list
     exclude: |
       ['vehicle']
   - How often do you get this income?: x.times_paid_per_year

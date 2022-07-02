@@ -39,10 +39,6 @@ def times_per_year(index):
         return ""
     return ""
 
-
-# docassemble.base.functions.update_language_function('*', 'period_list', times_per_year_list)
-
-
 def recent_years(past=15, order="descending", future=1):
     """
     Returns a list of the most recent past years, continuing into the future.
@@ -61,94 +57,6 @@ def recent_years(past=15, order="descending", future=1):
         return list(range(now.year - past, now.year + future, 1))
     else:
         return list(range(now.year + future, now.year - past, -1))
-
-
-def asset_source_list():
-    """Returns a list of asset sources for a multiple choice dropdown."""
-    source_list = DAOrderedDict()
-    source_list.auto_gather = False
-    source_list.gathered = True
-    source_list.elements.update(
-        [
-            ("savings", "Savings Account"),
-            ("cd", "Certificate of Deposit"),
-            ("ira", "Individual Retirement Account"),
-            ("mutual fund", "Money or Mutual Fund"),
-            ("stocks", "Stocks or Bonds"),
-            ("trust", "Trust Fund"),
-            ("checking", "Checking Account"),
-            ("vehicle", "Vehicle"),
-            ("real estate", "Real Estate"),
-            ("other", "Other Asset"),
-        ]
-    )
-    return source_list
-
-
-def income_source_list():
-    """Returns a dict of income sources for a multiple choice dropdown."""
-    source_list = DAOrderedDict()
-    source_list["wages"] = "A job or self-employment"
-
-    source_list.elements.update(non_wage_income_list())
-    source_list.auto_gather = False
-    source_list.gathered = True
-
-    return source_list
-
-
-def non_wage_income_list():
-    """Returns a dict of income sources, excluding wages."""
-    source_list = DAOrderedDict()
-    source_list.auto_gather = False
-    source_list.gathered = True
-    source_list.elements.update(
-        [
-            ("SSR", "Social Security Retirement Benefits"),
-            ("SSDI", "Social Security Disability Benefits"),
-            ("SSI", "Supplemental Security Income (SSI)"),
-            ("pension", "Pension"),
-            ("TAFDC", "TAFDC"),
-            ("public assistance", "Other public assistance"),
-            ("SNAP", "Food Stamps (SNAP)"),
-            ("rent", "Income from real estate (rent, etc)"),
-            ("room and board", "Room and/or Board Payments"),
-            ("child support", "Child Support"),
-            ("alimony", "Alimony"),
-            ("other support", "Other Support"),
-            ("other", "Other"),
-        ]
-    )
-    return source_list
-
-
-def expense_source_list():
-    """Returns a dict of expense sources for a multiple choice dropdown."""
-    source_list = DAOrderedDict()
-    source_list.auto_gather = False
-    source_list.gathered = True
-    source_list.elements.update(
-        [
-            ("rent", "Rent"),
-            ("mortgage", "Mortgage"),
-            ("food", "Food"),
-            ("utilities", "Utilities"),
-            ("fuel", "Other Heating/Cooking Fuel"),
-            ("clothing", "Clothing"),
-            ("credit cards", "Credit Card Payments"),
-            ("property tax", "Property Tax (State and Local)"),
-            ("other taxes", "Other taxes and fees related to your home"),
-            ("insurance", "Insurance"),
-            ("medical", "Medical-Dental (after amount paid by insurance)"),
-            ("auto", "Car operation and maintenance"),
-            ("transportation", "Other transportation"),
-            ("charity", "Church or charitable donations"),
-            ("loan payments", "Loan, credit, or lay-away payments"),
-            ("support", "Support to someone not in household"),
-            ("other", "Other"),
-        ]
-    )
-    return source_list
 
 
 class ALIncome(PeriodicValue):
@@ -225,7 +133,7 @@ class ALIncomeList(DAList):
         string or a list. If you filter by `source` you can also filter by one
         `owner`.
 
-        To calculate `.total()` correctly, all items must have a `.total()` method.
+        To calculate `.total()` correctly, all items must have an `.total()`.
         Job-type incomes should automatically exclude deductions.
         """
         self._trigger_gather()
@@ -415,7 +323,7 @@ class ALAssetList(ALIncomeList):
 
     def total(self, source=None):
         """
-        The total of an AssetList is the same as the market_value()
+        Alias of ALAssetList.market_value() to integrate with ALIncomeList math.
         """
         return self.market_value(source=source)
 
@@ -518,8 +426,9 @@ class ALSimpleValue(DAObject):
         transaction_type = 'expense' makes the value negative. Use min=0 in that
         case.
 
-        If you use signed values, be cautious when placing in an ALIncomeList object.
-        The `total()` method may return unexpected results in that case.
+        This can't be used in an ALIncomeList because its `total` can retrun
+        positive and negative values, which would mess up ALIncomeList math
+        to add up all positive item amounts.
         """
         if hasattr(self, "transaction_type"):
             return (
@@ -531,7 +440,7 @@ class ALSimpleValue(DAObject):
             return Decimal(self.value)
 
     def __str__(self):
-        """Returns the signed value of this individual item, formatted as a Decimal string."""
+        """Returns own `.total()` as string, not its own name."""
         return str(self.total())
 
 
@@ -739,13 +648,13 @@ class ALItemizedJob(DAObject):
 
     def total(self, times_per_year=1, source=None):
         """
-        The total of an ALItemizedJob is defined as equivalent to the `gross` total, without accounting for deductions.
+        Alias for ALItemizedJob.gross_total to integrate with ALIncomeList math.
         """
         return self.gross_total(times_per_year=times_per_year, source=source)
 
     def gross_total(self, times_per_year=1, source=None):
         """
-        Returns the sum of positive values (like wages on a paycheck) for the specified time period.
+        Returns the sum of positive values (payments) for a given times_per_year.
         You can filter the items by `source`. `source` can be a string or a list.
         If you use sources from deductions, they will be ignored.
 
@@ -771,10 +680,8 @@ class ALItemizedJob(DAObject):
 
     def deduction_total(self, times_per_year=1, source=None):
         """
-        Returns the total amount of "outgoing" values (deductions on a paycheck) for the specified time period.
-        The total will be a positive value.
-                
-        You can filter the items by `source`. `source` can be a
+        Returns the sum of money going out divided by a pay times_per_year as a
+        postive value. You can filter the items by `source`. `source` can be a
         string or a list. If you use sources from money coming in, they will be
         ignored.
 
@@ -884,15 +791,42 @@ class ALItemizedJob(DAObject):
             / float(times_per_year)
         )
 
+    # def to_json(self):
+    #    """
+    #    Returns an itemized job's dictionary as JSON.
+    #    # Q: I couldn't find Legal Server's API for this. Link? Does this need to be a string? If so, how do we handle this with .to_json of itemized job list?
+    #    """
+    #    return {
+    #      "name": self.name,
+    #      "frequency": float(self.times_paid_per_year),
+    #      "gross": float(self.gross_total(times_per_year=self.times_paid_per_year)),
+    #      "net": float(self.net_total(times_per_year=self.times_paid_per_year)),
+    #      "to_add": self.values_json(self.to_add),
+    #      "to_subtract": self.values_json(self.to_subtract)
+    #    }
+    #
+    # def values_json(self, values_dict):
+    #    """
+    #    Return a JSON version of the given dict of ALItemizedJob "in" or "out"
+    #    objects.
+    #    """
+    #    result = {}
+    #    for key in values_dict.true_values():
+    #      value = values_dict[key]
+    #      result[key] = {}
+    #      result[key]['value'] = value.value
+    #      # Q: Include defaults for all attributes?
+    #      if hasattr(value, 'is_hourly'):
+    #        result[key]['is_hourly'] = value.is_hourly
+    #      if hasattr(value, 'times_paid_per_year'):
+    #        result[key]['times_paid_per_year'] = value.times_paid_per_year
+    #    return result
 
 
 class ALItemizedJobList(DAList):
     """
-    Represents a list of jobs that can have both payments and money out. 
-    For example: a paycheck that has both wages and deductions, such as health insurance, 
-    taxes, etc. 
-    
-    This is a less common way of reporting income.
+    Represents a list of jobs that can have both payments and money out. This is
+    a less common way of reporting income.
     """
 
     def init(self, *pargs, **kwargs):
@@ -904,7 +838,8 @@ class ALItemizedJobList(DAList):
 
     def total(self, times_per_year=1, source=None):
         """
-        The total of an ALItemizedJobList is defined as the gross total, not accounting for any deductions.
+        Alias for ALItemizedJobList.gross_total to integrate with
+        ALIncomeList math.
         """
         return self.gross_total(times_per_year=times_per_year, source=source)
 
@@ -955,12 +890,9 @@ class ALItemizedJobList(DAList):
     def net_total(self, times_per_year=1, source=None):
         """
         Returns the net of the list's jobs (money in minus money out) divided by
-        the times_per_year. 
-        
-        For example, the net would reflect wages on a paycheck minus any 
-        deductions, such as for health insurance or taxes.
-        
-        You can filter the items by `source`. `source` can be a string or a list.
+        the times_per_year. You can filter the items by `source`. `source` can be a
+        string or a list.
+
         Args:
         kwarg: source {str | [str]} - (Optional) Source or list of sources of
             desired job items to sum from every itemized job.
