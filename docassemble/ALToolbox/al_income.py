@@ -523,11 +523,10 @@ class _ALItemizedValue(DAObject):
         return isolated_name
 
 
-class ALItemizedValueDict(DAOrderedDict):
+class _ALItemizedValueDict(DAOrderedDict):
     """
-    Contains values going into or coming out of ALItemizedJobs. Also manages hooks
-    to update items when they've been gathered or edited. E.g. removing non-existent
-    items.
+    Dictionary containing both positive and negative values for an ALItemizedJob.
+    E.g., wages and deductions being the most common.
     """
 
     def init(self, *pargs, **kwargs):
@@ -564,9 +563,9 @@ class ALItemizedJob(DAObject):
     of reporting income than a plain ALJob.
 
     Attributes:
-    .to_add {ALItemizedValueDict} Dict of _ALItemizedValues of money coming in.
+    .to_add {_ALItemizedValueDict} Dict of _ALItemizedValues of money coming in.
         Use ALItemizedJob methods to calcuate totals.
-    .to_subtract {ALItemizedValueDict} Dict of _ALItemizedValues of money going out.
+    .to_subtract {_ALItemizedValueDict} Dict of _ALItemizedValues of money going out.
         Use ALItemizedJob methods to calcuate totals.
     .times_per_year {str} Actually a number, as a string, of the annual frequency of the
         job.
@@ -600,10 +599,10 @@ class ALItemizedJob(DAObject):
             self.initializeAttribute("employer", Individual)
         # Money coming in
         if not hasattr(self, "to_add"):
-            self.initializeAttribute("to_add", ALItemizedValueDict)
+            self.initializeAttribute("to_add", _ALItemizedValueDict)
         # Money being taken out
         if not hasattr(self, "to_subtract"):
-            self.initializeAttribute("to_subtract", ALItemizedValueDict)
+            self.initializeAttribute("to_subtract", _ALItemizedValueDict)
 
     def _item_value_per_times_paid_per_year(self, item, times_per_year=1):
         """
