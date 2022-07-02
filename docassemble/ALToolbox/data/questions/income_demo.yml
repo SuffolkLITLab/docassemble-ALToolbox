@@ -155,7 +155,7 @@ generic object: ALItemizedJob
 code: |
   x.name
   x.employer.name.first
-  x.times_paid_per_year
+  x.times_per_year
   x.to_add.complete_attribute = 'complete'
   x.to_subtract.complete_attribute = 'complete'
   if x.is_part_time:
@@ -241,7 +241,7 @@ fields:
     choices:
       - Hourly: True
       - Salary: False
-  - How often do you get paid?: x.times_paid_per_year
+  - How often do you get paid?: x.times_per_year
     input type: radio
     code: |
       times_per_year_list
@@ -329,7 +329,7 @@ question: |
 fields:
   - Is it an hourly amount?: x.is_hourly
     datatype: yesnoradio
-  - Period: x.times_paid_per_year
+  - Period: x.times_per_year
     input type: radio
     code: |
       times_per_year_list
@@ -398,7 +398,7 @@ question: |
 fields:
   - Is the job hourly?: x.is_hourly
     datatype: yesnoradio
-  - How often do you get paid?: x.times_paid_per_year
+  - How often do you get paid?: x.times_per_year
     input type: radio
     code: |
       times_per_year_list
@@ -449,7 +449,7 @@ fields:
       asset_source_list
     exclude: |
       ['vehicle']
-  - How often do you get this income?: x.times_paid_per_year
+  - How often do you get this income?: x.times_per_year
     input type: radio
     code: |
       times_per_year_list
@@ -479,7 +479,7 @@ generic object: ALAssetList
 question: |
   Tell us about the values of the ${ x[i].source }
 fields:
-  - How often do you get money from this?: x[i].times_paid_per_year
+  - How often do you get money from this?: x[i].times_per_year
     input type: radio
     code: |
       times_per_year_list

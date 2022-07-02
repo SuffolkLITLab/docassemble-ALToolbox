@@ -71,17 +71,17 @@ class ALIncome(PeriodicValue):
         Returns the income over the specified times_per_year, taking into account
         hours per period for hourly items.
 
-        To calculate `.total()`, an ALIncome must have a `.times_paid_per_year` and `.value`.
+        To calculate `.total()`, an ALIncome must have a `.times_per_year` and `.value`.
         It can also have `.is_hourly` and `.hours_per_period`.
         """
         if hasattr(self, "is_hourly") and self.is_hourly:
             return (
                 Decimal(self.value)
                 * Decimal(self.hours_per_period)
-                * Decimal(self.times_paid_per_year)
+                * Decimal(self.times_per_year)
             ) / Decimal(times_per_year)
         else:
-            return (Decimal(self.value) * Decimal(self.times_paid_per_year)) / Decimal(
+            return (Decimal(self.value) * Decimal(self.times_per_year)) / Decimal(
                 times_per_year
             )
 
@@ -94,7 +94,7 @@ class ALIncomeList(DAList):
     .source
     .owner
     .total()
-    .times_paid_per_year
+    .times_per_year
     .value
     """
 
@@ -172,14 +172,14 @@ class ALIncomeList(DAList):
     def to_json(self):
         """
         Returns the list of incomes as a string, suitable for Legal Server API.
-        This will force the gathering of the `.source`, `.times_paid_per_year`, and `.value`
+        This will force the gathering of the `.source`, `.times_per_year`, and `.value`
         attributes.
         """
         return json.dumps(
             [
                 {
                     "source": income.source,
-                    "frequency": float(income.times_paid_per_year),
+                    "frequency": float(income.times_per_year),
                     "value": income.value,
                 }
                 for income in self.elements
@@ -211,7 +211,7 @@ class ALJob(ALIncome):
 
         This will force the gathering of the ALJob's `.net` attribute.
         """
-        return (Decimal(self.net) * Decimal(self.times_paid_per_year)) / Decimal(
+        return (Decimal(self.net) * Decimal(self.times_per_year)) / Decimal(
             times_per_year
         )
 
@@ -230,9 +230,9 @@ class ALJob(ALIncome):
         period, use 52. The default is 1 (a year).
 
         This will force the gathering of the attributes `.hours_per_period` and
-        `.times_paid_per_year`
+        `.times_per_year`
         """
-        return (float(self.hours_per_period) * int(self.times_paid_per_year)) / int(
+        return (float(self.hours_per_period) * int(self.times_per_year)) / int(
             times_per_year
         )
 
@@ -568,7 +568,7 @@ class ALItemizedJob(DAObject):
         Use ALItemizedJob methods to calcuate totals.
     .to_subtract {ALItemizedValueDict} Dict of _ALItemizedValues of money going out.
         Use ALItemizedJob methods to calcuate totals.
-    .times_paid_per_year {str} Actually a number, as a string, of the annual frequency of the
+    .times_per_year {str} Actually a number, as a string, of the annual frequency of the
         job.
     .is_hourly {bool} (Optional) Whether the user gets paid hourly for the job.
     .hours_per_period {int} (Optional) If the job is hourly, how many hours the
@@ -623,9 +623,9 @@ class ALItemizedJob(DAObject):
             return Decimal(0)
 
         # If an item has its own period, use that instead
-        frequency_to_use = self.times_paid_per_year
-        if hasattr(item, "times_paid_per_year") and item.times_paid_per_year:
-            frequency_to_use = item.times_paid_per_year
+        frequency_to_use = self.times_per_year
+        if hasattr(item, "times_per_year") and item.times_per_year:
+            frequency_to_use = item.times_per_year
 
         is_hourly = False
         # Override if item should be calculated hourly (like wages). Both the job
@@ -787,41 +787,9 @@ class ALItemizedJob(DAObject):
         Returns the number of hours worked in a times_per_year for an hourly job.
         """
         return round(
-            (float(self.hours_per_period) * float(self.times_paid_per_year))
+            (float(self.hours_per_period) * float(self.times_per_year))
             / float(times_per_year)
         )
-
-    # def to_json(self):
-    #    """
-    #    Returns an itemized job's dictionary as JSON.
-    #    # Q: I couldn't find Legal Server's API for this. Link? Does this need to be a string? If so, how do we handle this with .to_json of itemized job list?
-    #    """
-    #    return {
-    #      "name": self.name,
-    #      "frequency": float(self.times_paid_per_year),
-    #      "gross": float(self.gross_total(times_per_year=self.times_paid_per_year)),
-    #      "net": float(self.net_total(times_per_year=self.times_paid_per_year)),
-    #      "to_add": self.values_json(self.to_add),
-    #      "to_subtract": self.values_json(self.to_subtract)
-    #    }
-    #
-    # def values_json(self, values_dict):
-    #    """
-    #    Return a JSON version of the given dict of ALItemizedJob "in" or "out"
-    #    objects.
-    #    """
-    #    result = {}
-    #    for key in values_dict.true_values():
-    #      value = values_dict[key]
-    #      result[key] = {}
-    #      result[key]['value'] = value.value
-    #      # Q: Include defaults for all attributes?
-    #      if hasattr(value, 'is_hourly'):
-    #        result[key]['is_hourly'] = value.is_hourly
-    #      if hasattr(value, 'times_paid_per_year'):
-    #        result[key]['times_paid_per_year'] = value.times_paid_per_year
-    #    return result
-
 
 class ALItemizedJobList(DAList):
     """
@@ -908,7 +876,3 @@ class ALItemizedJobList(DAList):
         for job in self.elements:
             total += job.net_total(times_per_year=times_per_year, source=source)
         return total
-
-    # def to_json(self):
-    #    """Returns a list of jobs as JSON."""
-    #    return [job.to_json() for job in self.elements]
