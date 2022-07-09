@@ -18,13 +18,12 @@ import docassemble.base.functions
 import json
 
 
-def times_per_year(index):
+def times_per_year(times_per_year_list, index):
     """
     Given the index of an item in the `times_per_year_list`, returns
     text describing the number of intervals of the given period in a year.
     Example: times_per_year(12) will return "monthly"
     """
-    times_per_year_list = value("times_per_year_list")
     try:
         for row in times_per_year_list:
             if int(index) == int(row[0]):
