@@ -37,6 +37,7 @@ def times_per_year(times_per_year_list, index):
         return ""
     return ""
 
+
 def recent_years(past=15, order="descending", future=1):
     """
     Returns a list of the most recent past years, continuing into the future.
@@ -77,7 +78,7 @@ class ALIncome(DAObject):
     .source {str} (Optional) The "source" of the income, like a "job" or a "house".
     .owner {str} (Optional) Full name of the income's owner as a single string.
     """
-    
+
     def __str__(self):
         """Returns the income's `.total()` as string, not its object name."""
         return str(self.total())
@@ -368,6 +369,7 @@ class ALAsset(ALIncome):
 
 class ALAssetList(ALIncomeList):
     """A list of ALAssets."""
+
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.object_type = ALAsset
@@ -577,7 +579,7 @@ class ALItemizedValue(DAObject):
 
     def __str__(self):
         """Returns a string of the value of the item with two decimal places."""
-        currency_str = "{:.2f}".format( self.value )
+        currency_str = "{:.2f}".format(self.value)
         return currency_str
 
 
@@ -623,7 +625,7 @@ class ALItemizedValueDict(DAOrderedDict):
         """
         to_stringify = []
         for key in self:
-            to_stringify.append( (key, "{:.2f}".format( self[ key ].value )) )
+            to_stringify.append((key, "{:.2f}".format(self[key].value)))
         pretty = json.dumps(to_stringify, indent=2)
         return pretty
 
@@ -865,6 +867,7 @@ class ALItemizedJob(DAObject):
             (float(self.hours_per_period) * float(self.times_per_year))
             / float(times_per_year)
         )
+
 
 class ALItemizedJobList(DAList):
     """
