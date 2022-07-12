@@ -633,6 +633,18 @@ subquestion: |
   % if to_run['ALItemizedJob'] or to_run['all']:
   ## Single ALItemizedJob: ${ itemized_job.name }
   
+  Job's `.to_add` as a string: ${ itemized_job.to_add }
+  
+  Job's `.to_subtract` as a string: ${ itemized_job.to_subtract }
+  
+  Items of `.to_add` as strings:
+  
+  % for key in itemized_job.to_add:
+  * ${ itemized_job.to_add[ key ] }
+  % endfor
+  
+  
+  
   ${ itemized_job.output }
   
   ---

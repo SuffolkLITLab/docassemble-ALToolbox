@@ -20,7 +20,7 @@ import json
 
 def times_per_year(times_per_year_list, index):
     """
-    Given the index of an item in the `times_per_year_list`, returns
+    Given the `index` of an item in the `times_per_year_list`, returns
     text describing the number of intervals of the given period in a year.
     Example: times_per_year(12) will return "monthly"
     """
@@ -63,6 +63,19 @@ class ALIncome(DAObject):
     incomes must include hours per period (times per year). Period is some
     demoninator of a year. E.g, to express a weekly period, use 52. The default
     is 1 (a year).
+
+    Attributes:
+    .value {num} A number representing an amount of money accumulated during
+        the `times_per_year` of this income.
+    .times_per_year {str | num} Represents a number of the annual frequency of
+        the income. E.g. 12 for a monthly income.
+    .is_hourly {bool} (Optional) True if the income is hourly.
+    .hours_per_period {num} (Optional) If the income is hourly, the number of
+        hours during the annual frequency of this job. E.g. if the annual
+        frequency is 52 (weekly), the hours per week might be 50. That is, 50
+        hours per week. This attribute is required if `.is_hourly` is True.
+    .source {str} (Optional) The "source" of the income, like a "job" or a "house".
+    .owner {str} (Optional) Full name of the income's owner as a single string.
     """
     
     def __str__(self):
@@ -92,13 +105,13 @@ class ALIncome(DAObject):
 class ALIncomeList(DAList):
     """
     Represents a filterable DAList of incomes-type items. It can make
-    use of these item attributes and methods:
+    use of these attributes and methods in its items:
 
     .source
     .owner
-    .total()
     .times_per_year
     .value
+    .total()
     """
 
     def init(self, *pargs, **kwargs):
@@ -136,8 +149,9 @@ class ALIncomeList(DAList):
         string or a list. If you filter by `source` you can also filter by one
         `owner`.
 
-        To calculate `.total()` correctly, all items must have an `.total()`.
-        Job-type incomes should automatically exclude deductions.
+        To calculate `.total()` correctly, all items must have a `.total()` and
+        it should be a positive value. Job-type incomes should automatically
+        exclude deductions.
         """
         self._trigger_gather()
         result = Decimal(0)
@@ -175,9 +189,32 @@ class ALIncomeList(DAList):
 
 class ALJob(ALIncome):
     """
-    Represents a job that may be hourly or pay-period based. This is a more
-    common way of reporting income than ALItemizedJob.
+    Represents a job that may be hourly or pay-period based. The job is not
+    itemized. Can be stored in an ALJobList.
+
+    Attributes:
+    .value { num } A number representing an amount of money accumulated during
+        the `times_per_year` of this income.
+    .times_per_year {str | num} Represents a number of the annual frequency of
+        the value. E.g. 12 for a monthly value.
+    .hours_per_period {num} (Optional) The number of hours during the annual
+        frequency of this job. E.g. if the annual frequency is 52 (weekly), the
+        hours per week might be 50. That is, 50 hours per week.
+    .net {num} (Optional) The net that the job makes during its pay period -
+        its annual frequency. E.g. if the annual frequency is 52 (weekly), net
+        is the total amount made for one week.
+    .employer {str} (Optional) A single string for an employer's full name
+    .employer_address {str} (Optional) A single string for employer's address
+    .employer_phone {str} (Optional) An employer's phone number
     """
+
+    def total(self, times_per_year=1, source=None):
+        """
+        Same as ALIncome total. Returns the income over the specified times_per_year.
+        `times_per_year` is some demoninator of a year. E.g. to express a weekly
+        period, use 52. The default is 1 (a year).
+        """
+        return self.gross_total(times_per_year=times_per_year)
 
     def gross_total(self, times_per_year=1):
         """
@@ -235,7 +272,14 @@ class ALJobList(ALIncomeList):
         self.object_type = ALJob
 
     def total(self, times_per_year=1, source=None):
-        """Alias for self.gross_total() to integrate with ALIncomeList math."""
+        """
+        Returns the sum of the gross incomes of its ALJobs divided by the time
+        times_per_year. You can filter the jobs by `source`. `source` can be a
+        string or a list.
+
+        `times_per_year` is some demoninator of a year. E.g, to express a weekly
+        period, use 52. The default is 1 (a year).
+        """
         return self.gross_total(times_per_year=times_per_year, source=source)
 
     def gross_total(self, times_per_year=1, source=None):
@@ -294,9 +338,18 @@ class ALJobList(ALIncomeList):
 
 class ALAsset(ALIncome):
     """
-    An ALAsset is expected to have the attributes .market_value and
-    .balance to be used correctly. It also has a .value attribute that
-    defaults to 0.
+    An ALAsset represents an asset that has a market value and a balance. Can be
+        stored in an ALAssetList.
+
+    Attributes:
+    .market_value {num} Market value of an asset.
+    .balance {num} Balance of an asset.
+    .times_per_year {str | num} Represents a number of the annual frequency of
+        the value. E.g. 12 for a monthly value.
+    .value {num} (Optional) Represents an amount of money accumulated by this
+        asset over its `times_per_year`. Default is 0.
+    .owner {str} (Optional) Full name of the asset owner as a single string.
+    .source {str} (Optional) The "source" of the asset, like "vase".
     """
 
     def total(self, times_per_year=1):
@@ -314,13 +367,15 @@ class ALAsset(ALIncome):
 
 
 class ALAssetList(ALIncomeList):
+    """A list of ALAssets."""
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.object_type = ALAsset
 
     def total(self, source=None):
         """
-        Alias of ALAssetList.market_value() to integrate with ALIncomeList math.
+        Returns the total `.market_value` of assets in the list. You can filter
+        the assets by `source`. `source` can be a string or a list.
         """
         return self.market_value(source=source)
 
@@ -385,7 +440,23 @@ class ALAssetList(ALIncomeList):
 
 
 class ALVehicle(ALAsset):
-    """Extends ALAsset. Vehicles have a .year_make_model() method."""
+    """
+    One vehicle with its properties. Extends ALAsset. Vehicles have a
+        .year_make_model() method.
+
+    Attributes:
+    .year {str} The year of the vehicle.
+    .make {str} The make of the vehicle.
+    .model {str} The model of the vehicle.
+    .market_value {num} Market value of an asset.
+    .balance {num} Balance of an asset.
+    .times_per_year {str | num} Represents a number of the annual frequency of
+        the value. E.g. 12 for a monthly value.
+    .value {num} (Optional) Represents an amount of money accumulated by this
+        asset over its `times_per_year`. Default is 0.
+    .owner {str} Full name of the asset owner as a single string.
+    .source {str} (Optional) The "source" of the asset. Defaults to "vehicle".
+    """
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -401,10 +472,7 @@ class ALVehicle(ALAsset):
 
 
 class ALVehicleList(ALAssetList):
-    """
-    List of vehicles. Extends ALAssetList. Vehicles have a .year_make_model()
-    method.
-    """
+    """List of ALVehicles. Extends ALAssetList."""
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -413,7 +481,14 @@ class ALVehicleList(ALAssetList):
 
 class ALSimpleValue(DAObject):
     """
-    Represents a currency value. It's meant to be stored in a list.
+    Represents a currency value. It's meant to be stored in a list. Can be an
+        item in an ALSimpleValueList.
+
+    Attributes:
+    .value {str} The monetary value of the item.
+    .transaction_type {str} (Optional) Can be "expense", which will give a
+        negative value to the total of the item.
+    .source {str} (Optional) The "source" of the item, like "vase".
     """
 
     def total(self):
@@ -440,9 +515,7 @@ class ALSimpleValue(DAObject):
 
 
 class ALSimpleValueList(DAList):
-    """
-    Represents a filterable DAList of ALSimpleValues.
-    """
+    """Represents a filterable DAList of ALSimpleValues."""
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -461,8 +534,8 @@ class ALSimpleValueList(DAList):
     def total(self, source=None):
         """
         Returns the total value in the list, gathering the list items if
-        necessary. You can filter the values by `source`. `source` can be a string
-        or a list.
+        necessary. You can filter the values by `source`. `source` can be a
+        string or a list.
         """
         self._trigger_gather()
         result = Decimal(0)
@@ -480,33 +553,46 @@ class ALSimpleValueList(DAList):
         return result
 
 
-class _ALItemizedValue(DAObject):
+class ALItemizedValue(DAObject):
     """
-    A private class. An item in an ALItemizedJob item list. Here to provide a better
-    string value. An object created this way should be accessed directly only to get
-    its string. Its values have to be calculated in context of the ALItemizedJob
-    that contains it.
+    An item in an ALItemizedValueDict (a line item like wages or union dues).
+    Should be a positive number, even if it will later be subtracted from the
+    job's net total.
+
+    WARNING:
+    This item's period-based value can't be calculated correctly outside of an
+    ALItemizedJob. Its value should only be accessed through the filtering
+    methods of the ALItemizedJob that contains it.
+
+    Attributes:
+    .value {num} A number representing an amount of money accumulated during
+        the `times_per_year` of this item or this item's job.
+    .is_hourly {bool} Whether this particular item is calculated hourly.
+    .times_per_year {str | num} A number (or string representing a number)
+        representing the annual frequency of the job. E.g. 12 for monthly.
     """
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
 
     def __str__(self):
-        """Returns just the name of the object, instead of its whole path."""
-        name_end = re.sub(r"^.*\['", "", self.instanceName.split(".")[-1])
-        isolated_name = re.sub(r"']$", "", name_end)
-        return isolated_name
+        """Returns a string of the value of the item with two decimal places."""
+        currency_str = "{:.2f}".format( self.value )
+        return currency_str
 
 
-class _ALItemizedValueDict(DAOrderedDict):
+class ALItemizedValueDict(DAOrderedDict):
     """
-    Dictionary containing both positive and negative values for an ALItemizedJob.
-    E.g., wages and deductions being the most common.
+    Dictionary that can contain ALItemizedValues (e.g. line items) for an
+    ALItemizedJob. E.g., wages and deductions being the most common.
+
+    WARNING: Should only be accessed through an ALItemizedJob. Otherwise
+        you may get unexpected results.
     """
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
-        self.object_type = _ALItemizedValue
+        self.object_type = ALItemizedValue
         if not hasattr(self, "complete_attribute"):
             self.complete_attribute = "value"
 
@@ -530,6 +616,17 @@ class _ALItemizedValueDict(DAOrderedDict):
         for key in keys_to_delete:
             self.delitem(key)
 
+    def __str__(self):
+        """
+        Returns a string of the dictionary's key/value pairs in a list. E.g.
+        "['federal_taxes': '2500.00', 'wages': '15.50']"
+        """
+        to_stringify = []
+        for key in self:
+            to_stringify.append( (key, "{:.2f}".format( self[ key ].value )) )
+        pretty = json.dumps(to_stringify, indent=2)
+        return pretty
+
 
 class ALItemizedJob(DAObject):
     """
@@ -538,19 +635,23 @@ class ALItemizedJob(DAObject):
     of reporting income than a plain ALJob.
 
     Attributes:
-    .to_add {_ALItemizedValueDict} Dict of _ALItemizedValues of money coming in.
-        Use ALItemizedJob methods to calcuate totals.
-    .to_subtract {_ALItemizedValueDict} Dict of _ALItemizedValues of money going out.
-        Use ALItemizedJob methods to calcuate totals.
-    .times_per_year {str} Actually a number, as a string, of the annual frequency of the
-        job.
+    .to_add {ALItemizedValueDict} Dict of ALItemizedValues that would be added
+        to a job's net total, like wages.
+    .to_subtract {ALItemizedValueDict} Dict of ALItemizedValues that would be
+        subtracted from a net total, like union dues.
+    .times_per_year {str} Actually a number, as a string, of the annual
+        frequency of the job. E.g. 12 for monthly.
     .is_hourly {bool} (Optional) Whether the user gets paid hourly for the job.
     .hours_per_period {int} (Optional) If the job is hourly, how many hours the
         user works per period.
-    .employer {Individual} (Optional) Individual assumed to have an address and name.
+    .employer {Individual} (Optional) Individual assumed to have a name and,
+        optionally, an address and phone.
+    .source {str} (Optional) The category of this item, like "public service".
+        Defaults to "job".
 
     WARNING: Individual items in `.to_add` and `.to_subtract` should not be used
-    directly. They should only be accessed through the methods of this job.
+        directly. They should only be accessed through the filtering methods of
+        this job.
 
     Fulfills these requirements:
     - A job can be hourly. It's wages will be calcuated with that in mind.
@@ -569,26 +670,26 @@ class ALItemizedJob(DAObject):
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         if not hasattr(self, "source") or self.source is None:
-            self.source = "Job"
+            self.source = "job"
         if not hasattr(self, "employer"):
             self.initializeAttribute("employer", Individual)
         # Money coming in
         if not hasattr(self, "to_add"):
-            self.initializeAttribute("to_add", _ALItemizedValueDict)
+            self.initializeAttribute("to_add", ALItemizedValueDict)
         # Money being taken out
         if not hasattr(self, "to_subtract"):
-            self.initializeAttribute("to_subtract", _ALItemizedValueDict)
+            self.initializeAttribute("to_subtract", ALItemizedValueDict)
 
     def _item_value_per_times_per_year(self, item, times_per_year=1):
         """
-        Given an item and an times_per_year, returns the value accumulated by the
+        Given an item and a times_per_year, returns the value accumulated by the
         item for that `times_per_year`.
 
         `times_per_year` is some demoninator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
 
         Args:
-        arg item {_ALItemizedValue} Object containing the value and other props
+        arg item {ALItemizedValue} Object containing the value and other props
             for an "in" or "out" ALItemizedJob item.
         kwarg: times_per_year {str | num} (Optional) Number of times per year you
             want to calcualte. E.g, to express a weekly period, use 52. Default is 1.
@@ -683,7 +784,7 @@ class ALItemizedJob(DAObject):
         """
         Returns the net (gross minus deductions) value of the job divided by
         `times_per_year`. You can filter the items by `source`. `source` can be a
-        string or a list.
+        string or a list. E.g. "full time" or ["full time", "union dues"]
 
         Args:
         kwarg: times_per_year {str | num} (Optional) Number of times per year you
@@ -716,7 +817,7 @@ class ALItemizedJob(DAObject):
         """
         Returns list of the job's sources from both the `to_add` and
         `to_subtract`. You can filter the items by `source`. `source` can be a
-        string or a list.
+        string or a list. E.g. "full time" or ["full time", "tips"]
 
         This is mostly for internal use meant to ensure that `source` input is
         always a list.
@@ -767,14 +868,14 @@ class ALItemizedJob(DAObject):
 
 class ALItemizedJobList(DAList):
     """
-    Represents a list of jobs that can have both payments and money out. This is
-    a less common way of reporting income.
+    Represents a list of ALItemizedJobs that can have both payments and money
+        out. This is a less common way of reporting income.
     """
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         if not hasattr(self, "source") or self.source is None:
-            self.source = "Jobs"
+            self.source = "jobs"
         if self.object_type is None:
             self.object_type = ALItemizedJob
 
