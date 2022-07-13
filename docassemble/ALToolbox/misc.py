@@ -1,5 +1,11 @@
 import docassemble.base.functions
-from docassemble.base.util import defined, value, showifdef, space_to_underscore, Address
+from docassemble.base.util import (
+    defined,
+    value,
+    showifdef,
+    space_to_underscore,
+    Address,
+)
 import re
 
 __all__ = [
@@ -204,7 +210,7 @@ def output_checkbox(
         return unchecked_value
 
 
-def nice_county_name(address: Address)->str:
+def nice_county_name(address: Address) -> str:
     """
     If the county name contains the word "County", which Google Address
     Autocomplete does by default, remove it.
@@ -212,6 +218,6 @@ def nice_county_name(address: Address)->str:
     if not hasattr(address, "county"):
         return ""
     if address.county.endswith(" County"):
-        return address.county[:-len(" County")]
+        return address.county[: -len(" County")]
     else:
         return address.county
