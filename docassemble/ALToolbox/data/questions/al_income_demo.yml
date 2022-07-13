@@ -293,7 +293,7 @@ question: |
   How many itemized jobs do you have?
 fields:
   - no label: x.target_number
-    datatype: number
+    datatype: integer
 ---
 id: name of one itemized job in list
 generic object: ALItemizedJobList
@@ -418,7 +418,7 @@ question: |
   How many non-itemized jobs do you have?
 fields:
   - no label: x.target_number
-    datatype: number
+    datatype: integer
 ---
 id: name of one regular job in list
 generic object: ALJobList
@@ -467,7 +467,7 @@ question: |
   How many assets do you have in this asset list?
 fields:
   - no label: x.target_number
-    datatype: number
+    datatype: integer
 ---
 id: info for each asset
 generic object: ALAssetList
@@ -495,7 +495,7 @@ fields:
 generic object: ALVehicle
 code: |
   # .source is automatically 'vehicle'
-  x.value
+  x.market_value
   x.complete = True
 ---
 id: one vehicle info
@@ -504,10 +504,11 @@ question: |
   Tell us about your one vehicle
 subquestion: |
   Notes:
-  
-  * Do not try to use the `total()` method with an ALVehicle.
-  * A single ALVehicle doesn't have methods for a loan balance. That's part of ALVehicleList.
-  * The `.source` attribute is automatically 'vehicle'
+
+  A Vehicle is a child class of Asset, and so it has attributes like value
+  (representing income earned), times_per_year, balance, and market_value, but
+  for most vehicle owners only the `balance` and `market_value` attributes from
+  ALAsset will be meaningful.
   
 fields:
   - Year: x.year
@@ -518,17 +519,26 @@ fields:
     hint: e.g, Ford, Honda 
   - Model: x.model
     hint: e.g., Fusion, Civic
-  - Current value: x.value
+  - Market value: x.market_value
     datatype: currency
+  - Loan balance: x.balance
+    datatype: currency
+    required: False
+  - Income earned: x.value
+    datatype: currency
+    required: False
+  - How often is the income earned?: x.times_per_year
+    datatype: integer
+    code: times_per_year_list
   - Who owns this?: x.owner
 ---
 # UNIQUE FOR ALVehicleList
 ---
-# Has to have its own. Othwerwise it's overriden by ALAssetList.
+# Has to have its own. Otherwise it's overriden by ALAssetList.
 generic object: ALVehicleList
 code: |
   # .source is automatically 'vehicle'
-  x[i].value
+  x[i].market_value
   x[i].complete = True
 ---
 id: how many vehicles
@@ -537,7 +547,7 @@ question: |
   How many vehicles do you have?
 fields:
   - no label: x.target_number
-    datatype: number
+    datatype: integer
 ---
 id: vehicle in list info
 generic object: ALVehicleList
@@ -597,7 +607,7 @@ question: |
   How many simple values do you have in your ${ x.object_name() } ${ x.__class__.__name__ }?
 fields:
   - no label: x.target_number
-    datatype: number
+    datatype: integer
     default: 2
 ---
 # UNIQUE TO ALSimpleValueList
@@ -665,7 +675,7 @@ subquestion: |
   
   #### All jobs
   
-  Calcuation type | Frequency | Total
+  Calculation type | Frequency | Total
   - | - | -
   Gross | Yearly | ${currency( itemized_job_list.gross_total() )}
   Gross | Monthly | ${currency( itemized_job_list.gross_total(times_per_year=12) )}
@@ -679,7 +689,7 @@ subquestion: |
   
   All rows should be the same except the last row, where `federal_taxes` is being subtracted from the base pay.
   
-  Calcuation type | Sources | Total
+  Calculation type | Sources | Total
   - | - | -
   Gross | Part time | ${currency( itemized_job_list.gross_total(source=['part time']) )}
   Gross | Full time | ${currency( itemized_job_list.gross_total(source=['full time']) )}
@@ -815,9 +825,9 @@ subquestion: |
   % if to_run['ALVehicle'] or to_run['all']:
   ### A single ALVehicle:
   
-  Owner | Year/Make/Model | Value
+  Owner | Year/Make/Model | Current market value
   - | - | -
-  ${ al_vehicle.owner } | ${ al_vehicle.year + ', ' +  al_vehicle.make + ', ' + al_vehicle.model } | ${ currency( al_vehicle.value ) }
+  ${ al_vehicle.owner } | ${ al_vehicle.year + ', ' +  al_vehicle.make + ', ' + al_vehicle.model } | ${ currency( al_vehicle.market_value ) }
   
   ---
   
@@ -932,8 +942,8 @@ columns:
       row_item.owner
   - Year/Make/Model: |
       row_item.year + ', ' +  row_item.make + ', ' + row_item.model
-  - Value: |
-      currency(row_item.value)
+  - Market value: |
+      currency(row_item.market_value)
 ---
 generic object: ALSimpleValueList
 template: x.output

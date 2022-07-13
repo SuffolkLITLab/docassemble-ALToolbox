@@ -109,10 +109,10 @@ class ALIncome(DAObject):
     Attributes:
     .value {float | Decimal} A number representing an amount of money accumulated during
         the `times_per_year` of this income.
-    .times_per_year {int | float} Represents a number of the annual frequency of
+    .times_per_year {float | Decimal} Represents a number of the annual frequency of
         the income. E.g. 12 for a monthly income.
     .is_hourly {bool} (Optional) True if the income is hourly.
-    .hours_per_period {int | float} (Optional) If the income is hourly, the number of
+    .hours_per_period {float | Decimal} (Optional) If the income is hourly, the number of
         hours during the annual frequency of this job. E.g. if the annual
         frequency is 52 (weekly), the hours per week might be 50. That is, 50
         hours per week. This attribute is required if `.is_hourly` is True.
@@ -522,10 +522,10 @@ class ALVehicle(ALAsset):
     .year {str} The model year of the vehicle, like 2022
     .make {str} The make of the vehicle, like "Honda"
     .model {str} The model of the vehicle, like "Accord"
-    .market_value {int | float} Market value of an asset.
-    .balance {int | float} Balance of an asset.
+    .market_value {float | Decimal} Market value of an asset.
+    .balance {float | Decimal} Balance of an asset.
     .value {float | Decimal} (Optional) Income earned by the vehicle (typically 0)
-    .times_per_year {str | float} Time frequency over which the `value` is earned
+    .times_per_year {float} Time frequency over which the `value` is earned
     .owner {str} Full name of the asset owner as a single string.
     .source {str} (Optional) The "source" of the asset. Defaults to "vehicle".
     """
@@ -837,7 +837,7 @@ class ALItemizedJob(DAObject):
         If you use sources from deductions, they will be ignored.
 
         Args:
-        kwarg: times_per_year {str | float} (Optional) Number of times per year you
+        kwarg: times_per_year {float} (Optional) Number of times per year you
             want to calcualte. E.g, to express a weekly period, use 52. Default is 1.
         kwarg: source {str | [str]} (Optional) Source or list of sources of desired
             item(s).
@@ -1007,7 +1007,7 @@ class ALItemizedJobList(DAList):
         kwarg: source {str | [str]} - (Optional) Source or list of sources of
             desired job items to sum from every itemized job.
             E.g. ['tips', 'commissions']
-        kwarg: times_per_year {str | float} (Optional) Number of times per year you
+        kwarg: times_per_year {float} (Optional) Number of times per year you
             want to calcualte. E.g, to express a weekly period, use 52. Default is 1.
         """
         self._trigger_gather()
@@ -1031,7 +1031,7 @@ class ALItemizedJobList(DAList):
         kwarg: source {str | [str]} - (Optional) Source or list of sources of
             desired job items to sum from every itemized job.
             E.g. ['taxes', 'dues']
-        kwarg: times_per_year {str | float} (Optional) Number of times per year you
+        kwarg: times_per_year {float} (Optional) Number of times per year you
             want to calcualte. E.g, to express a weekly period, use 52. Default is 1.
         """
         self._trigger_gather()
