@@ -534,7 +534,7 @@ fields:
 ---
 # UNIQUE FOR ALVehicleList
 ---
-# Has to have its own. Otherwise it's overriden by ALAssetList.
+# Has to have its own. Otherwise it's overridden by ALAssetList.
 generic object: ALVehicleList
 code: |
   # .source is automatically 'vehicle'

@@ -86,7 +86,7 @@ def recent_years(
     where the most recent ones are most likely. E.g. automobile years or
     birthdate.
 
-    Keyword paramaters:
+    Keyword parameters:
     * past {float} The number of past years to list, including the current year.
         The default is 15
     * order {string} 'descending' or 'ascending'. Default is `descending`.
@@ -103,7 +103,7 @@ class ALIncome(DAObject):
     """
     Represents an income which may have an hourly rate or a salary. Hourly rate
     incomes must include hours per period (times per year). Period is some
-    demoninator of a year. E.g, to express a weekly period, use 52. The default
+    denominator of a year. E.g, to express a weekly period, use 52. The default
     is 1 (a year).
 
     Attributes:
@@ -267,7 +267,7 @@ class ALJob(ALIncome):
         Same as ALIncome total. Returns the income over the specified times_per_year,
         representing the `.value` attribute of the item.
 
-        `times_per_year` is some demoninator of a year. E.g. to express a weekly
+        `times_per_year` is some denominator of a year. E.g. to express a weekly
         period, use 52. The default is 1 (a year).
         """
         return self.total(times_per_year=times_per_year)
@@ -278,7 +278,7 @@ class ALJob(ALIncome):
         If the job is hourly, the "net" value may not be comparable to the
         gross value.
 
-        `times_per_year` is some demoninator of a year. E.g, to express a weekly
+        `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
 
         This will force the gathering of the ALJob's `.net` attribute.
@@ -303,7 +303,7 @@ class ALJob(ALIncome):
         For example, if the person works 10 hours a week, it will return
         520 when the times_per_year parameter is 1.
 
-        `times_per_year` is some demoninator of a year. E.g, to express a weekly
+        `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
 
         This will force the gathering of the attributes `.hours_per_period` and
@@ -336,7 +336,7 @@ class ALJobList(ALIncomeList):
         times_per_year. You can filter the jobs by `source`. `source` can be a
         string or a list.
 
-        `times_per_year` is some demoninator of a year. E.g, to express a weekly
+        `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
         """
         return self.gross_total(times_per_year=times_per_year, source=source)
@@ -349,7 +349,7 @@ class ALJobList(ALIncomeList):
         times_per_year. You can filter the jobs by `source`. `source` can be a
         string or a list.
 
-        `times_per_year` is some demoninator of a year. E.g, to express a weekly
+        `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
         """
         self._trigger_gather()
@@ -380,7 +380,7 @@ class ALJobList(ALIncomeList):
         If the job is hourly, the `net_total()` may not be comparable to the
         `gross_total()`.
 
-        `times_per_year` is some demoninator of a year. E.g, to express a weekly
+        `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
         """
         self._trigger_gather()
@@ -418,8 +418,8 @@ class ALAsset(ALIncome):
         for a given `times_per_year`, such as interest earned in a checking
         account. If not defined, the income will be set to 0, to simplify
         representing the many common assets that do not earn any income.
-    .times_per_year {float} Number of times per year the asset earns the
-        income listed in the `value` attribute.
+    .times_per_year {float} (Optional) Number of times per year the asset
+        earns the income listed in the `value` attribute.
     .owner {str} (Optional) Full name of the asset owner as a single string.
     .source {str} (Optional) The "source" of the asset, like "vase".
     """
@@ -429,7 +429,7 @@ class ALAsset(ALIncome):
         Returns the .value attribute divided by the times per year you want to
         calculate. The value defaults to 0.
 
-        `times_per_year` is some demoninator of a year. E.g, to express a weekly
+        `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
         """
         if not hasattr(self, "value") or self.value == "":
@@ -676,7 +676,7 @@ class ALItemizedValueDict(DAOrderedDict):
 
     def hook_after_gather(self):
         """
-        Update item lists after they've been gathered or edited to remove non-existant
+        Update item lists after they've been gathered or edited to remove non-existent
         items. Will still allow the developer to set `auto_gather=False` if they
         want without affecting this functionality.
         See https://docassemble.org/docs/objects.html#DAList.hook_after_gather.
@@ -748,8 +748,8 @@ class ALItemizedJob(DAObject):
         this job.
 
     Fulfills these requirements:
-    - A job can be hourly. Its wages will be calcuated with that in mind.
-    - Despite an hourly job, some individual items must be calcuated using the
+    - A job can be hourly. Its wages will be calculated with that in mind.
+    - Despite an hourly job, some individual items must be calculated using the
         job's whole period.
     - Some items will have their own periods.
     - In a list of jobs, a developer may need to access full time and part time
@@ -778,9 +778,11 @@ class ALItemizedJob(DAObject):
         self, item: ALItemizedValue, times_per_year: float = 1
     ) -> Decimal:
         """
-        Given an item and a times_per_year, returns the value accumulated by the
-        item for that `times_per_year`, applying the attributes of the top-level
-        ALItemizedJob, such as `times_per_year` and `is_hourly`.
+        Given an ALItemizedValue and a times_per_year, returns the value
+        accumulated by the item for that `times_per_year`, applying the
+        attributes of the top-level ALItemizedJob, such as `times_per_year` and
+        `is_hourly` as a default, and otherwise applying the attributes of the
+        ALItemizedValue.
 
         `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
@@ -789,7 +791,7 @@ class ALItemizedJob(DAObject):
         arg item {ALItemizedValue} Object containing the value and other props
             for an "in" or "out" ALItemizedJob item.
         kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calcualte. E.g, to express a weekly period, use 52. Default is 1.
+            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
         """
         if times_per_year == 0:
             return Decimal(0)
@@ -839,7 +841,7 @@ class ALItemizedJob(DAObject):
 
         Args:
         kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calcualte. E.g, to express a weekly period, use 52. Default is 1.
+            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
         kwarg: source {str | [str]} (Optional) Source or list of sources of desired
             item(s).
         """
@@ -847,22 +849,32 @@ class ALItemizedJob(DAObject):
         total = Decimal(0)
         if times_per_year == 0:
             return total
-        # Make sure we're always working with a list of sources (names?)
-        sources = self.source_to_list(source=source)
-        # Add up all money coming in from a source
-        for key, value in self.to_add.elements.items():
-            if key in sources:
-                total += self._item_value_per_times_per_year(
-                    value, times_per_year=times_per_year
+        if source:
+            # Make sure we're always working with a list of sources (names?)
+            # Add up all money coming in from a source
+            sources = self.source_to_list(source=source)
+            for key, value in self.to_add.elements.items():
+                if key in sources:
+                    total += self._item_value_per_times_per_year(
+                        value, times_per_year=times_per_year
+                    )
+            return total
+        else:
+            return Decimal(
+                sum(
+                    self._item_value_per_times_per_year(
+                        item, times_per_year=times_per_year
+                    )
+                    for item in self.to_add.elements
                 )
-        return total
+            )
 
     def deduction_total(
         self, times_per_year: float = 1, source: Union[List[str], str] = None
     ):
         """
         Returns the sum of money going out (normally, deductions like union
-        dues) divided by a pay times_per_year as a postive value. You can
+        dues) divided by a pay times_per_year as a positive value. You can
         filter the items by `source`. `source` can be a string or a list.
 
         Args:
@@ -875,15 +887,25 @@ class ALItemizedJob(DAObject):
         total = Decimal(0)
         if times_per_year == 0:
             return total
-        # Make sure we're always working with a list of sources (names?)
-        sources = self.source_to_list(source=source)
-        # Add all the money going out
-        for key, value in self.to_subtract.elements.items():
-            if key in sources:
-                total += self._item_value_per_times_per_year(
-                    value, times_per_year=times_per_year
+        if source:
+            # Make sure we're always working with a list of sources (names?)
+            # Add up all money coming in from a source
+            sources = self.source_to_list(source=source)
+            for key, value in self.to_subtract.elements.items():
+                if key in sources:
+                    total += self._item_value_per_times_per_year(
+                        value, times_per_year=times_per_year
+                    )
+            return total
+        else:
+            return Decimal(
+                sum(
+                    self._item_value_per_times_per_year(
+                        item, times_per_year=times_per_year
+                    )
+                    for item in self.to_subtract.elements
                 )
-        return total
+            )
 
     def net_total(
         self, times_per_year: float = 1, source: Union[List[str], str] = None
@@ -895,30 +917,15 @@ class ALItemizedJob(DAObject):
 
         Args:
         kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calcualte. E.g, to express a weekly period, use 52. Default is 1.
+            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
         kwarg: source {str | List[str]} (Optional) Source or list of sources of desired
             item(s).
         """
         # self.to_add._trigger_gather()
         # self.to_subtract._trigger_gather()
-        total = Decimal(0)
-        if times_per_year == 0:
-            return total
-        # Make sure we're always working with a list of sources (names?)
-        sources = self.source_to_list(source=source)
-        # Add up all money coming in
-        for key, value in self.to_add.elements.items():
-            if key in sources:
-                total += self._item_value_per_times_per_year(
-                    value, times_per_year=times_per_year
-                )
-        # Subtract the money going out
-        for key, value in self.to_subtract.elements.items():
-            if key in sources:
-                total -= self._item_value_per_times_per_year(
-                    value, times_per_year=times_per_year
-                )
-        return total
+        return self.gross_total(
+            times_per_year=times_per_year, source=source
+        ) - self.deduction_total(times_per_year=times_per_year, source=source)
 
     def source_to_list(self, source: Union[List[str], str] = None) -> List[str]:
         """
@@ -1009,7 +1016,7 @@ class ALItemizedJobList(DAList):
             desired job items to sum from every itemized job.
             E.g. ['tips', 'commissions']
         kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calcualte. E.g, to express a weekly period, use 52. Default is 1.
+            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
         """
         self._trigger_gather()
         total = Decimal(0)
@@ -1033,7 +1040,7 @@ class ALItemizedJobList(DAList):
             desired job items to sum from every itemized job.
             E.g. ['taxes', 'dues']
         kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calcualte. E.g, to express a weekly period, use 52. Default is 1.
+            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
         """
         self._trigger_gather()
         total = Decimal(0)
