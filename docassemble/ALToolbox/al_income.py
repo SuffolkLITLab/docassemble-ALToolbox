@@ -409,7 +409,8 @@ class ALAsset(ALIncome):
 
     Can be stored in an ALAssetList.
 
-    Attributes: .market_value {float | Decimal} Market value of the asset.
+    Attributes:
+     .market_value {float | Decimal} Market value of the asset.
     .balance {float | Decimal } Current balance of the account, e.g., like
         the balance in a checking account, but could also represent a loan
         amount.
