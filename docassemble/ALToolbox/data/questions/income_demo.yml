@@ -236,6 +236,7 @@ fields:
     input type: radio
     code: |
       times_per_year_list
+    datatype: integer
   - How many hours do you work during that time?: x.hours_per_period
     input type: number
     show if: x.is_hourly
@@ -277,7 +278,7 @@ validation code: |
 id: other itemized job reduction value
 generic object: ALItemizedJob
 question: |
-  What do you get paid for ${ job_items_names.get(i, i) } in your ${ x.name } job?
+  What amount is taken out of your paycheck for ${ job_items_names.get(i, i) } in your ${ x.name } job?
 fields:
   - Amount: x.to_subtract[i].value
     datatype: currency
@@ -316,7 +317,7 @@ code: |
 id: income info
 generic object: ALIncome
 question: |
-  What how much do you get from ${ x.source }?
+  How much do you get from ${ x.source }?
 fields:
   - Is it an hourly amount?: x.is_hourly
     datatype: yesnoradio
@@ -324,6 +325,7 @@ fields:
     input type: radio
     code: |
       times_per_year_list
+    datatype: integer
   - How many hours do you work per period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
@@ -393,6 +395,7 @@ fields:
     input type: radio
     code: |
       times_per_year_list
+    datatype: integer
   - How many hours do you work in each period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
@@ -444,6 +447,7 @@ fields:
     input type: radio
     code: |
       times_per_year_list
+    datatype: integer
   - Interest or other income from the asset: x.value
     datatype: currency
   - Who owns this?: x.owner
@@ -468,17 +472,22 @@ fields:
 id: info for each asset
 generic object: ALAssetList
 question: |
-  Tell us about the values of the ${ x[i].source }
+  About your ${ x[i].source } asset
 fields:
-  - How often do you get money from this?: x[i].times_per_year
+  - Current market value: x[i].market_value
+    datatype: currency
+    required: False
+  - Balance (for a financial account, may be identical to market value): x[i].balance
+    datatype: currency
+    required: False
+  - How much does this asset earn you (in interest, dividends or other regular payments to you)?: x[i].value
+    datatype: currency
+    required: False
+  - How often do you get money for this asset?: x[i].times_per_year
     input type: radio
     code: |
       times_per_year_list
-  - Market value: x[i].market_value
-    datatype: currency
-    required: False
-  - Balance: x[i].balance
-    datatype: currency
+    datatype: integer
     required: False
 ---
 # UNIQUE FOR ALVehicle
@@ -497,7 +506,7 @@ subquestion: |
   Notes:
   
   * Do not try to use the `total()` method with an ALVehicle.
-  * A single ALVehical doesn't have methods for a loan balance. That's part of ALVehicleList.
+  * A single ALVehicle doesn't have methods for a loan balance. That's part of ALVehicleList.
   * The `.source` attribute is automatically 'vehicle'
   
 fields:
@@ -857,7 +866,7 @@ content: |
   Gross | Yearly | ${ currency( x.gross_total() ) }
   Gross | Weekly | ${ currency( x.gross_total(times_per_year=12) ) }
   Total out | Yearly | ${currency(x.deduction_total())}
-  Total out | Fortnightly | ${currency(x.deduction_total(times_per_year=26))}
+  Total out | Every 2 weeks | ${currency(x.deduction_total(times_per_year=26))}
   Net | Yearly | ${currency( x.net_total() )}
   Net | Quarterly | ${currency( x.net_total(times_per_year=4) )}
   
@@ -885,7 +894,7 @@ generic object: ALIncome
 template: x.output
 content: |
   ${ x.source } | Yearly | ${ currency( x.total() ) }
-  ${ x.source } | Fortnightly | ${ currency( x.total(times_per_year=26) ) }
+  ${ x.source } | Every 2 weeks | ${ currency( x.total(times_per_year=26) ) }
 ---
 generic object: ALJob
 template: x.output
@@ -913,7 +922,7 @@ generic object: ALAsset
 template: x.output
 content: |
   ${ x.source } | ${ x.owner } | Yearly | ${ currency( x.total() ) }
-  ${ x.source } | ${ x.owner } | Fortnightly | ${ currency( x.total(times_per_year=26) ) }
+  ${ x.source } | ${ x.owner } | Every 2 weeks | ${ currency( x.total(times_per_year=26) ) }
 ---
 table: x.output
 generic object: ALVehicleList
