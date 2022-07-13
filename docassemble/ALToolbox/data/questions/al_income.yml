@@ -1,0 +1,92 @@
+---
+modules: 
+  - .al_income
+---
+# Returns a list of lists, each of which contains the number of
+# times a pay period fits into a year and then the English word
+# for that period. Example: [12, "Monthly"]
+variable name: times_per_year_list
+data:
+  - [52, "Weekly"]
+  - [26, "Once every two weeks"]
+  - [24, "Twice per month"]
+  - [12, "Monthly"]
+  - [4, "Once every 3 months"]
+  - [1, "Yearly"]
+---
+objects:
+  # a list of asset sources for a multiple choice dropdown
+  - asset_source_list: DAOrderedDict.using(elements=asset_list_dict, auto_gather = False, gathered = True)
+---
+variable name: asset_list_dict
+data: !!omap
+  - checking: "Checking Account"
+  - savings: "Savings Account"
+  - cd: "Certificate of Deposit"
+  - ira: "Individual Retirement Account"
+  - mutual fund: "Money or Mutual Fund"
+  - stocks: "Stocks or Bonds"
+  - trust: "Trust Fund"
+  - vehicle: "Vehicle"
+  - real estate: "Real Estate"
+  - other: "Other Asset"
+---
+objects:
+  # dict of income sources for a multiple choice dropdown
+  - income_source_list: DAOrderedDict.using(elements=income_list_dict, auto_gather = False, gathered = True)
+---
+variable name: income_list_dict
+data: !!omap
+  - wages: "A job or self-employment"
+---
+code: |
+  income_source_list.elements.update(non_wage_income_list)
+  update_income_list = True
+---
+mandatory: True
+code: |
+  update_income_list
+---
+objects:
+  # a dict of income sources, excluding wages
+  - non_wage_income_list: DAOrderedDict.using(elements=non_wage_income_list_dict, auto_gather = False, gathered = True)
+---
+variable name: non_wage_income_list_dict
+data: !!omap
+  - SSR: "Social Security Retirement Benefits"
+  - SSDI: "Social Security Disability Benefits"
+  - SSI: "Supplemental Security Income (SSI)"
+  - pension: "Pension"
+  - TAFDC: "TAFDC"
+  - public assistance: "Other public assistance"
+  - SNAP: "Food Stamps (SNAP)"
+  - rent: "Income from real estate (rent, etc)"
+  - room and board: "Room and/or Board Payments"
+  - child support: "Child Support"
+  - alimony: "Alimony"
+  - other support: "Other Support"
+  - other: "Other"
+---
+objects:
+  # a dict of expense sources for a multiple choice dropdown
+  - expense_source_list: DAOrderedDict.using(elements=expense_list_dict, auto_gather = False, gathered = True)
+---
+variable name: expense_list_dict
+data: !!omap
+  - rent: "Rent"
+  - mortgage: "Mortgage"
+  - food: "Food"
+  - utilities: "Utilities"
+  - fuel: "Other Heating/Cooking Fuel"
+  - clothing: "Clothing"
+  - credit cards: "Credit Card Payments"
+  - property tax: "Property Tax (State and Local)"
+  - other taxes: "Other taxes and fees related to your home"
+  - insurance: "Insurance"
+  - medical: "Medical-Dental (after amount paid by insurance)"
+  - auto: "Car operation and maintenance"
+  - transportation: "Other transportation"
+  - charity: "Church or charitable donations"
+  - loan payments: "Loan, credit, or lay-away payments"
+  - support: "Support to someone not in household"
+  - other: "Other"
