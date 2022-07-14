@@ -1,0 +1,29 @@
+metadata:
+  Title: Nice county name demo
+---
+modules:  
+  - .misc
+---
+objects:
+  - address: Address
+---
+mandatory: True
+code: |
+  address.county
+  print_county
+---
+question: |
+  Address
+subquestion: |
+  `nice_county_name`: If the county name contains the word "County", which Google Address Autocomplete does by default, remove it.
+fields:
+  - Address: address.address
+    address autocomplete: True
+  - County: address.county
+---
+event: print_county
+question: |
+  County
+subquestion: |
+  ${ nice_county_name( address ) }
+---
