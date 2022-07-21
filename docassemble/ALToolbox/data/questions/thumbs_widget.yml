@@ -1,0 +1,6 @@
+modules:
+  - .misc
+---
+features:
+  javascript: thumbs_widget.js
+  css: thumbs_widget.css

@@ -4,7 +4,9 @@ from docassemble.base.util import (
     value,
     showifdef,
     space_to_underscore,
+    action_button_html,
     Address,
+    word
 )
 import re
 
@@ -18,6 +20,7 @@ __all__ = [
     "number_to_letter",
     "collapse_template",
     "tabbed_templates_html",
+    "thumbs_widget",
     "sum_if_defined",
     "add_records",
     "output_checkbox",
@@ -60,15 +63,20 @@ def fa_icon(icon, color="primary", color_css=None, size="sm"):
     Return HTML for a font-awesome icon of the specified size and color. You can reference
     a CSS variable (such as Bootstrap theme color) or a true CSS color reference, such as 'blue' or
     '#DDDDDD'. Defaults to Bootstrap theme color "primary".
+
+    Sizes can be '2xs', 'xs', 'sm', 'md' (or None), 'lg', 'xl', '2xl'.
     """
-    if not color and not color_css:
+    if not size or size == "md":
+      size_str = ""
+    else:
+      size_str = " fa-" + size
+    if not size and not color and not color_css:
         return ":" + icon + ":"  # Default to letting Docassemble handle it
     elif color_css:
         return (
             '<i class="fa fa-'
             + icon
-            + " fa-"
-            + size
+            + size_str
             + '" style="color:'
             + color_css
             + ';"></i>'
@@ -77,8 +85,7 @@ def fa_icon(icon, color="primary", color_css=None, size="sm"):
         return (
             '<i class="fa fa-'
             + icon
-            + " fa-"
-            + size
+            + size_str
             + '" style="color:var(--'
             + color
             + ');"></i>'
@@ -178,6 +185,36 @@ def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
 
     return tabs + tab_content
 
+def thumbs_widget(*, up_action, down_action, feedback_action=None,
+        thumbs_text="How did you feel about this form?",
+        feedback_text="Thanks! You can leave an anonymous review below",
+        submit_feedback_text="Submit your feedback",
+        post_feedback_text="Thank you for your review!") -> str:
+  js_thumbs_up = f"javascript:altoolbox_thumbs_up_send('{up_action}', {'true' if feedback_action else 'false'})"
+  js_thumbs_down = f"javascript:altoolbox_thumbs_down_send('{down_action}', {'true' if feedback_action else 'false'})"
+  widget = f"""
+  <div class="al-feedback-wrapper">
+      <p class="al-thumbs-widget">{word(thumbs_text)}</p>
+      <a href="{js_thumbs_up}" id="al-thumbs-widget-up"
+          class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs up')}">{fa_icon('thumbs-up', size='md')}</a>
+      <a href="{js_thumbs_down}" id="al-thumbs-widget-down"
+          class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs down')}">{fa_icon('thumbs-down', size='md')}</a>
+  """
+  if feedback_action:
+      feedback_id = feedback_action + '_area_id'
+      js_feedback = f"javascript:altoolbox_feedback_send('{feedback_action}', '{feedback_id}')"
+      widget += f"""
+        <p class="al-feedback-text al-hidden">{word(feedback_text)}</p>
+        <textarea class="datextarea al-feedback-text al-hidden" id="{feedback_id}"
+            alt="{word('Write your feedback here')}" rows="4"></textarea>
+        <br>
+        {action_button_html(js_feedback, label=word(submit_feedback_text), size='md', classname='al-feedback-text al-hidden')} 
+      """
+  widget += f"""
+    <p class="al-post-feedback al-hidden">{word(post_feedback_text)}</p>
+  </div>
+  """
+  return widget
 
 def sum_if_defined(*pargs):
     """Lets you add up the value of variables that are not in a list"""

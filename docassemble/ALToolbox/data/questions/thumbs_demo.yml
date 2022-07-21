@@ -1,0 +1,29 @@
+---
+include:
+  - thumbs_widget.yml
+---
+mandatory: True
+question: |
+  Thumbs Widget
+subquestion: |
+  ${ thumbs_widget(up_action='up_action', down_action='down_action', feedback_action='feedback_action') }
+continue button field: goto_next
+---
+mandatory: True
+question: Results
+subquestion: |
+  Thumbs?: ${ thumbs_value }
+
+  Feedback text: ${ feedback_response }
+---
+event: feedback_action
+code: |
+  feedback_response = action_argument('feedback_text')
+---
+event: up_action
+code: |
+  thumbs_value = 1
+---
+event: down_action
+code: |
+  thumbs_value = -1
