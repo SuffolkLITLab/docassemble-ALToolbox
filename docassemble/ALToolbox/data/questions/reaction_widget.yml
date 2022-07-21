@@ -1,0 +1,6 @@
+modules:
+  - .misc
+---
+features:
+  javascript: reaction_widget.js
+  css: reaction_widget.css

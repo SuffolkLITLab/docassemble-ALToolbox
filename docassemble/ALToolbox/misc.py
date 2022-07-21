@@ -20,7 +20,7 @@ __all__ = [
     "number_to_letter",
     "collapse_template",
     "tabbed_templates_html",
-    "thumbs_widget",
+    "reaction_widget",
     "sum_if_defined",
     "add_records",
     "output_checkbox",
@@ -185,7 +185,7 @@ def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
 
     return tabs + tab_content
 
-def thumbs_widget(*, up_action, down_action, feedback_action=None,
+def reaction_widget(*, up_action, down_action, feedback_action=None,
         thumbs_text="How did you feel about this form?",
         feedback_text="Thanks! You can leave an anonymous review below",
         submit_feedback_text="Submit your feedback",
@@ -207,7 +207,7 @@ def thumbs_widget(*, up_action, down_action, feedback_action=None,
         <p class="al-feedback-text al-hidden">{word(feedback_text)}</p>
         <textarea class="datextarea al-feedback-text al-hidden" id="{feedback_id}"
             alt="{word('Write your feedback here')}" rows="4"></textarea>
-        <br>
+        <br class="al-feedback-text">
         {action_button_html(js_feedback, label=word(submit_feedback_text), size='md', classname='al-feedback-text al-hidden')} 
       """
   widget += f"""

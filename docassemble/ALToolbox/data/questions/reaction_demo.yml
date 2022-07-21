@@ -1,12 +1,12 @@
 ---
 include:
-  - thumbs_widget.yml
+  - reaction_widget.yml
 ---
 mandatory: True
 question: |
-  Thumbs Widget
+  Reaction Widget
 subquestion: |
-  ${ thumbs_widget(up_action='up_action', down_action='down_action', feedback_action='feedback_action') }
+  ${ reaction_widget(up_action='up_action', down_action='down_action', feedback_action='feedback_action') }
 continue button field: goto_next
 ---
 mandatory: True
