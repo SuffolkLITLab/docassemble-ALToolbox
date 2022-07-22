@@ -1,0 +1,6 @@
+modules:
+  - .misc
+---
+features:
+  javascript: review_widget.js
+  css: review_widget.css

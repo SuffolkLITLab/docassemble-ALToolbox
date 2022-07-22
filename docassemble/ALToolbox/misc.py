@@ -20,7 +20,7 @@ __all__ = [
     "number_to_letter",
     "collapse_template",
     "tabbed_templates_html",
-    "reaction_widget",
+    "review_widget",
     "sum_if_defined",
     "add_records",
     "output_checkbox",
@@ -186,44 +186,63 @@ def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
     return tabs + tab_content
 
 
-def reaction_widget(
+def review_widget(
     *,
-    up_action,
-    down_action,
-    feedback_action=None,
-    thumbs_text="How did you feel about this form?",
-    feedback_text="Thanks! You can leave an anonymous review below",
-    submit_feedback_text="Submit your feedback",
-    post_feedback_text="Thank you for your review!",
+    up_action:str,
+    down_action:str,
+    review_action:str=None,
+    thumbs_display:str="Did we help you?",
+    review_display:str="Thanks! Let us know what we could do better",
+    submit_review_button:str="Add your review",
+    post_review_display:str="Thank you for your review!",
 ) -> str:
-    js_thumbs_up = f"javascript:altoolbox_thumbs_up_send('{up_action}', {'true' if feedback_action else 'false'})"
-    js_thumbs_down = f"javascript:altoolbox_thumbs_down_send('{down_action}', {'true' if feedback_action else 'false'})"
-    widget = f"""
-    <div class="card" style="width: 20rem;">
-      <div class="card-body">
-        <p class="al-thumbs-widget">{word(thumbs_text)}</p>
-        <a href="{js_thumbs_up}" id="al-thumbs-widget-up"
-            class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs up')}">{fa_icon('thumbs-up', size='md')}</a>
-        <a href="{js_thumbs_down}" id="al-thumbs-widget-down"
-            class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs down')}">{fa_icon('thumbs-down', size='md')}</a>
     """
-    if feedback_action:
-        feedback_id = feedback_action + "_area_id"
-        js_feedback = (
-            f"javascript:altoolbox_feedback_send('{feedback_action}', '{feedback_id}')"
+    A widget that allows people to give a quick review (thumbs up and down, with an optional text
+    component) in the middle of an interview without triggering a page reload.
+
+    If `review_action` is provided, once you press either of the thumbs, a text input screen with
+    a submit button appears, and once the text review is submitted (or after the thumbs, if no
+    `review_action` was provided), a final "thank you" messsage is displayed.
+    
+    @param up_action {string} - the variable name of an event to be executed on the server if the
+        thumbs up is pressed
+    @param down_action {string} - the variable name of an event to be executed on the server i
+        the thumbs down is pressed
+    @param (optional) review_action {string} - the variable name of an event to be execute on the
+        server when someone submits their text review
+    @param (optional) thumbs_display {string} - text displayed to user describing the thumbs
+    @param (optional) review_display {string} - text displayed to user describing the text input
+    @param (optional) submit_review_button {string} - text on the button to submit their text review
+    @param (optional) post_review_display {string} - text displayed to user after review is
+        submitted
+    """
+    js_thumbs_up = f"javascript:altoolbox_thumbs_up_send('{up_action}', {'true' if review_action else 'false'})"
+    js_thumbs_down = f"javascript:altoolbox_thumbs_down_send('{down_action}', {'true' if review_action else 'false'})"
+    widget = f"""
+<div class="card" style="width: 20rem;">
+  <div class="card-body">
+    <p class="al-thumbs-widget">{word(thumbs_display)}</p>
+    <a href="{js_thumbs_up}" id="al-thumbs-widget-up"
+        class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs up')}">{fa_icon('thumbs-up', size='md')}</a>
+    <a href="{js_thumbs_down}" id="al-thumbs-widget-down"
+        class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs down')}">{fa_icon('thumbs-down', size='md')}</a>
+    """
+    if review_action:
+        review_area_id = review_action + "_area_id"
+        js_review = (
+            f"javascript:altoolbox_review_send('{review_action}', '{review_area_id}')"
         )
         widget += f"""
-          <p class="al-feedback-text al-hidden">{word(feedback_text)}</p>
-          <textarea class="datextarea al-feedback-text al-hidden" id="{feedback_id}"
-              alt="{word('Write your feedback here')}" rows="4"></textarea>
-          <br class="al-feedback-text">
-          {action_button_html(js_feedback, label=word(submit_feedback_text), size='md', classname='al-feedback-text al-hidden')} 
+      <p class="al-review-text al-hidden">{word(review_display)}</p>
+      <textarea class="datextarea al-review-text al-hidden" id="{review_area_id}"
+          alt="{word('Write your review here')}" rows="4"></textarea>
+      <br class="al-review-text">
+      {action_button_html(js_review, label=word(submit_review_button), size='md', classname='al-review-text al-hidden')} 
         """
     widget += f"""
-      <p class="al-post-feedback al-hidden">{word(post_feedback_text)}</p>
-      </div>
-    </div>
-    """
+  <p class="al-after-review al-hidden">{word(post_review_display)}</p>
+  </div>
+</div>"""
     return widget
 
 

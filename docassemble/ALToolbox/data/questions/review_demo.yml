@@ -1,12 +1,12 @@
 ---
 include:
-  - reaction_widget.yml
+  - review_widget.yml
 ---
 mandatory: True
 question: |
-  Reaction Widget
+  Review Widget
 subquestion: |
-  ${ reaction_widget(up_action='up_action', down_action='down_action', feedback_action='feedback_action') }
+  ${ review_widget(up_action='up_action', down_action='down_action', review_action='review_action') }
 continue button field: goto_next
 ---
 mandatory: True
@@ -14,11 +14,11 @@ question: Results
 subquestion: |
   Thumbs?: ${ thumbs_value }
 
-  Feedback text: ${ feedback_response }
+  Feedback text: ${ review_response }
 ---
-event: feedback_action
+event: review_action
 code: |
-  feedback_response = action_argument('feedback_text')
+  review_response = action_argument('review_text')
 ---
 event: up_action
 code: |
