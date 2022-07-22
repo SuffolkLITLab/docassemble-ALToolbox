@@ -188,13 +188,13 @@ def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
 
 def review_widget(
     *,
-    up_action:str,
-    down_action:str,
-    review_action:str=None,
-    thumbs_display:str="Did we help you?",
-    review_display:str="Thanks! Let us know what we could do better",
-    submit_review_button:str="Add your review",
-    post_review_display:str="Thank you for your review!",
+    up_action: str,
+    down_action: str,
+    review_action: str = None,
+    thumbs_display: str = "Did we help you?",
+    review_display: str = "Thanks! Let us know what we could do better",
+    submit_review_button: str = "Add your review",
+    post_review_display: str = "Thank you for your review!",
 ) -> str:
     """
     A widget that allows people to give a quick review (thumbs up and down, with an optional text
@@ -203,7 +203,7 @@ def review_widget(
     If `review_action` is provided, once you press either of the thumbs, a text input screen with
     a submit button appears, and once the text review is submitted (or after the thumbs, if no
     `review_action` was provided), a final "thank you" messsage is displayed.
-    
+
     @param up_action {string} - the variable name of an event to be executed on the server if the
         thumbs up is pressed
     @param down_action {string} - the variable name of an event to be executed on the server i
