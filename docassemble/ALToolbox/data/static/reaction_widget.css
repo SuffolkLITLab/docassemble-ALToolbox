@@ -9,11 +9,3 @@
 .al-feedback-text {
   margin: 6px 0px 6px;
 }
-
-.al-feedback-wrapper {
-  margin: 6px 0px 6px;
-  padding: 0.33rem;
-  border: 1px solid;
-  width: fit-content;
-  border-radius: 0.375rem;
-}

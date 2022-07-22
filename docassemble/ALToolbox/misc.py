@@ -199,29 +199,31 @@ def reaction_widget(
     js_thumbs_up = f"javascript:altoolbox_thumbs_up_send('{up_action}', {'true' if feedback_action else 'false'})"
     js_thumbs_down = f"javascript:altoolbox_thumbs_down_send('{down_action}', {'true' if feedback_action else 'false'})"
     widget = f"""
-  <div class="al-feedback-wrapper">
-      <p class="al-thumbs-widget">{word(thumbs_text)}</p>
-      <a href="{js_thumbs_up}" id="al-thumbs-widget-up"
-          class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs up')}">{fa_icon('thumbs-up', size='md')}</a>
-      <a href="{js_thumbs_down}" id="al-thumbs-widget-down"
-          class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs down')}">{fa_icon('thumbs-down', size='md')}</a>
-  """
+    <div class="card" style="width: 20rem;">
+      <div class="card-body">
+        <p class="al-thumbs-widget">{word(thumbs_text)}</p>
+        <a href="{js_thumbs_up}" id="al-thumbs-widget-up"
+            class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs up')}">{fa_icon('thumbs-up', size='md')}</a>
+        <a href="{js_thumbs_down}" id="al-thumbs-widget-down"
+            class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs down')}">{fa_icon('thumbs-down', size='md')}</a>
+    """
     if feedback_action:
         feedback_id = feedback_action + "_area_id"
         js_feedback = (
             f"javascript:altoolbox_feedback_send('{feedback_action}', '{feedback_id}')"
         )
         widget += f"""
-        <p class="al-feedback-text al-hidden">{word(feedback_text)}</p>
-        <textarea class="datextarea al-feedback-text al-hidden" id="{feedback_id}"
-            alt="{word('Write your feedback here')}" rows="4"></textarea>
-        <br class="al-feedback-text">
-        {action_button_html(js_feedback, label=word(submit_feedback_text), size='md', classname='al-feedback-text al-hidden')} 
-      """
+          <p class="al-feedback-text al-hidden">{word(feedback_text)}</p>
+          <textarea class="datextarea al-feedback-text al-hidden" id="{feedback_id}"
+              alt="{word('Write your feedback here')}" rows="4"></textarea>
+          <br class="al-feedback-text">
+          {action_button_html(js_feedback, label=word(submit_feedback_text), size='md', classname='al-feedback-text al-hidden')} 
+        """
     widget += f"""
-    <p class="al-post-feedback al-hidden">{word(post_feedback_text)}</p>
-  </div>
-  """
+      <p class="al-post-feedback al-hidden">{word(post_feedback_text)}</p>
+      </div>
+    </div>
+    """
     return widget
 
 
