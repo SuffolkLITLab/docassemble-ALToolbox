@@ -13,8 +13,6 @@ from typing import Union
 """
 
 
-
-
 def standard_holidays(
     year, country="US", subdiv="MA", add_holidays=None, remove_holidays=None
 ) -> dict:
@@ -123,18 +121,32 @@ def non_business_days(
 
 
 def is_business_day(
-    date:Union[str, DADateTime], country="US", subdiv="MA", add_holidays=None, remove_holidays=None
+    date: Union[str, DADateTime],
+    country="US",
+    subdiv="MA",
+    add_holidays=None,
+    remove_holidays=None,
 ) -> bool:
     if not isinstance(date, DADateTime):
         date = as_datetime(date)
-    if date.dow in [6,7]: # Docassemble codes Saturday and Sunday as 6 and 7 respectively
+    if date.dow in [
+        6,
+        7,
+    ]:  # Docassemble codes Saturday and Sunday as 6 and 7 respectively
         return False
-    if date.format("yyyy-MM-dd") in standard_holidays(year=date.year, country=country, subdiv=subdiv, add_holidays=add_holidays, remove_holidays=remove_holidays):
+    if date.format("yyyy-MM-dd") in standard_holidays(
+        year=date.year,
+        country=country,
+        subdiv=subdiv,
+        add_holidays=add_holidays,
+        remove_holidays=remove_holidays,
+    ):
         return False
     return True
 
+
 def get_next_business_day(
-    start_date:Union[str, DADateTime],
+    start_date: Union[str, DADateTime],
     wait_n_days=1,
     country="US",
     subdiv="MA",
@@ -149,6 +161,12 @@ def get_next_business_day(
         start_date = as_datetime(start_date)
     date_to_check = start_date.plus(days=wait_n_days)
 
-    while not is_business_day(date_to_check, country=country, subdiv=subdiv, add_holidays=add_holidays, remove_holidays=remove_holidays):
+    while not is_business_day(
+        date_to_check,
+        country=country,
+        subdiv=subdiv,
+        add_holidays=add_holidays,
+        remove_holidays=remove_holidays,
+    ):
         date_to_check = date_to_check.plus(days=1)
     return date_to_check
