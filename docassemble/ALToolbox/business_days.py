@@ -3,7 +3,7 @@ import pandas as pd
 import datetime
 from datetime import date as dt
 from docassemble.base.util import as_datetime, DADateTime
-from typing import Union
+from typing import Union, Dict
 
 """
   External docs: 
@@ -15,7 +15,19 @@ from typing import Union
 
 def standard_holidays(
     year, country="US", subdiv="MA", add_holidays=None, remove_holidays=None
-) -> dict:
+) -> Dict[str, str]:
+    """
+    Get all holidays in the specified year, country, and state (or other subdivision).
+    Note that this draws on the "holidays" package which may deviate slightly from
+    holidays observed by a local court, but should be very close to accurate.
+
+    Returns a dictionary like:
+    {
+        "2021-01-01": "New Year's Day",
+        ...
+        "2021-12-25": "Christmas Day",
+    }
+    """
     # 1. Get standard holidays from python's holidays module
     countr_holidays = []
     countr_holidays = holidays.country_holidays(
@@ -49,9 +61,10 @@ def non_business_days(
     first_n_dates=0,
     last_n_dates=0,
 ) -> dict:
+    # TODO: this function may not be necessary, but check with @purplesky2016 before removing
     # 1. Collect weekends and standard holidays
     # 1.1 Get all saturdays and sundays in the given year
-    # Must use .strftime('%m/%d/%Y')to make it a string, otherwise will get 'TypeError'
+
     sundays = (
         pd.date_range(start=str(year), end=str(year + 1), freq="W-SUN")
         .strftime("%Y-%m-%d")
@@ -127,6 +140,12 @@ def is_business_day(
     add_holidays=None,
     remove_holidays=None,
 ) -> bool:
+    """
+    Returns true iff the specified date is a business day (i.e., not a holiday)
+    in the specified jurisdiction. Business days are considered to be:
+    1. weekdays other than Saturday and Sunday and
+    1. days that are not a federal or state-observed holiday
+    """
     if not isinstance(date, DADateTime):
         date = as_datetime(date)
     if date.dow in [
@@ -155,7 +174,13 @@ def get_next_business_day(
 ) -> DADateTime:
     """
     Returns the first day AFTER the specified start date that is
-    not a holiday, Saturday or Sunday.
+    not a federal or state holiday, Saturday or Sunday. Optionally,
+    specify the parameter `wait_n_days` to get the first business day after
+    at least, e.g., 10 days.
+
+    Relies on the Python holidays package, which has fairly good support for
+    holidays around the world and in various states and provinces, but local
+    court rules may differ.
     """
     if not isinstance(start_date, DADateTime):
         start_date = as_datetime(start_date)
