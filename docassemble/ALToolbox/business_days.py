@@ -2,7 +2,8 @@ import holidays
 import pandas as pd
 import datetime
 from datetime import date as dt
-from docassemble.base.util import as_datetime
+from docassemble.base.util import as_datetime, DADateTime
+from typing import Union, Dict
 
 """
   External docs: 
@@ -14,10 +15,24 @@ from docassemble.base.util import as_datetime
 
 def standard_holidays(
     year, country="US", subdiv="MA", add_holidays=None, remove_holidays=None
-) -> dict:
+) -> holidays.HolidayBase:
+    """
+    Get all holidays in the specified year, country, and state (or other subdivision).
+    Note that this draws on the "holidays" package which may deviate slightly from
+    holidays observed by a local court, but should be very close to accurate.
+
+    Returns a dictionary like-object that you can treat like:
+    {
+        "2021-01-01": "New Year's Day",
+        ...
+        "2021-12-25": "Christmas Day",
+    }
+    
+    In place of a string, the object that is returned can also be treated as though
+    the keys are datetime.date objects.
+    """
     # 1. Get standard holidays from python's holidays module
-    countr_holidays = []
-    countr_holidays = holidays.country_holidays(
+    countr_holidays:holidays.HolidayBase = holidays.country_holidays(
         country=country, subdiv=subdiv, years=year
     )
 
@@ -48,17 +63,18 @@ def non_business_days(
     first_n_dates=0,
     last_n_dates=0,
 ) -> dict:
+    # TODO: this function may not be necessary, but check with @purplesky2016 before removing
     # 1. Collect weekends and standard holidays
     # 1.1 Get all saturdays and sundays in the given year
-    # Must use .strftime('%m/%d/%Y')to make it a string, otherwise will get 'TypeError'
+
     sundays = (
         pd.date_range(start=str(year), end=str(year + 1), freq="W-SUN")
-        .strftime("%m/%d/%Y")
+        .strftime("%Y-%m-%d")
         .tolist()
     )
     saturdays = (
         pd.date_range(start=str(year), end=str(year + 1), freq="W-SAT")
-        .strftime("%m/%d/%Y")
+        .strftime("%Y-%m-%d")
         .tolist()
     )
 
@@ -90,7 +106,7 @@ def non_business_days(
 
     clean_date_dict = {}
     for k, v in date_dict.items():
-        clean_date_dict[k.strftime("%m/%d/%Y")] = v
+        clean_date_dict[k.strftime("%Y-%m-%d")] = v
 
     # 4. Take a subset if user desires it (useful only if this function is explicitly called)
     final_output = {}
@@ -120,64 +136,64 @@ def non_business_days(
 
 
 def is_business_day(
-    date, country="US", subdiv="MA", add_holidays=None, remove_holidays=None
+    date: Union[str, DADateTime],
+    country="US",
+    subdiv="MA",
+    add_holidays=None,
+    remove_holidays=None,
 ) -> bool:
-    if (
-        date
-        in non_business_days(
-            as_datetime(date).year,
-            country=country,
-            subdiv=subdiv,
-            add_holidays=add_holidays,
-            remove_holidays=remove_holidays,
-        ).keys()
+    """
+    Returns true iff the specified date is a business day (i.e., not a holiday)
+    in the specified jurisdiction. Business days are considered to be:
+    1. weekdays other than Saturday and Sunday and
+    1. days that are not a federal or state-observed holiday
+    """
+    if not isinstance(date, DADateTime):
+        date = as_datetime(date)
+    if date.dow in [
+        6,
+        7,
+    ]:  # Docassemble codes Saturday and Sunday as 6 and 7 respectively
+        return False
+    if date.format("yyyy-MM-dd") in standard_holidays(
+        year=date.year,
+        country=country,
+        subdiv=subdiv,
+        add_holidays=add_holidays,
+        remove_holidays=remove_holidays,
     ):
         return False
-    else:
-        return True
+    return True
 
 
 def get_next_business_day(
-    start_date,
+    start_date: Union[str, DADateTime],
     wait_n_days=1,
     country="US",
     subdiv="MA",
     add_holidays=None,
     remove_holidays=None,
-) -> dt:
-    # Get non_business_days for current year and next year to avoid calling non_business_days for each individual date
-    current_yr = as_datetime(start_date).year
-    current_yr_non_business_days = non_business_days(
-        year=current_yr,
+) -> DADateTime:
+    """
+    Returns the first day AFTER the specified start date that is
+    not a federal or state holiday, Saturday or Sunday. Optionally,
+    specify the parameter `wait_n_days` to get the first business day after
+    at least, e.g., 10 days.
+
+    Relies on the Python holidays package, which has fairly good support for
+    holidays around the world and in various states and provinces, but local
+    court rules may differ.
+    """
+    if not isinstance(start_date, DADateTime):
+        start_date = as_datetime(start_date)
+    date_to_check = start_date.plus(days=wait_n_days)
+
+    while not is_business_day(
+        date_to_check,
         country=country,
         subdiv=subdiv,
         add_holidays=add_holidays,
         remove_holidays=remove_holidays,
-    )
-    next_yr_non_business_days = non_business_days(
-        year=current_yr + 1,
-        country=country,
-        subdiv=subdiv,
-        add_holidays=add_holidays,
-        remove_holidays=remove_holidays,
-    )
-
-    # Initialize
-    additional_days = wait_n_days
-    done = False
-
-    # Check if start_date+additional_days is a non-business day
-    while not done:
-        new_date = (
-            as_datetime(start_date) + datetime.timedelta(days=additional_days)
-        ).strftime("%m/%d/%Y")
-        # If new_date is in the year of start_date, use current_yr_non_business_days to check
-        if new_date[-4:] == current_yr:
-            if new_date not in current_yr_non_business_days:
-                done = True
-        else:  # Otherwise use next_yr_non_business_days to check
-            if new_date not in next_yr_non_business_days:
-                done = True
-        additional_days += 1  # Increase one more day
-
-    return new_date
+    ):
+        date_to_check = date_to_check.plus(days=1)
+    return date_to_check
