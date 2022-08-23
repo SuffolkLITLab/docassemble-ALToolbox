@@ -15,22 +15,24 @@ from typing import Union, Dict
 
 def standard_holidays(
     year, country="US", subdiv="MA", add_holidays=None, remove_holidays=None
-) -> Dict[str, str]:
+) -> holidays.HolidayBase:
     """
     Get all holidays in the specified year, country, and state (or other subdivision).
     Note that this draws on the "holidays" package which may deviate slightly from
     holidays observed by a local court, but should be very close to accurate.
 
-    Returns a dictionary like:
+    Returns a dictionary like-object that you can treat like:
     {
         "2021-01-01": "New Year's Day",
         ...
         "2021-12-25": "Christmas Day",
     }
+    
+    In place of a string, the object that is returned can also be treated as though
+    the keys are datetime.date objects.
     """
     # 1. Get standard holidays from python's holidays module
-    countr_holidays = []
-    countr_holidays = holidays.country_holidays(
+    countr_holidays:holidays.HolidayBase = holidays.country_holidays(
         country=country, subdiv=subdiv, years=year
     )
 
