@@ -27,12 +27,12 @@ def standard_holidays(
         ...
         "2021-12-25": "Christmas Day",
     }
-    
+
     In place of a string, the object that is returned can also be treated as though
     the keys are datetime.date objects.
     """
     # 1. Get standard holidays from python's holidays module
-    countr_holidays:holidays.HolidayBase = holidays.country_holidays(
+    countr_holidays: holidays.HolidayBase = holidays.country_holidays(
         country=country, subdiv=subdiv, years=year
     )
 
