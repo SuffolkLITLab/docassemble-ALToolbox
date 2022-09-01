@@ -38,6 +38,7 @@ __all__ = [
     "ALItemizedJobList",
 ]
 
+
 def _currency_float_to_decimal(value: Union[str, float]) -> Decimal:
     """Given a float (that was set by a docassemble currency datatype, so truncated at 2 decimal places)
     returns the correct decimal value, without floating point representation errors
@@ -45,8 +46,8 @@ def _currency_float_to_decimal(value: Union[str, float]) -> Decimal:
     if isinstance(value, float):
         # Print out the value of the float, rounded to the smallest allowable amount in the
         # locale currency, and use this value to make the exact Decimal value
-        digits = get_locale('frac_digits')
-        format_str  = '{:.' + str(digits) + 'f}'
+        digits = get_locale("frac_digits")
+        format_str = "{:." + str(digits) + "f}"
         return Decimal(format_str.format(value))
     else:
         return Decimal(value)
@@ -141,9 +142,9 @@ class ALIncome(DAObject):
     def total(self, times_per_year: float = 1) -> Decimal:
         """
         Returns the income over the specified times_per_year, taking into account
-        hours per period for hourly items. For example, for an hourly income of 10 
+        hours per period for hourly items. For example, for an hourly income of 10
         an hour, 40 hours a week, `income.total(1)` would be 20,800, the yearly income,
-        and `income.total(52)` would be 400, the weekly income. 
+        and `income.total(52)` would be 400, the weekly income.
 
         To calculate `.total()`, an ALIncome must have a `.times_per_year` and `.value`.
         It can also have `.is_hourly` and `.hours_per_period`.
@@ -151,9 +152,7 @@ class ALIncome(DAObject):
         val = _currency_float_to_decimal(self.value)
         if hasattr(self, "is_hourly") and self.is_hourly:
             return (
-                val
-                * Decimal(self.hours_per_period)
-                * Decimal(self.times_per_year)
+                val * Decimal(self.hours_per_period) * Decimal(self.times_per_year)
             ) / Decimal(times_per_year)
         else:
             return (val * Decimal(self.times_per_year)) / Decimal(times_per_year)
@@ -590,11 +589,7 @@ class ALSimpleValue(DAObject):
         """
         val = _currency_float_to_decimal(self.value)
         if hasattr(self, "transaction_type"):
-            return (
-                val * Decimal(-1)
-                if (self.transaction_type == "expense")
-                else val
-            )
+            return val * Decimal(-1) if (self.transaction_type == "expense") else val
         else:
             return val
 
@@ -670,7 +665,7 @@ class ALItemizedValue(DAObject):
         # If an item's value doesn't exist, use a value of 0
         # TODO: is this behavior correct, or should it force gathering the value?
         # What does a no-value item in the list represent?
-        if not hasattr(self, 'value'):
+        if not hasattr(self, "value"):
             return Decimal(0)
 
         return _currency_float_to_decimal(self.value)
