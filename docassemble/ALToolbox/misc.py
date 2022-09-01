@@ -1,5 +1,6 @@
 from typing import Union
 
+from decimal import Decimal
 import docassemble.base.functions
 from docassemble.base.util import (
     defined,
@@ -38,7 +39,7 @@ class shortenMe:
 
 
 # The following three functions are from Quinten
-def thousands(num: Union[float, str], show_decimals=False) -> str:
+def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
     """
     Return a whole number formatted with thousands separator.
     Optionally, format with 2 decimal points (for a PDF form with the
