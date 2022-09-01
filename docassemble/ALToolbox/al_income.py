@@ -835,13 +835,11 @@ class ALItemizedJob(DAObject):
 
         # Use the appropriate calculation
         if is_hourly:
-            y = (
+            return (
                 value * Decimal(self.hours_per_period) * Decimal(frequency_to_use)
             ) / Decimal(times_per_year)
-            return y
         else:
-            y = (value * Decimal(frequency_to_use)) / Decimal(times_per_year)
-            return y
+            return (value * Decimal(frequency_to_use)) / Decimal(times_per_year)
 
     def total(
         self, times_per_year: float = 1, source: Union[List[str], str] = None
