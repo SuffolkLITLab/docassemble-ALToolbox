@@ -144,7 +144,6 @@ class test_correct_outputs(unittest.TestCase):
         self.assertEqual(Decimal("14373.84"), job.net_total())
         self.assertSetEqual(set(["part time", "tips", "snacks"]), job.source_to_set())
 
-
     def test_itemized_job_list(self):
         # TODO
         pass
