@@ -136,9 +136,17 @@ class test_correct_outputs(unittest.TestCase):
         )
         job.to_add["part time"] = ALItemizedValue(is_hourly=True, value=10.04)
         job.hours_per_period = 10
-        self.assertEqual(Decimal("5220.8"), job.gross_total())
+        self.assertEqual(Decimal("5220.80"), job.gross_total())
+        job.to_add["tips"] = ALItemizedValue(is_hourly=False, value=200.23)
+        job.to_subtract["snacks"] = ALItemizedValue(is_hourly=False, value="24.21")
+        self.assertEqual(Decimal("15632.76"), job.gross_total())
+        self.assertEqual(Decimal("1258.92"), job.deduction_total())
+        self.assertEqual(Decimal("14373.84"), job.net_total())
+        self.assertSetEqual(set(["part time", "tips", "snacks"]), job.source_to_set())
+
 
     def test_itemized_job_list(self):
+        # TODO
         pass
 
 

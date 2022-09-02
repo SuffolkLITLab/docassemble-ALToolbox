@@ -865,7 +865,7 @@ class ALItemizedJob(DAObject):
         if source:
             # Make sure we're always working with a list of sources (names?)
             # Add up all money coming in from a source
-            sources = self.source_to_list(source=source)
+            sources = self.source_to_set(source=source)
             for key, value in self.to_add.elements.items():
                 if key in sources:
                     total += self._item_value_per_times_per_year(
@@ -903,7 +903,7 @@ class ALItemizedJob(DAObject):
         if source:
             # Make sure we're always working with a list of sources (names?)
             # Add up all money coming in from a source
-            sources = self.source_to_list(source=source)
+            sources = self.source_to_set(source=source)
             for key, value in self.to_subtract.elements.items():
                 if key in sources:
                     total += self._item_value_per_times_per_year(
@@ -916,7 +916,7 @@ class ALItemizedJob(DAObject):
                     self._item_value_per_times_per_year(
                         item, times_per_year=times_per_year
                     )
-                    for item in self.to_subtract.elements
+                    for key, item in self.to_subtract.elements.items()
                 )
             )
 
@@ -940,24 +940,26 @@ class ALItemizedJob(DAObject):
             times_per_year=times_per_year, source=source
         ) - self.deduction_total(times_per_year=times_per_year, source=source)
 
-    def source_to_list(self, source: Union[List[str], str] = None) -> List[str]:
+    def source_to_set(self, source: Union[Set[str], List[str], str] = None) -> Set[str]:
         """
-        Returns list of the job's sources from both the `to_add` and
+        Returns set of the job's sources from both the `to_add` and
         `to_subtract`. You can filter the items by `source`. `source` can be a
         string or a list. E.g. "full time" or ["full time", "tips"]
 
         This is mostly for internal use meant to ensure that `source` input is
-        always a list.
+        always a set.
         """
-        sources: List = []
+        sources = set()
         # If not filtering by anything, get all possible sources
         if source is None:
-            sources = sources + [key for key in self.to_add.elements.keys()]
-            sources = sources + [key for key in self.to_subtract.elements.keys()]
-        elif isinstance(source, list):
+            sources.update([key for key in self.to_add.elements.keys()])
+            sources.update([key for key in self.to_subtract.elements.keys()])
+        elif isinstance(source, set):
             sources = source
+        elif isinstance(source, list):
+            sources = set(source)
         else:
-            sources = [source]
+            sources = set([source])
         return sources
 
     def employer_name_address_phone(self) -> str:

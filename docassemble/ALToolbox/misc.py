@@ -1,3 +1,5 @@
+from typing import Union
+
 import docassemble.base.functions
 from docassemble.base.util import (
     defined,
@@ -36,8 +38,7 @@ class shortenMe:
 
 
 # The following three functions are from Quinten
-# format a float number to a whole number with thousands separator
-def thousands(num: float, show_decimals=False) -> str:
+def thousands(num: Union[float, str], show_decimals=False) -> str:
     """
     Return a whole number formatted with thousands separator.
     Optionally, format with 2 decimal points (for a PDF form with the
@@ -49,15 +50,14 @@ def thousands(num: float, show_decimals=False) -> str:
         else:
             return f"{int(num):,}"
     except:
-        return num
+        return str(num)
 
 
-# Format a phone number so you can click on it to open in your phone dialer
 def tel(phone_number):
+    """Format a phone number so you can click on it to open in your phone dialer"""
     return '<a href="tel:' + str(phone_number) + '">' + str(phone_number) + "</a>"
 
 
-# Display an icon on the screen.
 def fa_icon(icon, color="primary", color_css=None, size="sm"):
     """
     Return HTML for a font-awesome icon of the specified size and color. You can reference
