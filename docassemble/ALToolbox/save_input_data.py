@@ -22,8 +22,11 @@ def save_input_data(
     The input_dict should a dictionary where each key is a string and each value is a value from a Docassemble interview
     question. Typically that is a string, float, int, or a DADict.
     """
-    type_dict = dict()
-    field_dict = dict()
+    type_dict: Dict[str, str] = {}
+    field_dict: Dict[str, Any] = {}
+    if not input_dict:
+        # Can still save the tags, so just use an empty input dict
+        input_dict = {}
     for k, v in input_dict.items():
         field_dict[k] = v
         if isinstance(v, int):
@@ -35,7 +38,7 @@ def save_input_data(
         else:
             type_dict[k] = "text"
 
-    data_to_save = dict()
+    data_to_save: Dict[str, Any] = {}
     data_to_save["title"] = title
 
     # TODO(qs): We should be able to infer type in the InterviewStats package too, eventually. But

@@ -7,6 +7,7 @@ from docassemble.base.util import (
     DAEmpty,
     Individual,
     comma_list,
+    get_locale,
     log,
     object_name_convert,
     value,
@@ -36,6 +37,20 @@ __all__ = [
     "ALItemizedJob",
     "ALItemizedJobList",
 ]
+
+
+def _currency_float_to_decimal(value: Union[str, float]) -> Decimal:
+    """Given a float (that was set by a docassemble currency datatype, so
+    rounded to the nearest `fractional_digit` decimal places), returns the
+    exact decimal value, without floating point representation errors
+    """
+    if isinstance(value, float):
+        # Print out the value of the float, rounded to the smallest allowable amount in the
+        # locale currency, and use this value to make the exact Decimal value
+        digits = get_locale("frac_digits")
+        return Decimal(f"{value:.{digits}f}")
+    else:
+        return Decimal(value)
 
 
 def times_per_year(
@@ -107,7 +122,7 @@ class ALIncome(DAObject):
     is 1 (a year).
 
     Attributes:
-    .value {float | Decimal} A number representing an amount of money accumulated during
+    .value {str | float | Decimal} A number representing an amount of money accumulated during
         the `times_per_year` of this income.
     .times_per_year {float | Decimal} Represents a number of the annual frequency of
         the income. E.g. 12 for a monthly income.
@@ -127,21 +142,20 @@ class ALIncome(DAObject):
     def total(self, times_per_year: float = 1) -> Decimal:
         """
         Returns the income over the specified times_per_year, taking into account
-        hours per period for hourly items.
+        hours per period for hourly items. For example, for an hourly income of 10
+        an hour, 40 hours a week, `income.total(1)` would be 20,800, the yearly income,
+        and `income.total(52)` would be 400, the weekly income.
 
         To calculate `.total()`, an ALIncome must have a `.times_per_year` and `.value`.
         It can also have `.is_hourly` and `.hours_per_period`.
         """
+        val = _currency_float_to_decimal(self.value)
         if hasattr(self, "is_hourly") and self.is_hourly:
             return (
-                Decimal(self.value)
-                * Decimal(self.hours_per_period)
-                * Decimal(self.times_per_year)
+                val * Decimal(self.hours_per_period) * Decimal(self.times_per_year)
             ) / Decimal(times_per_year)
         else:
-            return (Decimal(self.value) * Decimal(self.times_per_year)) / Decimal(
-                times_per_year
-            )
+            return (val * Decimal(self.times_per_year)) / Decimal(times_per_year)
 
 
 class ALIncomeList(DAList):
@@ -457,13 +471,13 @@ class ALAssetList(ALIncomeList):
         result = Decimal(0)
         for asset in self.elements:
             if source is None:
-                result += Decimal(asset.market_value)
+                result += _currency_float_to_decimal(asset.market_value)
             elif isinstance(source, list):
                 if asset.source in source:
-                    result += Decimal(asset.market_value)
+                    result += _currency_float_to_decimal(asset.market_value)
             else:
                 if asset.source == source:
-                    result += Decimal(asset.market_value)
+                    result += _currency_float_to_decimal(asset.market_value)
         return result
 
     def balance(self, source: Union[List[str], str] = None) -> Decimal:
@@ -478,13 +492,13 @@ class ALAssetList(ALIncomeList):
         result = Decimal(0)
         for asset in self.elements:
             if source is None:
-                result += Decimal(asset.balance)
+                result += _currency_float_to_decimal(asset.balance)
             elif isinstance(source, list):
                 if asset.source in source:
-                    result += Decimal(asset.balance)
+                    result += _currency_float_to_decimal(asset.balance)
             else:
                 if asset.source == source:
-                    result += Decimal(asset.balance)
+                    result += _currency_float_to_decimal(asset.balance)
         return result
 
     def owners(self, source: Union[List[str], str] = None) -> Set[str]:
@@ -558,7 +572,7 @@ class ALSimpleValue(DAObject):
         item in an ALSimpleValueList.
 
     Attributes:
-    .value {str} The monetary value of the item.
+    .value {str | float } The monetary value of the item.
     .transaction_type {str} (Optional) Can be "expense", which will give a
         negative value to the total of the item.
     .source {str} (Optional) The "source" of the item, like "vase".
@@ -573,14 +587,11 @@ class ALSimpleValue(DAObject):
         If you use signed values, be careful when placing in an ALIncomeList
         object. The `total()` method may return unexpected results in that case.
         """
+        val = _currency_float_to_decimal(self.value)
         if hasattr(self, "transaction_type"):
-            return (
-                Decimal(self.value * -1)
-                if (self.transaction_type == "expense")
-                else Decimal(self.value)
-            )
+            return val * Decimal(-1) if (self.transaction_type == "expense") else val
         else:
-            return Decimal(self.value)
+            return val
 
     def __str__(self):
         """Returns the total as a formatted string"""
@@ -614,15 +625,15 @@ class ALSimpleValueList(DAList):
         result = Decimal(0)
         if source is None:
             for value in self.elements:
-                result += Decimal(value.total())
+                result += value.total()
         elif isinstance(source, list):
             for value in self.elements:
                 if value.source in source:
-                    result += Decimal(value.total())
+                    result += value.total()
         else:
             for value in self.elements:
                 if value.source == source:
-                    result += Decimal(value.total())
+                    result += value.total()
         return result
 
 
@@ -649,6 +660,15 @@ class ALItemizedValue(DAObject):
         If the ".exists" attribute is False or undefined, the item will not be used
         when calculating totals.
     """
+
+    def total(self) -> Decimal:
+        # If an item's value doesn't exist, use a value of 0
+        # TODO: is this behavior correct, or should it force gathering the value?
+        # What does a no-value item in the list represent?
+        if not hasattr(self, "value"):
+            return Decimal(0)
+
+        return _currency_float_to_decimal(self.value)
 
     def __str__(self):
         """Returns a string of the value of the item with two decimal places."""
@@ -806,14 +826,7 @@ class ALItemizedJob(DAObject):
         # Both the job and the item itself need to be hourly to be
         # calculated as hourly
         is_hourly = self.is_hourly and hasattr(item, "is_hourly") and item.is_hourly
-
-        # If an item's value doesn't exist, use a value of 0
-        # TODO: is this behavior correct, or should it force gathering the value?
-        # What does a no-value item in the list represent?
-        if hasattr(item, "value"):
-            value = Decimal(item.value)
-        else:
-            value = Decimal(0)
+        value = item.total()
 
         # Use the appropriate calculation
         if is_hourly:
@@ -852,7 +865,7 @@ class ALItemizedJob(DAObject):
         if source:
             # Make sure we're always working with a list of sources (names?)
             # Add up all money coming in from a source
-            sources = self.source_to_list(source=source)
+            sources = self.source_to_set(source=source)
             for key, value in self.to_add.elements.items():
                 if key in sources:
                     total += self._item_value_per_times_per_year(
@@ -865,7 +878,7 @@ class ALItemizedJob(DAObject):
                     self._item_value_per_times_per_year(
                         item, times_per_year=times_per_year
                     )
-                    for item in self.to_add.elements
+                    for key, item in self.to_add.elements.items()
                 )
             )
 
@@ -890,7 +903,7 @@ class ALItemizedJob(DAObject):
         if source:
             # Make sure we're always working with a list of sources (names?)
             # Add up all money coming in from a source
-            sources = self.source_to_list(source=source)
+            sources = self.source_to_set(source=source)
             for key, value in self.to_subtract.elements.items():
                 if key in sources:
                     total += self._item_value_per_times_per_year(
@@ -903,7 +916,7 @@ class ALItemizedJob(DAObject):
                     self._item_value_per_times_per_year(
                         item, times_per_year=times_per_year
                     )
-                    for item in self.to_subtract.elements
+                    for key, item in self.to_subtract.elements.items()
                 )
             )
 
@@ -927,24 +940,26 @@ class ALItemizedJob(DAObject):
             times_per_year=times_per_year, source=source
         ) - self.deduction_total(times_per_year=times_per_year, source=source)
 
-    def source_to_list(self, source: Union[List[str], str] = None) -> List[str]:
+    def source_to_set(self, source: Union[Set[str], List[str], str] = None) -> Set[str]:
         """
-        Returns list of the job's sources from both the `to_add` and
+        Returns set of the job's sources from both the `to_add` and
         `to_subtract`. You can filter the items by `source`. `source` can be a
         string or a list. E.g. "full time" or ["full time", "tips"]
 
         This is mostly for internal use meant to ensure that `source` input is
-        always a list.
+        always a set.
         """
-        sources: List = []
+        sources = set()
         # If not filtering by anything, get all possible sources
         if source is None:
-            sources = sources + [key for key in self.to_add.elements.keys()]
-            sources = sources + [key for key in self.to_subtract.elements.keys()]
-        elif isinstance(source, list):
+            sources.update([key for key in self.to_add.elements.keys()])
+            sources.update([key for key in self.to_subtract.elements.keys()])
+        elif isinstance(source, set):
             sources = source
+        elif isinstance(source, list):
+            sources = set(source)
         else:
-            sources = [source]
+            sources = set([source])
         return sources
 
     def employer_name_address_phone(self) -> str:
