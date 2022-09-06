@@ -30,6 +30,7 @@ class test_correct_outputs(unittest.TestCase):
         self.assertEqual(Decimal("-5.3"), value_neg_str.total())
         value_float = ALSimpleValue(value=6.3)
         self.assertEqual(Decimal("6.3"), value_float.total())
+        self.assertEqual("6.30", str(value_float.total()))
 
     def test_simple_value_list(self):
         val1 = ALSimpleValue(transaction_type="expense", source="real estate", value=5)
@@ -46,6 +47,7 @@ class test_correct_outputs(unittest.TestCase):
         income = ALIncome(value=10.1, times_per_year=12)
         self.assertEqual(Decimal("121.2"), income.total())
         self.assertEqual(Decimal("10.1"), income.total(times_per_year=12))
+        self.assertEqual(Decimal("2.33"), income.total(times_per_year=52).quantize(Decimal('0.01')))
 
         hourly_income = ALIncome(
             value=4.4, times_per_year=52, is_hourly=True, hours_per_period=39
@@ -140,8 +142,10 @@ class test_correct_outputs(unittest.TestCase):
         job.to_add["tips"] = ALItemizedValue(is_hourly=False, value=200.23)
         job.to_subtract["snacks"] = ALItemizedValue(is_hourly=False, value="24.21")
         self.assertEqual(Decimal("15632.76"), job.gross_total())
+        self.assertEqual("15632.76", str(job.gross_total()))
         self.assertEqual(Decimal("1258.92"), job.deduction_total())
         self.assertEqual(Decimal("14373.84"), job.net_total())
+        self.assertEqual("14373.84", str(job.net_total()))
         self.assertSetEqual(set(["part time", "tips", "snacks"]), job.source_to_set())
 
     def test_itemized_job_list(self):

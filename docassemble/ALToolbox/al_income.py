@@ -40,15 +40,15 @@ __all__ = [
 
 
 def _currency_float_to_decimal(value: Union[str, float]) -> Decimal:
-    """Given a float (that was set by a docassemble currency datatype, so truncated at 2 decimal places)
-    returns the correct decimal value, without floating point representation errors
+    """Given a float (that was set by a docassemble currency datatype, so
+    rounded to the nearest `fractional_digit` decimal places), returns the
+    exact decimal value, without floating point representation errors
     """
     if isinstance(value, float):
         # Print out the value of the float, rounded to the smallest allowable amount in the
         # locale currency, and use this value to make the exact Decimal value
         digits = get_locale("frac_digits")
-        format_str = "{:." + str(digits) + "f}"
-        return Decimal(format_str.format(value))
+        return Decimal(f"{value:.{digits}f}")
     else:
         return Decimal(value)
 
