@@ -47,7 +47,9 @@ class test_correct_outputs(unittest.TestCase):
         income = ALIncome(value=10.1, times_per_year=12)
         self.assertEqual(Decimal("121.2"), income.total())
         self.assertEqual(Decimal("10.1"), income.total(times_per_year=12))
-        self.assertEqual(Decimal("2.33"), income.total(times_per_year=52).quantize(Decimal('0.01')))
+        self.assertEqual(
+            Decimal("2.33"), income.total(times_per_year=52).quantize(Decimal("0.01"))
+        )
 
         hourly_income = ALIncome(
             value=4.4, times_per_year=52, is_hourly=True, hours_per_period=39
