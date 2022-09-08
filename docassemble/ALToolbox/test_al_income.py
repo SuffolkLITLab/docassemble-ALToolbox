@@ -110,7 +110,9 @@ class test_correct_outputs(unittest.TestCase):
         self.assertEqual(
             Decimal("35.79"), asset_list.balance(source=["savings", "stocks"])
         )
-        self.assertEqual(Decimal("15.84"), asset_list.total(exclude_source=["checking"]))
+        self.assertEqual(
+            Decimal("15.84"), asset_list.total(exclude_source=["checking"])
+        )
 
     def test_vehicle(self):
         # TODO
@@ -161,7 +163,7 @@ class test_correct_outputs(unittest.TestCase):
             name="Baby sitter",
             source="job",
             times_per_year=52,
-            hours_per_period=10
+            hours_per_period=10,
         )
         job.to_add["part time"] = ALItemizedValue(is_hourly=True, value=10.04)
         job.to_add["tips"] = ALItemizedValue(is_hourly=False, value=200.23)
