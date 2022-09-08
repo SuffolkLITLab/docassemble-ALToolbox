@@ -182,7 +182,7 @@ fields:
       show if:
         code: x.is_part_time is False
     - label: |
-        % if x.is_hourly
+        % if x.is_hourly:
         What is your hourly pay for this job?
         % else:
         What are your wages for this job?
