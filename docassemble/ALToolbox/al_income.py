@@ -673,7 +673,11 @@ class ALItemizedValue(DAObject):
         when calculating totals.
     """
 
-    def fields(self, use_exists=True) -> List[Dict[str, Any]]:
+    def income_fields(self, use_exists=True) -> List[Dict[str, Any]]:
+        """
+        Returns a YAML structure representing the list of fields for an itemized value,
+        to be passed to a `code` attribute of a question's fields
+        """
         if use_exists:
             return [
                 {
@@ -720,7 +724,7 @@ class ALItemizedValue(DAObject):
             return float(self.value)
 
     def __int__(self) -> int:
-        return round(float(self))
+        return int(float(self))
 
     def __format__(self, format_spec) -> str:
         return f"{float(self):{format_spec}}"

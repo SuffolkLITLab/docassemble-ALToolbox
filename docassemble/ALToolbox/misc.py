@@ -44,6 +44,9 @@ def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
     Return a whole number formatted with thousands separator.
     Optionally, format with 2 decimal points (for a PDF form with the
     currency symbol already present in the form)
+
+    If `trucate`, will call `int(num)`, truncating the decimals instead of
+    rounding to the closest int.
     """
     try:
         if show_decimals:
