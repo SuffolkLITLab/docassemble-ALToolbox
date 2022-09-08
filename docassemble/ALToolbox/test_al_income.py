@@ -11,6 +11,7 @@ from .al_income import (
     ALSimpleValue,
     ALSimpleValueList,
     ALItemizedJob,
+    ALItemizedJobList,
     ALItemizedValueDict,
     ALItemizedValue,
     recent_years,
@@ -101,12 +102,17 @@ class test_correct_outputs(unittest.TestCase):
         investing = ALAsset(
             balance=23.45, value=1.2, times_per_year=12, source="stocks"
         )
-        asset_list = ALAssetList(elements=[home, savings, investing])
+        checking = ALAsset(
+            balance=34.56, value=0.01, times_per_year=12, source="checking"
+        )
+        asset_list = ALAssetList(elements=[home, savings, investing, checking])
         self.assertEqual(Decimal("1234567.89"), asset_list.market_value(source="home"))
         self.assertEqual(
             Decimal("35.79"), asset_list.balance(source=["savings", "stocks"])
         )
-        self.assertEqual(Decimal("15.84"), asset_list.total())
+        self.assertEqual(
+            Decimal("15.84"), asset_list.total(exclude_source=["checking"])
+        )
 
     def test_vehicle(self):
         # TODO
@@ -146,13 +152,27 @@ class test_correct_outputs(unittest.TestCase):
         self.assertEqual(Decimal("15632.76"), job.gross_total())
         self.assertEqual("15632.76", str(job.gross_total()))
         self.assertEqual(Decimal("1258.92"), job.deduction_total())
+        self.assertEqual(Decimal("104.91"), job.deduction_total(times_per_year=12))
         self.assertEqual(Decimal("14373.84"), job.net_total())
         self.assertEqual("14373.84", str(job.net_total()))
-        self.assertSetEqual(set(["part time", "tips", "snacks"]), job.source_to_set())
 
     def test_itemized_job_list(self):
-        # TODO
-        pass
+        job = ALItemizedJob(
+            is_hourly=True,
+            is_part_time=True,
+            name="Baby sitter",
+            source="job",
+            times_per_year=52,
+            hours_per_period=10,
+        )
+        job.to_add["part time"] = ALItemizedValue(is_hourly=True, value=10.04)
+        job.to_add["tips"] = ALItemizedValue(is_hourly=False, value=200.23)
+        job.to_subtract["snacks"] = ALItemizedValue(is_hourly=False, value="24.21")
+        job_list = ALItemizedJobList(elements=[job])
+        self.assertEqual(Decimal("15632.76"), job_list.gross_total())
+        self.assertEqual(Decimal("1258.92"), job_list.deduction_total())
+        self.assertEqual(Decimal("104.91"), job_list.deduction_total(times_per_year=12))
+        self.assertEqual(Decimal("14373.84"), job_list.net_total())
 
 
 if __name__ == "__main__":

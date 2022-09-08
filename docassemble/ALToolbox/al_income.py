@@ -8,6 +8,7 @@ from docassemble.base.util import (
     Individual,
     comma_list,
     get_locale,
+    word,
     log,
     object_name_convert,
     value,
@@ -17,7 +18,7 @@ import re
 import datetime
 import docassemble.base.functions
 import json
-from typing import List, Set, Union, Tuple, Dict
+from typing import Any, Dict, Callable, List, Optional, Set, Union, Tuple
 
 __all__ = [
     "times_per_year",
@@ -158,6 +159,41 @@ class ALIncome(DAObject):
             return (val * Decimal(self.times_per_year)) / Decimal(times_per_year)
 
 
+SourceType = Union[Set[str], List[str], str]
+
+
+def _to_set(s: Optional[Union[Set, List, str]]) -> Set:
+    """Converts a str, list of strings, or set of strings into a set of strings,
+    which can be used to filter items in ALIncome classes.
+
+    This is for internal use meant to ensure that `source` input is always a set.
+    """
+    if s is None:
+        return set()
+    if isinstance(s, set):
+        return s
+    if isinstance(s, list):
+        return set(s)
+    if isinstance(s, str):
+        return set([s])
+    return set()
+
+
+def _source_to_callable(
+    source: SourceType = None, exclude_source: SourceType = None
+) -> Callable[[str], bool]:
+    """Combines both a positive and negative lists into a single set that should be tested for inclusion"""
+    exclude_set = _to_set(exclude_source)
+    include_set = _to_set(source).difference(exclude_set)
+    if include_set:
+        return lambda s: s in include_set
+    else:
+        if exclude_set:
+            return lambda s: s not in exclude_set
+        else:
+            return lambda s: True
+
+
 class ALIncomeList(DAList):
     """
     Represents a filterable DAList of incomes-type items. It can make
@@ -183,32 +219,30 @@ class ALIncomeList(DAList):
                 sources.add(item.source)
         return sources
 
-    def matches(self, source: Union[List[str], str]) -> "ALIncomeList":
+    def matches(self, source: SourceType, exclude_source: SourceType) -> "ALIncomeList":
         """
         Returns an ALIncomeList consisting only of elements matching the specified
         income source, assisting in filling PDFs with predefined spaces. `source`
         may be a list.
         """
-        # Always make sure we're working with a list
-        sources = source
-        if not isinstance(source, list):
-            sources = [source]
+        # Always make sure we're working with a set
+        satifies_sources = _source_to_callable(source, exclude_source)
         # Construct the filtered list
         return ALIncomeList(
-            elements=[item for item in self.elements if item.source in sources]
+            elements=[item for item in self.elements if satifies_sources(item.source)]
         )
 
     def total(
         self,
         times_per_year: float = 1,
-        source: Union[List[str], str] = None,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
         owner: str = None,
     ) -> Decimal:
         """
         Returns the total periodic value in the list, gathering the list items
         if necessary. You can optionally filter by `source`. `source` can be a
-        string or a list. If you filter by `source` you can also filter by one
-        `owner`.
+        string or a list. You can also filter by one `owner`.
 
         To calculate `.total()` correctly, all items must have a `.total()` and
         it should be a positive value. Job-type incomes should automatically
@@ -218,33 +252,18 @@ class ALIncomeList(DAList):
         result: Decimal = Decimal(0)
         if times_per_year == 0:
             return result
-        if source is None:
-            for item in self.elements:
-                result += Decimal(item.total(times_per_year=times_per_year))
-        elif isinstance(source, list):
-            for item in self.elements:
-                if hasattr(item, "source") and item.source in source:
-                    if owner is None:  # if the user doesn't care who the owner is
+        satisfies_sources = _source_to_callable(source, exclude_source)
+        for item in self.elements:
+            if hasattr(item, "source") and satisfies_sources(item.source):
+                if owner is None:  # if the user doesn't care who the owner is
+                    result += Decimal(item.total(times_per_year=times_per_year))
+                else:
+                    if (
+                        not (isinstance(owner, DAEmpty))
+                        and hasattr(item, "owner")
+                        and item.owner == owner
+                    ):
                         result += Decimal(item.total(times_per_year=times_per_year))
-                    else:
-                        if (
-                            not (isinstance(owner, DAEmpty))
-                            and hasattr(item, "owner")
-                            and item.owner == owner
-                        ):
-                            result += Decimal(item.total(times_per_year=times_per_year))
-        else:
-            for item in self.elements:
-                if hasattr(item, "source") and item.source == source:
-                    if owner is None:
-                        result += Decimal(item.total(times_per_year=times_per_year))
-                    else:
-                        if (
-                            not (isinstance(owner, DAEmpty))
-                            and hasattr(item, "owner")
-                            and item.owner == owner
-                        ):
-                            result += Decimal(item.total(times_per_year=times_per_year))
         return result
 
 
@@ -342,7 +361,8 @@ class ALJobList(ALIncomeList):
     def total(
         self,
         times_per_year: float = 1,
-        source: Union[List[str], str] = None,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
         owner: str = None,
     ) -> Decimal:
         """
@@ -353,10 +373,15 @@ class ALJobList(ALIncomeList):
         `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
         """
-        return self.gross_total(times_per_year=times_per_year, source=source)
+        return self.gross_total(
+            times_per_year=times_per_year, source=source, exclude_source=exclude_source
+        )
 
     def gross_total(
-        self, times_per_year: float = 1, source: Union[List[str], str] = None
+        self,
+        times_per_year: float = 1,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
     ) -> Decimal:
         """
         Returns the sum of the gross incomes of its ALJobs divided by the time
@@ -370,22 +395,18 @@ class ALJobList(ALIncomeList):
         result: Decimal = Decimal(0)
         if times_per_year == 0:
             return result
-        if source is None:
-            for job in self.elements:
+        satisfies_sources = _source_to_callable(source, exclude_source)
+        for job in self.elements:
+            if satisfies_sources(job.source):
                 result += Decimal(job.gross_total(times_per_year=times_per_year))
-        elif isinstance(source, list):
-            for job in self.elements:
-                if job.source in source:
-                    result += Decimal(job.gross_total(times_per_year=times_per_year))
-        else:
-            for job in self.elements:
-                if job.source == source:
-                    result += Decimal(job.gross_total(times_per_year=times_per_year))
         return result
 
     def net_total(
-        self, times_per_year: float = 1, source: Union[List[str], str] = None
-    ):
+        self,
+        times_per_year: float = 1,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
+    ) -> Decimal:
         """
         Returns the sum of the net incomes of its ALJobs divided by the time
         times_per_year. You can filter the jobs by `source`. `source` can be a
@@ -401,17 +422,10 @@ class ALJobList(ALIncomeList):
         result: Decimal = Decimal(0)
         if times_per_year == 0:
             return result
-        if source is None:
-            for job in self.elements:
+        satisfies_sources = _source_to_callable(source, exclude_source)
+        for job in self.elements:
+            if satisfies_sources(job.source):
                 result += Decimal(job.net_total(times_per_year=times_per_year))
-        elif isinstance(source, list):
-            for job in self.elements:
-                if job.source in source:
-                    result += Decimal(job.net_total(times_per_year=times_per_year))
-        else:
-            for job in self.elements:
-                if job.source == source:
-                    result += Decimal(job.net_total(times_per_year=times_per_year))
         return result
 
 
@@ -463,24 +477,26 @@ class ALAssetList(ALIncomeList):
         super().init(*pargs, **kwargs)
         self.object_type = ALAsset
 
-    def market_value(self, source: Union[List[str], str] = None) -> Decimal:
+    def market_value(
+        self, source: SourceType = None, exclude_source: SourceType = None
+    ) -> Decimal:
         """
         Returns the total `.market_value` of assets in the list. You can filter
         the assets by `source`. `source` can be a string or a list.
         """
         result = Decimal(0)
+        satisfies_sources = _source_to_callable(source, exclude_source)
         for asset in self.elements:
-            if source is None:
+            if source is None and exclude_source is None:
                 result += _currency_float_to_decimal(asset.market_value)
-            elif isinstance(source, list):
-                if asset.source in source:
-                    result += _currency_float_to_decimal(asset.market_value)
             else:
-                if asset.source == source:
+                if satisfies_sources(asset.source):
                     result += _currency_float_to_decimal(asset.market_value)
         return result
 
-    def balance(self, source: Union[List[str], str] = None) -> Decimal:
+    def balance(
+        self, source: SourceType = None, exclude_source: SourceType = None
+    ) -> Decimal:
         """
         Returns the total `.balance` of assets in the list,
         which typically corresponds to the available funds
@@ -490,38 +506,35 @@ class ALAssetList(ALIncomeList):
         """
         self._trigger_gather()
         result = Decimal(0)
+        satisfies_sources = _source_to_callable(source, exclude_source)
         for asset in self.elements:
             if source is None:
                 result += _currency_float_to_decimal(asset.balance)
-            elif isinstance(source, list):
-                if asset.source in source:
-                    result += _currency_float_to_decimal(asset.balance)
             else:
-                if asset.source == source:
+                if satisfies_sources(asset.source):
                     result += _currency_float_to_decimal(asset.balance)
         return result
 
-    def owners(self, source: Union[List[str], str] = None) -> Set[str]:
+    def owners(
+        self, source: SourceType = None, exclude_source: SourceType = None
+    ) -> Set[str]:
         """
         Returns a set of the unique owners of the assets.  You can filter the
         assets by `source`. `source` can be a string or a list.
         """
         owners = set()
-        if source is None:
+        if source is None and exclude_source is None:
             for asset in self.elements:
                 if hasattr(asset, "owner"):
                     owners.add(asset.owner)
-        elif isinstance(source, list):
+        else:
+            satisfies_source = _source_to_callable(source, exclude_source)
             for asset in self.elements:
                 if (
                     hasattr(asset, "owner")
                     and hasattr(asset, "source")
-                    and asset.source in source
+                    and satisfies_source(asset.source)
                 ):
-                    owners.add(asset.owner)
-        else:
-            for asset in self.elements:
-                if hasattr(asset, "owner") and asset.source == source:
                     owners.add(asset.owner)
         return owners
 
@@ -550,7 +563,7 @@ class ALVehicle(ALAsset):
         if not hasattr(self, "source"):
             self.source = "vehicle"
 
-    def year_make_model(self):
+    def year_make_model(self) -> str:
         """
         Returns a string of the format year/make/model of the vehicle. Triggers
         gathering those attributes.
@@ -593,7 +606,7 @@ class ALSimpleValue(DAObject):
         else:
             return val
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Returns the total as a formatted string"""
         return str(self.total())
 
@@ -615,7 +628,9 @@ class ALSimpleValueList(DAList):
                 sources.add(value.source)
         return sources
 
-    def total(self, source: Union[List[str], str] = None) -> Decimal:
+    def total(
+        self, source: SourceType = None, exclude_source: SourceType = None
+    ) -> Decimal:
         """
         Returns the total value in the list, gathering the list items if
         necessary. You can filter the values by `source`. `source` can be a
@@ -623,16 +638,13 @@ class ALSimpleValueList(DAList):
         """
         self._trigger_gather()
         result = Decimal(0)
-        if source is None:
+        if source is None and exclude_source is None:
             for value in self.elements:
                 result += value.total()
-        elif isinstance(source, list):
-            for value in self.elements:
-                if value.source in source:
-                    result += value.total()
         else:
+            satisfies_source = _source_to_callable(source, exclude_source)
             for value in self.elements:
-                if value.source == source:
+                if satisfies_source(value.source):
                     result += value.total()
         return result
 
@@ -661,19 +673,61 @@ class ALItemizedValue(DAObject):
         when calculating totals.
     """
 
+    def income_fields(self, use_exists=True) -> List[Dict[str, Any]]:
+        """
+        Returns a YAML structure representing the list of fields for an itemized value,
+        to be passed to a `code` attribute of a question's fields
+        """
+        if use_exists:
+            return [
+                {
+                    "label": self.display_name,
+                    "field": self.attr_name("exists"),
+                    "datatype": "yesno",
+                },
+                {
+                    "label": word("Amount"),
+                    "field": self.attr_name("value"),
+                    "show if": self.attr_name("exists"),
+                    "datatype": "currency",
+                    "min": 0,
+                },
+            ]
+        else:
+            return [
+                {
+                    "label": self.display_name,
+                    "field": self.attr_name("value"),
+                    "datatype": "currency",
+                    "min": 0,
+                },
+            ]
+
     def total(self) -> Decimal:
         # If an item's value doesn't exist, use a value of 0
         # TODO: is this behavior correct, or should it force gathering the value?
         # What does a no-value item in the list represent?
-        if not hasattr(self, "value"):
+        if not hasattr(self, "value") or hasattr(self, "exists") and not self.exists:
             return Decimal(0)
 
         return _currency_float_to_decimal(self.value)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Returns a string of the value of the item with two decimal places."""
         currency_str = "{:.2f}".format(self.value)
         return currency_str
+
+    def __float__(self) -> float:
+        if hasattr(self, "exists") and not self.exists:
+            return 0.0
+        else:
+            return float(self.value)
+
+    def __int__(self) -> int:
+        return int(float(self))
+
+    def __format__(self, format_spec) -> str:
+        return f"{float(self):{format_spec}}"
 
 
 class ALItemizedValueDict(DAOrderedDict):
@@ -694,7 +748,7 @@ class ALItemizedValueDict(DAOrderedDict):
         if not hasattr(self, "complete_attribute"):
             self.complete_attribute = "value"
 
-    def hook_after_gather(self):
+    def hook_after_gather(self) -> None:
         """
         Update item lists after they've been gathered or edited to remove non-existent
         items. Will still allow the developer to set `auto_gather=False` if they
@@ -713,6 +767,14 @@ class ALItemizedValueDict(DAOrderedDict):
         # Delete the keys
         for key in keys_to_delete:
             self.delitem(key)
+
+    def total(self) -> Decimal:
+        val = Decimal(0)
+        for key, value in self.elements.items():
+            if hasattr(value, "exists") and not value.exists:
+                continue
+            val += _currency_float_to_decimal(value.value)
+        return val
 
     def __str__(self) -> str:
         """
@@ -786,7 +848,10 @@ class ALItemizedJob(DAObject):
         if not hasattr(self, "source") or self.source is None:
             self.source = "job"
         if not hasattr(self, "employer"):
-            self.initializeAttribute("employer", Individual)
+            if hasattr(self, "employer_type"):
+                self.initializeAttribute("employer", self.employer_type)
+            else:
+                self.initializeAttribute("employer", Individual)
         # Money coming in
         if not hasattr(self, "to_add"):
             self.initializeAttribute("to_add", ALItemizedValueDict)
@@ -837,15 +902,23 @@ class ALItemizedJob(DAObject):
             return (value * Decimal(frequency_to_use)) / Decimal(times_per_year)
 
     def total(
-        self, times_per_year: float = 1, source: Union[List[str], str] = None
+        self,
+        times_per_year: float = 1,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
     ) -> Decimal:
         """
         Alias for ALItemizedJob.gross_total to integrate with ALIncomeList math.
         """
-        return self.gross_total(times_per_year=times_per_year, source=source)
+        return self.gross_total(
+            times_per_year=times_per_year, source=source, exclude_source=exclude_source
+        )
 
     def gross_total(
-        self, times_per_year: float = 1, source: Union[List[str], str] = None
+        self,
+        times_per_year: float = 1,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
     ) -> Decimal:
         """
         Returns the sum of positive values (payments) for a given times_per_year.
@@ -862,29 +935,21 @@ class ALItemizedJob(DAObject):
         total = Decimal(0)
         if times_per_year == 0:
             return total
-        if source:
-            # Make sure we're always working with a list of sources (names?)
-            # Add up all money coming in from a source
-            sources = self.source_to_set(source=source)
-            for key, value in self.to_add.elements.items():
-                if key in sources:
-                    total += self._item_value_per_times_per_year(
-                        value, times_per_year=times_per_year
-                    )
-            return total
-        else:
-            return Decimal(
-                sum(
-                    self._item_value_per_times_per_year(
-                        item, times_per_year=times_per_year
-                    )
-                    for key, item in self.to_add.elements.items()
+        # Add up all money coming in from a source
+        satisfies_sources = _source_to_callable(source, exclude_source)
+        for key, value in self.to_add.elements.items():
+            if satisfies_sources(key):
+                total += self._item_value_per_times_per_year(
+                    value, times_per_year=times_per_year
                 )
-            )
+        return total
 
     def deduction_total(
-        self, times_per_year: float = 1, source: Union[List[str], str] = None
-    ):
+        self,
+        times_per_year: float = 1,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
+    ) -> Decimal:
         """
         Returns the sum of money going out (normally, deductions like union
         dues) divided by a pay times_per_year as a positive value. You can
@@ -900,28 +965,21 @@ class ALItemizedJob(DAObject):
         total = Decimal(0)
         if times_per_year == 0:
             return total
-        if source:
-            # Make sure we're always working with a list of sources (names?)
-            # Add up all money coming in from a source
-            sources = self.source_to_set(source=source)
-            for key, value in self.to_subtract.elements.items():
-                if key in sources:
-                    total += self._item_value_per_times_per_year(
-                        value, times_per_year=times_per_year
-                    )
-            return total
-        else:
-            return Decimal(
-                sum(
-                    self._item_value_per_times_per_year(
-                        item, times_per_year=times_per_year
-                    )
-                    for key, item in self.to_subtract.elements.items()
+        # Make sure we're always working with a list of sources (names?)
+        # Add up all money coming in from a source
+        satisfies_sources = _source_to_callable(source, exclude_source)
+        for key, value in self.to_subtract.elements.items():
+            if satisfies_sources(key):
+                total += self._item_value_per_times_per_year(
+                    value, times_per_year=times_per_year
                 )
-            )
+        return total
 
     def net_total(
-        self, times_per_year: float = 1, source: Union[List[str], str] = None
+        self,
+        times_per_year: float = 1,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
     ) -> Decimal:
         """
         Returns the net (gross minus deductions) value of the job divided by
@@ -937,30 +995,10 @@ class ALItemizedJob(DAObject):
         # self.to_add._trigger_gather()
         # self.to_subtract._trigger_gather()
         return self.gross_total(
-            times_per_year=times_per_year, source=source
-        ) - self.deduction_total(times_per_year=times_per_year, source=source)
-
-    def source_to_set(self, source: Union[Set[str], List[str], str] = None) -> Set[str]:
-        """
-        Returns set of the job's sources from both the `to_add` and
-        `to_subtract`. You can filter the items by `source`. `source` can be a
-        string or a list. E.g. "full time" or ["full time", "tips"]
-
-        This is mostly for internal use meant to ensure that `source` input is
-        always a set.
-        """
-        sources = set()
-        # If not filtering by anything, get all possible sources
-        if source is None:
-            sources.update([key for key in self.to_add.elements.keys()])
-            sources.update([key for key in self.to_subtract.elements.keys()])
-        elif isinstance(source, set):
-            sources = source
-        elif isinstance(source, list):
-            sources = set(source)
-        else:
-            sources = set([source])
-        return sources
+            times_per_year=times_per_year, source=source, exclude_source=exclude_source
+        ) - self.deduction_total(
+            times_per_year=times_per_year, source=source, exclude_source=exclude_source
+        )
 
     def employer_name_address_phone(self) -> str:
         """
@@ -1013,14 +1051,32 @@ class ALItemizedJobList(DAList):
         if not hasattr(self, "object_type") or self.object_type is None:
             self.object_type = ALItemizedJob
 
-    def total(self, times_per_year: float = 1, source=None):
+    def sources(self, which_side=None) -> Set[str]:
+        """Returns a set of the unique sources in all of the jobs.
+        By default gets from both sides, if which_side is "deductions", only gets from deductions."""
+        sources = set()
+        if not which_side:
+            which_side = "all"
+        for job in self.elements:
+            if which_side == "all" or which_side == "incomes":
+                sources.update(job.to_add.keys())
+            if which_side == "all" or which_side == "deductions":
+                sources.update(job.to_subtract.keys())
+        return sources
+
+    def total(self, times_per_year: float = 1, source=None) -> Decimal:
         """
         Alias for ALItemizedJobList.gross_total to integrate with
         ALIncomeList math.
         """
         return self.gross_total(times_per_year=times_per_year, source=source)
 
-    def gross_total(self, times_per_year=1, source: Union[List[str], str] = None):
+    def gross_total(
+        self,
+        times_per_year=1,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
+    ) -> Decimal:
         """
         Returns the sum of the gross incomes of the list's jobs divided by the
         times_per_year. You can filter the items by `source`. `source` can be a
@@ -1039,12 +1095,19 @@ class ALItemizedJobList(DAList):
             return total
         # Add all job gross totals from particular sources
         for job in self.elements:
-            total += job.gross_total(times_per_year=times_per_year, source=source)
+            total += job.gross_total(
+                times_per_year=times_per_year,
+                source=source,
+                exclude_source=exclude_source,
+            )
         return total
 
     def deduction_total(
-        self, times_per_year: float = 1, source: Union[List[str], str] = None
-    ):
+        self,
+        times_per_year: float = 1,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
+    ) -> Decimal:
         """
         Returns the sum of the deductions of the list's jobs divided by the
         times_per_year. You can filter the items by `source`. `source` can be a
@@ -1063,12 +1126,19 @@ class ALItemizedJobList(DAList):
             return total
         # Add all the money going out for all jobs
         for job in self.elements:
-            total += job.deduction_total(times_per_year=times_per_year, source=source)
+            total += job.deduction_total(
+                times_per_year=times_per_year,
+                source=source,
+                exclude_source=exclude_source,
+            )
         return total
 
     def net_total(
-        self, times_per_year: float = 1, source: Union[List[str], str] = None
-    ):
+        self,
+        times_per_year: float = 1,
+        source: SourceType = None,
+        exclude_source: SourceType = None,
+    ) -> Decimal:
         """
         Returns the net of the list's jobs (money in minus money out) divided by
         the times_per_year. You can filter the items by `source`. `source` can be a
@@ -1083,4 +1153,6 @@ class ALItemizedJobList(DAList):
         """
         return self.gross_total(
             times_per_year=times_per_year, source=source
-        ) - self.deduction_total(times_per_year=times_per_year, source=source)
+        ) - self.deduction_total(
+            times_per_year=times_per_year, source=source, exclude_source=exclude_source
+        )
