@@ -1,14 +1,46 @@
 ---
+features:
+  css:
+    - escape_button.css
+---
 code: |
   al_navigation_items = [
-    al_escape_button_html
+    al_escape_button_html_nav
   ]
 ---
 code: |
-  al_escape_button_html = '<li class="nav-item "><a class="btn btn-danger" href="https://google.com">Escape</a></li>'
+  al_escape_button_html = '<a class="btn btn-danger al_escape" href="https://google.com">Escape</a>'
+---
+code: |
+  al_escape_button_html_nav = '<li class="nav-item al_escape_nav">' + al_escape_button_html + '</li>'
+---
+code: |
+  al_escape_button_html_pre = '<p class="al_escape_pre">' + al_escape_button_html + '</p>'
 ---
 default screen parts:
   navigation bar html: |
     % for nav_item in al_navigation_items:
     ${ nav_item }
     % endfor
+---
+default screen parts:
+  pre: |
+    ${ al_escape_button_html_pre }
+comment: |
+  To create a custom version, such as when you want show additional items at the top of the page, you can add the variable `al_escape_button_html` to your `default screen parts:`.
+  
+  Make sure you only include this escape button plugin above that custom block. Otherwise our version will override yours:
+  
+  ```
+  ---
+  include:
+    - escape_button.yml
+  ---
+  default screen parts:
+    pre: |
+     My additional text
+     
+     ${ al_escape_button_html_pre }
+  ---
+  ```
+---

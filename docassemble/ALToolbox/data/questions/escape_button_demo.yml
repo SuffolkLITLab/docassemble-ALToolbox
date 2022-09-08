@@ -1,0 +1,29 @@
+---
+include:
+  - escape_button.yml
+---
+mandatory: True
+question: |
+  Escape button demo
+subquestion: |
+  The escape button goes to google.com.
+
+  The escape button will show at the top of the page on both wide and narrow screens. It will be in the header until the page is 767px wide. At that point, docassemble will put that button in the menu instead, but this plugin makes sure an equivalent button will still appear below the nav bar at the top of the page.
+  
+  To create a custom version, such as when you want show additional items at the top of the page, you can add the variable `al_escape_button_html` to your own [`default screen parts`](https://docassemble.org/docs/initial.html#default%20screen%20parts).
+  
+  Make sure you `include` this escape button plugin **above** your custom `default screen parts` block. Otherwise the Assembly Line version will override yours.
+  
+  This is what it might look like:
+  
+      ---
+      include:
+        - escape_button.yml
+      ---
+      default screen parts:
+        pre: |
+         ${ '${ al_escape_button_html_pre }' }
+         
+         Your additional content
+      ---
+---
