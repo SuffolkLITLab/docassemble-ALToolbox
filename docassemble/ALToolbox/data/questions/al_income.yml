@@ -554,7 +554,7 @@ fields:
   - Make: x.make
     help: For example, Ford, Honda
   - Model: x.model
-    help: For examlpe, Fusion, Civic
+    help: For example, Fusion, Civic
   - Market value: x.market_value
     datatype: currency
   - Loan balance: x.balance
