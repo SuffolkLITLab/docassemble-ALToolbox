@@ -171,11 +171,23 @@ generic object: ALItemizedJob
 question: |
     Enter info from your paystub for your job as a ${ x.source }
 fields:
-    - ${ word("What is your hourly pay for this job?") if x.is_hourly else word("What are your wages for this job?") }: x.to_add['full time'].value
+    - label: |
+        % if x.is_hourly:
+        What is your hourly pay for this job?
+        % else:
+        What are your wages for this job?
+        % endif
+      field: x.to_add['full time'].value
       datatype: currency
       show if:
         code: x.is_part_time is False
-    - ${ word("What is your hourly pay for this job?") if x.is_hourly else word("What are your wages for this job?") }: x.to_add['part time'].value
+    - label: |
+        % if x.is_hourly
+        What is your hourly pay for this job?
+        % else:
+        What are your wages for this job?
+        % endif
+      field: x.to_add['part time'].value
       datatype: currency
       show if:
         code: x.is_part_time is True
@@ -540,9 +552,9 @@ fields:
     code: |
       recent_years()
   - Make: x.make
-    hint: e.g, Ford, Honda
+    help: For example, Ford, Honda
   - Model: x.model
-    hint: e.g., Fusion, Civic
+    help: For examlpe, Fusion, Civic
   - Market value: x.market_value
     datatype: currency
   - Loan balance: x.balance
@@ -573,11 +585,6 @@ fields:
   - no label: x.target_number
     datatype: integer
 ---
-comment: |
-  Notes:
-  
-  * Do not try to use the `total()` method with an ALVehicle. ALVehicleList.
-  * The `.source` attribute is automatically 'vehicle'
 id: vehicle in list info
 generic object: ALVehicleList
 question: |
@@ -663,9 +670,6 @@ fields:
 ---
 # TRANSLATIONS
 ---
-depends on:
-  - user_language
-language: en
 variable name: job_items_names
 data:
   full time: Full time wages
@@ -676,15 +680,4 @@ data:
   state_taxes: State taxes
   social_security: Social security
   medicare: Medicare
----
-depends on:
-  - user_language
-language: es
-variable name: job_items_names
-data:
-  full time: salario del el trabajo de tiempo completo
-  part time: salario del el trabajo de medio tiempo
-  tips: Propinas
-  insurance: Seguro
-  federal_taxes: Impuestos federales
 ---
