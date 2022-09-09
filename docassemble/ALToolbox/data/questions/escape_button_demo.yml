@@ -1,0 +1,26 @@
+---
+include:
+  - escape_button.yml
+---
+mandatory: True
+question: |
+  Escape button demo
+subquestion: |
+  The escape button goes to google.com. It will be in the nav bar on both wide and narrow screens.
+
+  It overrides the default screen part `navigation bar html`.
+  If you would like to combine the "Escape" button with a custom link in the
+  top navigation bar, you can do so by adding mandatory block like this:
+
+  ```
+  ---
+  mandatory: True
+  variable name: al_navigation_items["my_link"]
+  data: |
+    <li class="nav-item"><a class="btn" href="https://google.com">My link</a></li>
+  ```
+
+  And making sure that it runs on a line before you `include` the `escape_button.yml` file.
+
+  **WARNING:** When you are creating content that goes in the nav bar, like your organization's title, be aware it might interfere with the spacing and location of the escape button.
+---

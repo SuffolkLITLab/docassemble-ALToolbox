@@ -1,14 +1,17 @@
 ---
-code: |
-  al_navigation_items = [
-    al_escape_button_html
-  ]
+features:
+  javascript: escape_button.js
 ---
-code: |
-  al_escape_button_html = '<li class="nav-item "><a class="btn btn-danger" href="https://google.com">Escape</a></li>'
+objects:
+  - al_navigation_items: DADict.using(auto_gather=False, gathered=True)
+---
+mandatory: True
+variable name: al_navigation_items["escape_button"]
+data: |
+  <li class="nav-item al_escape_nav"><a class="btn btn-danger al_escape" href="https://google.com">Escape</a></li>
 ---
 default screen parts:
   navigation bar html: |
-    % for nav_item in al_navigation_items:
+    % for nav_item in al_navigation_items.values():
     ${ nav_item }
     % endfor
