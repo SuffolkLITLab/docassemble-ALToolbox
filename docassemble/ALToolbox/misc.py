@@ -62,7 +62,7 @@ def tel(phone_number) -> str:
     return '<a href="tel:' + str(phone_number) + '">' + str(phone_number) + "</a>"
 
 
-def fa_icon(icon:str, color="primary", color_css=None, size="sm") -> str:
+def fa_icon(icon: str, color="primary", color_css=None, size="sm") -> str:
     """
     Return HTML for a font-awesome icon of the specified size and color. You can reference
     a CSS variable (such as Bootstrap theme color) or a true CSS color reference, such as 'blue' or
@@ -112,7 +112,9 @@ def space(var_name: str, prefix=" ", suffix="") -> str:
         return ""
 
 
-def yes_no_unknown(var_name: str, condition: Optional[bool], unknown="Unknown", placeholder=0):
+def yes_no_unknown(
+    var_name: str, condition: Optional[bool], unknown="Unknown", placeholder=0
+):
     """Return 'unknown' if the value is None rather than False. Helper for PDF filling with
     yesnomaybe fields"""
     if condition:
@@ -123,7 +125,7 @@ def yes_no_unknown(var_name: str, condition: Optional[bool], unknown="Unknown", 
         return placeholder
 
 
-def number_to_letter(n:Optional[int]) -> str:
+def number_to_letter(n: Optional[int]) -> str:
     """Returns a capital letter representing ordinal position. E.g., 1=A, 2=B, etc. Appends letters
     once you reach 26 in a way compatible with Excel/Google Sheets column naming conventions. 27=AA, 28=AB...
     """
