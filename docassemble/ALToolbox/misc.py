@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from decimal import Decimal
 import docassemble.base.functions
@@ -57,12 +57,12 @@ def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
         return str(num)
 
 
-def tel(phone_number):
+def tel(phone_number) -> str:
     """Format a phone number so you can click on it to open in your phone dialer"""
     return '<a href="tel:' + str(phone_number) + '">' + str(phone_number) + "</a>"
 
 
-def fa_icon(icon, color="primary", color_css=None, size="sm"):
+def fa_icon(icon: str, color="primary", color_css=None, size="sm") -> str:
     """
     Return HTML for a font-awesome icon of the specified size and color. You can reference
     a CSS variable (such as Bootstrap theme color) or a true CSS color reference, such as 'blue' or
@@ -96,7 +96,7 @@ def fa_icon(icon, color="primary", color_css=None, size="sm"):
         )
 
 
-def space(var_name, prefix=" ", suffix=""):
+def space(var_name: str, prefix=" ", suffix="") -> str:
     """If the value as a string is defined, return it prefixed/suffixed. Defaults to prefix
     of a space. Helps build a sentence with less cruft. Equivalent to SPACE function in
     HotDocs."""
@@ -112,7 +112,9 @@ def space(var_name, prefix=" ", suffix=""):
         return ""
 
 
-def yes_no_unknown(var_name, condition, unknown="Unknown", placeholder=0):
+def yes_no_unknown(
+    var_name: str, condition: Optional[bool], unknown="Unknown", placeholder=0
+):
     """Return 'unknown' if the value is None rather than False. Helper for PDF filling with
     yesnomaybe fields"""
     if condition:
@@ -123,7 +125,7 @@ def yes_no_unknown(var_name, condition, unknown="Unknown", placeholder=0):
         return placeholder
 
 
-def number_to_letter(n):
+def number_to_letter(n: Optional[int]) -> str:
     """Returns a capital letter representing ordinal position. E.g., 1=A, 2=B, etc. Appends letters
     once you reach 26 in a way compatible with Excel/Google Sheets column naming conventions. 27=AA, 28=AB...
     """

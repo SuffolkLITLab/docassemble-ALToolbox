@@ -1,4 +1,4 @@
-from docassemble.base.functions import word, log
+from docassemble.base.functions import word
 
 # See GitHub issue https://github.com/SuffolkLITLab/docassemble-ALToolbox/issues/16
 def copy_button_html(
