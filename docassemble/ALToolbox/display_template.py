@@ -4,7 +4,7 @@ from .copy_button import *
 
 def display_template(
     template, scrollable=True, collapse=False, copy=False, class_name="bg-light"
-):
+) -> str:
     # 1. Initialize
     if scrollable:
         scroll_class = "scrollable-panel"
