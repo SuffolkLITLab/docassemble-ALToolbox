@@ -12,6 +12,7 @@ data:
   - [24, "Twice per month"]
   - [12, "Monthly"]
   - [4, "Once every 3 months"]
+  - [2, "Once every 6 months"]
   - [1, "Yearly"]
 ---
 objects:
@@ -233,18 +234,23 @@ question: |
 subquestion: |
   You have already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.to_add.complete_elements().keys()] )}**.
 fields:
-  - Income name: x.to_add.new_item_name
+  - Type of income: x.to_add.new_item_name
 validation code: |
   if x.to_add.new_item_name in x.to_add.complete_elements().keys():
-    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.to_add.new_item_name, x.to_add.new_item_name) }</strong> that pay { currency( x.to_add[ x.to_add.new_item_name ].value )}. Pick a different name.')
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.to_add.new_item_name, x.to_add.new_item_name) }</strong> that pays { currency( x.to_add[ x.to_add.new_item_name ].value )}. Pick a different name.')
 ---
 id: other itemized job income value
 generic object: ALItemizedJob
 question: |
-  What do you get paid for ${ job_items_names.get(i, i) } in your job as a ${ x.source }?
+  How much do you get paid for ${ job_items_names.get(i, i) } in your job as a ${ x.source }?
 fields:
   - Amount: x.to_add[i].value
     datatype: currency
+  - How often do you get paid this amount?: x.to_add[i].times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+    datatype: integer
   - Do you have another source of income?: x.to_add.there_is_another
     datatype: yesnoradio
 ---
@@ -372,19 +378,97 @@ fields:
   - Who owns this?: x.owner
     required: False
 ---
-# UNIQUE CODE FOR ALIncomeList
+# UNIQUE FOR ALExpenses
 ---
-code: |
-  if income_sources.any_true():
-    for source in income_sources.true_values():
-      one_income = al_income_list.appendObject(source=source)
-      # Never put anything else in here
-  al_income_list.gathered = True
+generic object: ALExpenses
+id: expenses types
+question: |
+  What kind of expenses do you have?
+fields:
+  - no label: x.selected_types
+    datatype: checkboxes
+    code: |
+      expense_list_dict
 ---
+generic object: ALExpenses
+id: expense information
+question: |
+  How much do you spend on your ${ ordinal(i) } household expense?
+fields: 
+  - Type of expense: x[i].source
+    code: |
+      expense_list_dict
+  - Amount: x[i].value
+    datatype: currency
+  - How often do you pay this amount?: x[i].times_per_year
+    default: 12
+    code: |
+      times_per_year_list()
+---
+generic object: ALExpenses
+need:
+  - x[i].source
+  - x[i].display_name
+id: expense information, prefilled
+question: |
+  How much do you spend on ${ x[i].display_name.lower() }?
+subquestion: |
+  If you have more than one ${ x[i].display_name.lower() }
+  expense in your household, you'll have a chance to add another later on.
+fields:
+  - Amount: x[i].value
+    datatype: currency
+  - How often do you pay this amount?: x[i].times_per_year
+    default: 12
+    code: |
+      times_per_year_list
+---
+generic object: ALExpense
+need:
+  - x.source
+  - x.display_name
+id: single expense information prefilled
+question: |
+  How much do you spend on ${ x.display_name.lower() }?
+subquestion: |
+  If you have more than one ${ x.display_name.lower() }
+  expense in your household, you'll have a chance to add another later on.
+fields:
+  - Amount: x.value
+    datatype: currency
+  - How often do you pay this amount?: x.times_per_year
+    default: 12
+    code: |
+      times_per_year_list
+---
+generic object: ALExpenses
 code: |
-  for income in al_income_list.elements:
-    income.complete
-  get_alincome_list_item_values = True
+  x.selected_types
+  x.move_checks_to_list(expense_list_dict)
+  x.revisit = True
+  x.gathered = True
+---
+generic object: ALExpenses
+table: x.table
+rows: x
+columns:
+  - Type: |
+      x.display_name
+  - Amount per month: |
+      x.total(times_per_year=12)
+edit:
+  - type
+  - value
+---
+generic object: ALExpenses
+id: revisit expenses
+continue button field: x.revisit
+question: |
+  Edit expenses
+subquestion: |
+  ${ x.table }
+
+  ${ x.add_action() }
 ---
 # Why is this not being triggered
 id: which incomes

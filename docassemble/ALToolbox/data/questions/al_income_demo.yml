@@ -84,6 +84,20 @@ code: |
     al_income_list.there_are_any = income_sources.any_true
     al_income_list.target_number = len(income_sources.true_values())
 ---
+# UNIQUE CODE FOR ALIncomeList
+---
+code: |
+  if income_sources.any_true():
+    for source in income_sources.true_values():
+      one_income = al_income_list.appendObject(source=source)
+      # Never put anything else in here
+  al_income_list.gathered = True
+---
+code: |
+  for income in al_income_list.elements:
+    income.complete
+  get_alincome_list_item_values = True
+---
 id: which to test
 # TODO: Accumulate them all in one ALIncomeList at the end to test the ability of ALIncomeList to run its functions appropriately on all types of values (other than ALIncomeLists themselves)
 # TODO: Check these: Does ALAssetList cover all of ALIncomeList? Does ALAsset cover all of ALIncome?
