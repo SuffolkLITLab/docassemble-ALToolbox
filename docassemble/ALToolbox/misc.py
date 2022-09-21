@@ -62,7 +62,9 @@ def tel(phone_number) -> str:
     return '<a href="tel:' + str(phone_number) + '">' + str(phone_number) + "</a>"
 
 
-def fa_icon(icon: str, color="primary", color_css=None, size="sm", fa_class="fa-solid") -> str:
+def fa_icon(
+    icon: str, color="primary", color_css=None, size="sm", fa_class="fa-solid"
+) -> str:
     """
     Return HTML for a font-awesome icon of the specified size and color. You can reference
     a CSS variable (such as Bootstrap theme color) or a true CSS color reference, such as 'blue' or
@@ -138,7 +140,9 @@ def number_to_letter(n: Optional[int]) -> str:
     return string
 
 
-def collapse_template(template, classname=None, expand_icon="caret-down", collapse_icon="caret-right"):
+def collapse_template(
+    template, classname=None, expand_icon="caret-down", collapse_icon="caret-right"
+):
     """
     Insert HTML for a Bootstrap "collapse" div.
     """
