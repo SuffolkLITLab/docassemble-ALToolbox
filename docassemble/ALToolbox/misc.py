@@ -87,7 +87,7 @@ def fa_icon(icon: str, color="primary", color_css=None, size="sm", fa_class="fa-
         )
     else:
         return (
-            '<i class="fa fa-'
+            f'<i class="{fa_class} fa-'
             + icon
             + size_str
             + '" style="color:var(--'
