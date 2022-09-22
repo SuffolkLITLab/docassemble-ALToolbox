@@ -141,7 +141,7 @@ class ALPeriodicAmount(DAObject):
 
     def total(self, times_per_year: float = 1) -> Decimal:
         """
-        Returns the income over the specified times_per_year, 
+        Returns the income over the specified times_per_year,
 
         To calculate `.total()`, an ALPeriodicAmount must have a `.times_per_year` and `.value`.
         """
@@ -188,8 +188,10 @@ class ALIncome(ALPeriodicAmount):
         else:
             return super().total(times_per_year=times_per_year)
 
+
 class ALExpense(ALPeriodicAmount):
     """Not much changes from ALPeriodic Amount, just the generic object questions"""
+
     pass
 
 
@@ -253,7 +255,9 @@ class ALIncomeList(DAList):
                 sources.add(item.source)
         return sources
 
-    def matches(self, source: SourceType, exclude_source: SourceType=None) -> "ALIncomeList":
+    def matches(
+        self, source: SourceType, exclude_source: SourceType = None
+    ) -> "ALIncomeList":
         """
         Returns an ALIncomeList consisting only of elements matching the specified
         income source, assisting in filling PDFs with predefined spaces. `source`
@@ -288,7 +292,9 @@ class ALIncomeList(DAList):
             return result
         satisfies_sources = _source_to_callable(source, exclude_source)
         for item in self.elements:
-            if (source is None and exclude_source is None) or (hasattr(item, "source") and satisfies_sources(item.source)):
+            if (source is None and exclude_source is None) or (
+                hasattr(item, "source") and satisfies_sources(item.source)
+            ):
                 if owner is None:  # if the user doesn't care who the owner is
                     result += Decimal(item.total(times_per_year=times_per_year))
                 else:
@@ -300,13 +306,15 @@ class ALIncomeList(DAList):
                         result += Decimal(item.total(times_per_year=times_per_year))
         return result
 
-    def move_checks_to_list(self, selected_types: DADict=None, selected_terms: Mapping=None):
+    def move_checks_to_list(
+        self, selected_types: DADict = None, selected_terms: Mapping = None
+    ):
         """Gives a 'gather by checklist' option.
         If no selected_types param is passed, requires that a .selected_types
         attribute be set by a `datatype: checkboxes` fields
         If "other" is in the selected_types, the source will not be set directly
-        
-        Sets the attribute "moved" to true, doesn't set gathered, because this isn't 
+
+        Sets the attribute "moved" to true, doesn't set gathered, because this isn't
         idempotent, so trying to also gather all info about the checks in the list doesn't
         work well.
         """
@@ -320,9 +328,10 @@ class ALIncomeList(DAList):
                 if source == "other":
                     self.appendObject()
                 else:
-                    self.appendObject(source=source, display_name=selected_terms.get(source, source))
+                    self.appendObject(
+                        source=source, display_name=selected_terms.get(source, source)
+                    )
         self.moved = True
-
 
 
 class ALJob(ALIncome):
@@ -354,7 +363,7 @@ class ALJob(ALIncome):
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
-        #if not hasattr(self, "source") or self.source is None:
+        # if not hasattr(self, "source") or self.source is None:
         #    self.source = "job"
         if not hasattr(self, "employer"):
             if hasattr(self, "employer_type"):
@@ -494,6 +503,7 @@ class ALJobList(ALIncomeList):
                 result += Decimal(job.net_total(times_per_year=times_per_year))
         return result
 
+
 class ALExpenses(ALIncomeList):
     """
     A list of expenses
@@ -503,6 +513,7 @@ class ALExpenses(ALIncomeList):
         * owner
         * display name
     """
+
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.object_type = ALExpense
@@ -566,7 +577,9 @@ class ALAssetList(ALIncomeList):
         result = Decimal(0)
         satisfies_sources = _source_to_callable(source, exclude_source)
         for asset in self.elements:
-            if (source is None and exclude_source is None) or (satisfies_sources(asset.source)):
+            if (source is None and exclude_source is None) or (
+                satisfies_sources(asset.source)
+            ):
                 result += _currency_float_to_decimal(asset.market_value)
         return result
 
@@ -584,7 +597,9 @@ class ALAssetList(ALIncomeList):
         result = Decimal(0)
         satisfies_sources = _source_to_callable(source, exclude_source)
         for asset in self.elements:
-            if (source is None and exclude_source is None) or (satisfies_sources(asset.source)):
+            if (source is None and exclude_source is None) or (
+                satisfies_sources(asset.source)
+            ):
                 result += _currency_float_to_decimal(asset.balance)
         return result
 
@@ -918,7 +933,7 @@ class ALItemizedJob(DAObject):
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
-        #if not hasattr(self, "source") or self.source is None:
+        # if not hasattr(self, "source") or self.source is None:
         #    self.source = "job"
         if not hasattr(self, "employer"):
             if hasattr(self, "employer_type"):
