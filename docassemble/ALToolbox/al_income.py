@@ -2,6 +2,7 @@
 
 from docassemble.base.util import (
     DAObject,
+    DADict,
     DAList,
     DAOrderedDict,
     DAEmpty,
@@ -18,7 +19,7 @@ import re
 import datetime
 import docassemble.base.functions
 import json
-from typing import Any, Dict, Callable, List, Optional, Set, Union, Tuple
+from typing import Any, Dict, Callable, List, Optional, Set, Union, Tuple, Mapping
 
 __all__ = [
     "times_per_year",
@@ -148,7 +149,7 @@ class ALPeriodicAmount(DAObject):
         return (val * Decimal(self.times_per_year)) / Decimal(times_per_year)
 
 
-class ALIncome(DAObject):
+class ALIncome(ALPeriodicAmount):
     """
     Represents an income which may have an hourly rate or a salary. Hourly rate
     incomes must include hours per period (times per year). Period is some
@@ -252,7 +253,7 @@ class ALIncomeList(DAList):
                 sources.add(item.source)
         return sources
 
-    def matches(self, source: SourceType, exclude_source: SourceType) -> "ALIncomeList":
+    def matches(self, source: SourceType, exclude_source: SourceType=None) -> "ALIncomeList":
         """
         Returns an ALIncomeList consisting only of elements matching the specified
         income source, assisting in filling PDFs with predefined spaces. `source`
@@ -299,6 +300,30 @@ class ALIncomeList(DAList):
                         result += Decimal(item.total(times_per_year=times_per_year))
         return result
 
+    def move_checks_to_list(self, selected_types: DADict=None, selected_terms: Mapping=None):
+        """Gives a 'gather by checklist' option.
+        If no selected_types param is passed, requires that a .selected_types
+        attribute be set by a `datatype: checkboxes` fields
+        If "other" is in the selected_types, the source will not be set directly
+        
+        Sets the attribute "moved" to true, doesn't set gathered, because this isn't 
+        idempotent, so trying to also gather all info about the checks in the list doesn't
+        work well.
+        """
+        if selected_types is None:
+            selected_types = self.selected_types
+        if not selected_terms:
+            selected_terms = {}
+        self.elements.clear()
+        if selected_types.any_true():
+            for source in selected_types.true_values():
+                if source == "other":
+                    self.appendObject()
+                else:
+                    self.appendObject(source=source, display_name=selected_terms.get(source, source))
+        self.moved = True
+
+
 
 class ALJob(ALIncome):
     """
@@ -323,10 +348,19 @@ class ALJob(ALIncome):
     .net {float} (Optional) The net that the job makes during its pay period -
         its annual frequency. E.g. if the annual frequency is 52 (weekly), net
         is the total amount made for one week.
-    .employer {str} (Optional) A single string for an employer's full name
-    .employer_address {str} (Optional) A single string for employer's address
-    .employer_phone {str} (Optional) An employer's phone number
+    .employer {Individual} (Optional) A docassemble Individual object, employer.address is the address
+        and employer.phone is the phone
     """
+
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        #if not hasattr(self, "source") or self.source is None:
+        #    self.source = "job"
+        if not hasattr(self, "employer"):
+            if hasattr(self, "employer_type"):
+                self.initializeAttribute("employer", self.employer_type)
+            else:
+                self.initializeAttribute("employer", Individual)
 
     def gross_total(self, times_per_year: float = 1) -> Decimal:
         """
@@ -349,9 +383,8 @@ class ALJob(ALIncome):
 
         This will force the gathering of the ALJob's `.net` attribute.
         """
-        return (Decimal(self.net) * Decimal(self.times_per_year)) / Decimal(
-            times_per_year
-        )
+        net = _currency_float_to_decimal(self.net)
+        return (net * Decimal(self.times_per_year)) / Decimal(times_per_year)
 
     def employer_name_address_phone(self) -> str:
         """
@@ -359,7 +392,7 @@ class ALJob(ALIncome):
         gathering the `.employer`, `.employer_address`, and `.employer_phone`
         attributes.
         """
-        return f"{self.employer}: {self.employer_address}, {self.employer_phone}"
+        return f"{self.employer.name}: {self.employer.address}, {self.employer.phone}"
 
     def normalized_hours(self, times_per_year: float = 1) -> float:
         """
@@ -473,13 +506,6 @@ class ALExpenses(ALIncomeList):
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.object_type = ALExpense
-
-    def move_checks_to_list(self, expense_list_dict):
-        self.elements.clear()
-        if self.selected_types.any_true():
-            for source in self.selected_types.true_values():
-                self.appendObject(source=source, display_name=expense_list_dict.get(source, source))
-        self.gathered = True
 
 
 class ALAsset(ALIncome):
