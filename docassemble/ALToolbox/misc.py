@@ -62,7 +62,9 @@ def tel(phone_number) -> str:
     return '<a href="tel:' + str(phone_number) + '">' + str(phone_number) + "</a>"
 
 
-def fa_icon(icon: str, color="primary", color_css=None, size="sm") -> str:
+def fa_icon(
+    icon: str, color="primary", color_css=None, size="sm", fa_class="fa-solid"
+) -> str:
     """
     Return HTML for a font-awesome icon of the specified size and color. You can reference
     a CSS variable (such as Bootstrap theme color) or a true CSS color reference, such as 'blue' or
@@ -78,7 +80,7 @@ def fa_icon(icon: str, color="primary", color_css=None, size="sm") -> str:
         return ":" + icon + ":"  # Default to letting Docassemble handle it
     elif color_css:
         return (
-            '<i class="fa fa-'
+            f'<i class="{fa_class} fa-'
             + icon
             + size_str
             + '" style="color:'
@@ -87,7 +89,7 @@ def fa_icon(icon: str, color="primary", color_css=None, size="sm") -> str:
         )
     else:
         return (
-            '<i class="fa fa-'
+            f'<i class="{fa_class} fa-'
             + icon
             + size_str
             + '" style="color:var(--'
@@ -138,9 +140,19 @@ def number_to_letter(n: Optional[int]) -> str:
     return string
 
 
-def collapse_template(template, classname=None):
+def collapse_template(
+    template,
+    classname=None,
+    closed_icon="caret-right",
+    open_icon="caret-down",
+):
     """
     Insert HTML for a Bootstrap "collapse" div.
+
+    Optionally, you can specify a custom icon to override the defaults:
+
+    The default icons are "🞂" which displays when the text is collapsed (`closed_icon`) and
+    "▼" which displays when the text is open (`open_icon`).
     """
     if not template.subject_as_html(trim=True) and not template.content_as_html():
         return ""
@@ -149,16 +161,10 @@ def collapse_template(template, classname=None):
     else:
         classname = " " + classname.strip()
     the_id = re.sub(r"[^A-Za-z0-9]", "", template.instanceName)
-    return """\
-<a class="collapsed" data-bs-toggle="collapse" href="#{}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="pdcaretclosed"><i class="fas fa-caret-right"></i></span> {}</a>
-<div class="collapse" id="{}"><div class="card card-body{} pb-1">{}</div></div>\
-""".format(
-        the_id,
-        template.subject_as_html(trim=True),
-        the_id,
-        classname,
-        template.content_as_html(),
-    )
+    return f"""\
+<a class="collapsed" data-bs-toggle="collapse" href="#{ the_id }" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="pdcaretopen">{ fa_icon(open_icon) }</span><span class="pdcaretclosed">{ fa_icon(closed_icon) }</span> { template.subject_as_html(trim=True) }</a>
+<div class="collapse" id="{ the_id }"><div class="card card-body pb-1{ classname }">{ template.content_as_html() }</div></div>\
+"""
 
 
 def tabbed_templates_html(tab_group_name: str, *pargs) -> str:

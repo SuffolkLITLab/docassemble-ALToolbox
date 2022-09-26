@@ -38,7 +38,7 @@ subquestion: |
   ---
   What is your favorite fruit? Everybody has a favorite fruit.
   
-  ${ collapse_template(fruit_explanation) }
+  ${ collapse_template(fruit_explanation, closed_icon="plus", open_icon="minus") }
   Don't you have a favorite fruit?
   ${ collapse_template(favorite_explanation) }
   You must have a favorite.
