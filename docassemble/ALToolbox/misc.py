@@ -141,10 +141,18 @@ def number_to_letter(n: Optional[int]) -> str:
 
 
 def collapse_template(
-    template, classname=None, expand_icon="caret-down", collapse_icon="caret-right"
+    template,
+    classname=None,
+    closed_icon="caret-right",
+    open_icon="caret-down",
 ):
     """
     Insert HTML for a Bootstrap "collapse" div.
+
+    Optionally, you can specify a custom icon to override the defaults:
+
+    The default icons are "🞂" which displays when the text is collapsed (`closed_icon`) and
+    "▼" which displays when the text is open (`open_icon`).
     """
     if not template.subject_as_html(trim=True) and not template.content_as_html():
         return ""
@@ -154,7 +162,7 @@ def collapse_template(
         classname = " " + classname.strip()
     the_id = re.sub(r"[^A-Za-z0-9]", "", template.instanceName)
     return f"""\
-<a class="collapsed" data-bs-toggle="collapse" href="#{ the_id }" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="pdcaretopen">{ fa_icon(collapse_icon) }</span><span class="pdcaretclosed">{ fa_icon(expand_icon) }</span> { template.subject_as_html(trim=True) }</a>
+<a class="collapsed" data-bs-toggle="collapse" href="#{ the_id }" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="pdcaretopen">{ fa_icon(open_icon) }</span><span class="pdcaretclosed">{ fa_icon(closed_icon) }</span> { template.subject_as_html(trim=True) }</a>
 <div class="collapse" id="{ the_id }"><div class="card card-body pb-1{ classname }">{ template.content_as_html() }</div></div>\
 """
 
