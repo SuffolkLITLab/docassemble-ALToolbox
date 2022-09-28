@@ -27,7 +27,7 @@ __all__ = [
     "ALIncome",
     "ALIncomeList",
     "ALExpense",
-    "ALExpenses",
+    "ALExpenseList",
     "ALJob",
     "ALJobList",
     "ALAsset",
@@ -323,14 +323,13 @@ class ALIncomeList(DAList):
         if not selected_terms:
             selected_terms = {}
         self.elements.clear()
-        if selected_types.any_true():
-            for source in selected_types.true_values():
-                if source == "other":
-                    self.appendObject()
-                else:
-                    self.appendObject(
-                        source=source, display_name=selected_terms.get(source, source)
-                    )
+        for source in selected_types.true_values():
+            if source == "other":
+                self.appendObject()
+            else:
+                self.appendObject(
+                    source=source, display_name=selected_terms.get(source, source)
+                )
         self.moved = True
 
 

@@ -128,7 +128,7 @@ columns:
 edit:
   - exists
 ---
-generic object: ALExpenses 
+generic object: ALExpenseList 
 table: x.table
 rows: x
 columns:
@@ -490,9 +490,9 @@ fields:
   - Who owns this?: x.owner
     required: False
 ---
-# UNIQUE FOR ALExpenses
+# UNIQUE FOR ALExpenseList
 ---
-generic object: ALExpenses
+generic object: ALExpenseList
 id: expenses types
 question: |
   What kind of expenses do you have?
@@ -502,7 +502,7 @@ fields:
     code: |
       expense_terms_ordered
 ---
-generic object: ALExpenses
+generic object: ALExpenseList
 id: expense information
 question: |
   How much do you spend on your ${ ordinal(i) } household expense?
@@ -521,7 +521,7 @@ fields:
     code: |
       times_per_year_for_expenses
 ---
-generic object: ALExpenses
+generic object: ALExpenseList
 need:
   - x[i].source
   - x[i].display_name
@@ -557,13 +557,13 @@ fields:
     code: |
       times_per_year_list
 ---
-generic object: ALExpenses
+generic object: ALExpenseList
 code: |
   x.selected_types
   x.move_checks_to_list(selected_terms=expense_terms)
   x.moved = True
 ---
-generic object: ALExpenses
+generic object: ALExpenseList
 code: |
   x.moved
   for exp in x.elements:
@@ -571,7 +571,7 @@ code: |
   x.revisit = True
   x.gathered = True
 ---
-generic object: ALExpenses
+generic object: ALExpenseList
 table: x.table
 rows: x
 columns:
@@ -589,7 +589,7 @@ generic object: ALExpense
 code: |
   x.display_name = x.source
 ---
-generic object: ALExpenses
+generic object: ALExpenseList
 id: revisit expenses
 continue button field: x.revisit
 question: |
