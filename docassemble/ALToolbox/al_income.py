@@ -504,7 +504,7 @@ class ALJobList(ALIncomeList):
         return result
 
 
-class ALExpenses(ALIncomeList):
+class ALExpenseList(ALIncomeList):
     """
     A list of expenses
 
