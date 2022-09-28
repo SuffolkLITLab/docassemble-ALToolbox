@@ -265,7 +265,7 @@ comment: |
 id: itemized job period
 generic object: ALItemizedJob
 question: |
-  Tell us about the hours when working as a ${ x.source }
+  What are the hours for the "${ x.source }" job?
 fields:
   - Is this a part time job: x.is_part_time
     datatype: yesnoradio
@@ -340,7 +340,7 @@ validation code: |
 id: other itemized job income value
 generic object: ALItemizedJob
 question: |
-  How much do you get paid for ${ job_items_names.get(i, i) } in your job as a ${ x.source }?
+  How much do you get paid in ${ job_items_names.get(i, i) } in your job as a ${ x.source }?
 fields:
   - Amount: x.to_add[i].value
     datatype: currency
@@ -510,7 +510,7 @@ fields:
   - Type of expense: x[i].source
     code: |
       expense_terms_ordered
-  - Describe your expense: x[i].source
+  - Other (explain): x[i].source
     show if:
       variable: x[i].source
       is: other
@@ -629,7 +629,7 @@ fields:
 id: regular job employer
 generic object: ALJob
 question: |
-  Who employs you as a ${ x.source }
+  Who employs you as a ${ x.source }?
 fields:
   - I am self-employed: x.is_self_employed
     datatype: yesno
