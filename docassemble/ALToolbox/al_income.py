@@ -2,6 +2,7 @@
 
 from docassemble.base.util import (
     DAObject,
+    DADict,
     DAList,
     DAOrderedDict,
     DAEmpty,
@@ -18,13 +19,15 @@ import re
 import datetime
 import docassemble.base.functions
 import json
-from typing import Any, Dict, Callable, List, Optional, Set, Union, Tuple
+from typing import Any, Dict, Callable, List, Optional, Set, Union, Tuple, Mapping
 
 __all__ = [
     "times_per_year",
     "recent_years",
     "ALIncome",
     "ALIncomeList",
+    "ALExpense",
+    "ALExpenseList",
     "ALJob",
     "ALJobList",
     "ALAsset",
@@ -115,7 +118,38 @@ def recent_years(
         return list(range(now.year + future, now.year - past, -1))
 
 
-class ALIncome(DAObject):
+class ALPeriodicAmount(DAObject):
+    """
+    Represents an amount (could be an income or an expense depending on the context)
+    that reoccurs some times per year. E.g, to express a weekly period, use 52. The default
+    is 1 (a year).
+
+    Attributes:
+    .value {str | float | Decimal} A number representing an amount of money accumulated during
+        the `times_per_year` of this income.
+    .times_per_year {float | Decimal} Represents a number of the annual frequency of
+        the income. E.g. 12 for a monthly income.
+    .source {str} (Optional) The "source" of the income, like a "job" or a "house".
+    .owner {str} (Optional) Full name of the income's owner as a single string.
+    .display_name {str} (Optional) If present, will have a translated string to show the
+        user, as opposed to a raw english string from the program
+    """
+
+    def __str__(self) -> str:
+        """Returns the income's `.total()` as string, not its object name."""
+        return str(self.total())
+
+    def total(self, times_per_year: float = 1) -> Decimal:
+        """
+        Returns the income over the specified times_per_year,
+
+        To calculate `.total()`, an ALPeriodicAmount must have a `.times_per_year` and `.value`.
+        """
+        val = _currency_float_to_decimal(self.value)
+        return (val * Decimal(self.times_per_year)) / Decimal(times_per_year)
+
+
+class ALIncome(ALPeriodicAmount):
     """
     Represents an income which may have an hourly rate or a salary. Hourly rate
     incomes must include hours per period (times per year). Period is some
@@ -136,10 +170,6 @@ class ALIncome(DAObject):
     .owner {str} (Optional) Full name of the income's owner as a single string.
     """
 
-    def __str__(self) -> str:
-        """Returns the income's `.total()` as string, not its object name."""
-        return str(self.total())
-
     def total(self, times_per_year: float = 1) -> Decimal:
         """
         Returns the income over the specified times_per_year, taking into account
@@ -150,13 +180,19 @@ class ALIncome(DAObject):
         To calculate `.total()`, an ALIncome must have a `.times_per_year` and `.value`.
         It can also have `.is_hourly` and `.hours_per_period`.
         """
-        val = _currency_float_to_decimal(self.value)
         if hasattr(self, "is_hourly") and self.is_hourly:
+            val = _currency_float_to_decimal(self.value)
             return (
                 val * Decimal(self.hours_per_period) * Decimal(self.times_per_year)
             ) / Decimal(times_per_year)
         else:
-            return (val * Decimal(self.times_per_year)) / Decimal(times_per_year)
+            return super().total(times_per_year=times_per_year)
+
+
+class ALExpense(ALPeriodicAmount):
+    """Not much changes from ALPeriodic Amount, just the generic object questions"""
+
+    pass
 
 
 SourceType = Union[Set[str], List[str], str]
@@ -219,7 +255,9 @@ class ALIncomeList(DAList):
                 sources.add(item.source)
         return sources
 
-    def matches(self, source: SourceType, exclude_source: SourceType) -> "ALIncomeList":
+    def matches(
+        self, source: SourceType, exclude_source: SourceType = None
+    ) -> "ALIncomeList":
         """
         Returns an ALIncomeList consisting only of elements matching the specified
         income source, assisting in filling PDFs with predefined spaces. `source`
@@ -254,7 +292,9 @@ class ALIncomeList(DAList):
             return result
         satisfies_sources = _source_to_callable(source, exclude_source)
         for item in self.elements:
-            if hasattr(item, "source") and satisfies_sources(item.source):
+            if (source is None and exclude_source is None) or (
+                hasattr(item, "source") and satisfies_sources(item.source)
+            ):
                 if owner is None:  # if the user doesn't care who the owner is
                     result += Decimal(item.total(times_per_year=times_per_year))
                 else:
@@ -265,6 +305,32 @@ class ALIncomeList(DAList):
                     ):
                         result += Decimal(item.total(times_per_year=times_per_year))
         return result
+
+    def move_checks_to_list(
+        self, selected_types: DADict = None, selected_terms: Mapping = None
+    ):
+        """Gives a 'gather by checklist' option.
+        If no selected_types param is passed, requires that a .selected_types
+        attribute be set by a `datatype: checkboxes` fields
+        If "other" is in the selected_types, the source will not be set directly
+
+        Sets the attribute "moved" to true, doesn't set gathered, because this isn't
+        idempotent, so trying to also gather all info about the checks in the list doesn't
+        work well.
+        """
+        if selected_types is None:
+            selected_types = self.selected_types
+        if not selected_terms:
+            selected_terms = {}
+        self.elements.clear()
+        for source in selected_types.true_values():
+            if source == "other":
+                self.appendObject()
+            else:
+                self.appendObject(
+                    source=source, display_name=selected_terms.get(source, source)
+                )
+        self.moved = True
 
 
 class ALJob(ALIncome):
@@ -290,10 +356,19 @@ class ALJob(ALIncome):
     .net {float} (Optional) The net that the job makes during its pay period -
         its annual frequency. E.g. if the annual frequency is 52 (weekly), net
         is the total amount made for one week.
-    .employer {str} (Optional) A single string for an employer's full name
-    .employer_address {str} (Optional) A single string for employer's address
-    .employer_phone {str} (Optional) An employer's phone number
+    .employer {Individual} (Optional) A docassemble Individual object, employer.address is the address
+        and employer.phone is the phone
     """
+
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        # if not hasattr(self, "source") or self.source is None:
+        #    self.source = "job"
+        if not hasattr(self, "employer"):
+            if hasattr(self, "employer_type"):
+                self.initializeAttribute("employer", self.employer_type)
+            else:
+                self.initializeAttribute("employer", Individual)
 
     def gross_total(self, times_per_year: float = 1) -> Decimal:
         """
@@ -316,9 +391,8 @@ class ALJob(ALIncome):
 
         This will force the gathering of the ALJob's `.net` attribute.
         """
-        return (Decimal(self.net) * Decimal(self.times_per_year)) / Decimal(
-            times_per_year
-        )
+        net = _currency_float_to_decimal(self.net)
+        return (net * Decimal(self.times_per_year)) / Decimal(times_per_year)
 
     def employer_name_address_phone(self) -> str:
         """
@@ -326,7 +400,7 @@ class ALJob(ALIncome):
         gathering the `.employer`, `.employer_address`, and `.employer_phone`
         attributes.
         """
-        return f"{self.employer}: {self.employer_address}, {self.employer_phone}"
+        return f"{self.employer.name}: {self.employer.address}, {self.employer.phone}"
 
     def normalized_hours(self, times_per_year: float = 1) -> float:
         """
@@ -429,6 +503,21 @@ class ALJobList(ALIncomeList):
         return result
 
 
+class ALExpenseList(ALIncomeList):
+    """
+    A list of expenses
+
+    * each element has a:
+        * source
+        * owner
+        * display name
+    """
+
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        self.object_type = ALExpense
+
+
 class ALAsset(ALIncome):
     """
     An ALAsset represents an asset that has a market value, an optional income
@@ -487,11 +576,10 @@ class ALAssetList(ALIncomeList):
         result = Decimal(0)
         satisfies_sources = _source_to_callable(source, exclude_source)
         for asset in self.elements:
-            if source is None and exclude_source is None:
+            if (source is None and exclude_source is None) or (
+                satisfies_sources(asset.source)
+            ):
                 result += _currency_float_to_decimal(asset.market_value)
-            else:
-                if satisfies_sources(asset.source):
-                    result += _currency_float_to_decimal(asset.market_value)
         return result
 
     def balance(
@@ -508,11 +596,10 @@ class ALAssetList(ALIncomeList):
         result = Decimal(0)
         satisfies_sources = _source_to_callable(source, exclude_source)
         for asset in self.elements:
-            if source is None:
+            if (source is None and exclude_source is None) or (
+                satisfies_sources(asset.source)
+            ):
                 result += _currency_float_to_decimal(asset.balance)
-            else:
-                if satisfies_sources(asset.source):
-                    result += _currency_float_to_decimal(asset.balance)
         return result
 
     def owners(
@@ -845,8 +932,8 @@ class ALItemizedJob(DAObject):
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
-        if not hasattr(self, "source") or self.source is None:
-            self.source = "job"
+        # if not hasattr(self, "source") or self.source is None:
+        #    self.source = "job"
         if not hasattr(self, "employer"):
             if hasattr(self, "employer_type"):
                 self.initializeAttribute("employer", self.employer_type)

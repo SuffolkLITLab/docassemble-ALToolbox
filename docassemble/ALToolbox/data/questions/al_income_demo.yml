@@ -36,7 +36,7 @@ id: interview order
 mandatory: True
 code: |
   if to_run['ALItemizedJob'] or to_run['all']:
-    itemized_job.name = 'itemized taxi driver'
+    itemized_job.source = 'itemized taxi driver'
     itemized_job.complete
   
   if to_run['ALItemizedJobList'] or to_run['all']:
@@ -52,7 +52,7 @@ code: |
     get_alincome_list_item_values
   
   if to_run['ALJob'] or to_run['all']:
-    al_job.name = 'unitemized flight attendant'
+    al_job.source = 'unitemized flight attendant'
     al_job.complete
   
   if to_run['ALJobList'] or to_run['all']:
@@ -83,6 +83,20 @@ code: |
 code: |
     al_income_list.there_are_any = income_sources.any_true
     al_income_list.target_number = len(income_sources.true_values())
+---
+# UNIQUE CODE FOR ALIncomeList
+---
+code: |
+  if income_sources.any_true():
+    for source in income_sources.true_values():
+      one_income = al_income_list.appendObject(source=source)
+      # Never put anything else in here
+  al_income_list.gathered = True
+---
+code: |
+  for income in al_income_list.elements:
+    income.complete
+  get_alincome_list_item_values = True
 ---
 id: which to test
 # TODO: Accumulate them all in one ALIncomeList at the end to test the ability of ALIncomeList to run its functions appropriately on all types of values (other than ALIncomeLists themselves)
@@ -129,7 +143,6 @@ fields:
       #- asset_source_list: asset_source_list
       #- income_source_list: income_source_list
       #- non_wage_income_list: non_wage_income_list
-      #- expense_source_list: expense_source_list
 ---
 comment: |
   Notes on itemized job items:
@@ -274,7 +287,7 @@ subquestion: |
   Net | Monthly | ${ currency(al_job_list.net_total(times_per_year=12)) }
   
   One item value:[BR]
-  ${ [item for item in al_job_list.sources()][0] } base pay per year: ${ currency(al_job_list.net_total(source=[item for item in al_job_list.sources()][0])) }
+  ${ next(iter(al_job_list.sources()), None) } base pay per year: ${ currency(al_job_list.net_total(source=next(iter(al_job_list.sources()), None))) }
   
   % for one_job in al_job_list:
   #### ${ one_job.source }
