@@ -127,6 +127,7 @@ columns:
       '$0' if hasattr(row_item, 'exists') and not row_item.exists else currency(row_item.value)
 edit:
   - exists
+  - value
 ---
 generic object: ALExpenseList 
 table: x.table
