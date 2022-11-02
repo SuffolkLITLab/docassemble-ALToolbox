@@ -12,6 +12,13 @@ from typing import Union, Dict, Iterable, Mapping
   3. https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html  
 """
 
+__all__ = [
+    "standard_holidays",
+    "non_business_days",
+    "is_business_day",
+    "get_next_business_day",
+    "get_date_after_n_business_days",
+]
 
 def standard_holidays(
     year,
@@ -200,4 +207,31 @@ def get_next_business_day(
         remove_holidays=remove_holidays,
     ):
         date_to_check = date_to_check.plus(days=1)
+    return date_to_check
+
+def get_date_after_n_business_days(
+    start_date: Union[str, DADateTime],
+    wait_n_days=1,
+    country="US",
+    subdiv="MA",
+    add_holidays: Mapping = None,
+    remove_holidays: Iterable[str] = None,    
+) -> DADateTime:
+    """
+    Returns a time period which contains a minimum of `n` business days.
+    """
+    if not isinstance(start_date, DADateTime):
+        start_date = as_datetime(start_date)    
+    date_to_check = start_date
+    
+    for _ in range(wait_n_days):
+        date_to_check = date_to_check.plus(days=1)
+        while not is_business_day(
+            date_to_check,
+            country=country,
+            subdiv=subdiv,
+            add_holidays=add_holidays,
+            remove_holidays=remove_holidays,        
+        ):
+            date_to_check = date_to_check.plus(days=1)
     return date_to_check
