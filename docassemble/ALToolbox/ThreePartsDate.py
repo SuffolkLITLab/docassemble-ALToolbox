@@ -12,6 +12,7 @@ import re
 js_text = """\
   //this is an adaptation of Jonathan Pyle's datereplace.js
   $(document).on('daPageLoad', function(){
+    var idx = 0;
     $('input[type="ThreePartsDate"]').each(function(){
       var dateElement = this;
       var required = $(dateElement).closest('.da-form-group').hasClass('darequired');
@@ -22,22 +23,31 @@ js_text = """\
       //Construct the input components
       var parentElement = $('<div class="form-row row">');
       
+      var monthId = 'three-part-date-month-idx-' + idx;
       var monthParent = $('<div class="col">');
-      var monthLabel = $('<div style="text-align:center">Month</div>');     
+      var monthLabel = $('<div style="text-align:center">Month</div>');
+      monthLabel.attr( 'for', monthId );
       var monthElement = $('<select class="form-select" style="width:7.5em">');
+      monthElement.attr( 'id', monthId );
       monthElement.attr( 'required', required );
       monthElement.prop( 'required', required );
       
-      var dayParent = $('<div class="col">');    
-      var dayLabel = $('<div style="text-align:center">Day</div>');    
+      var dayId = 'three-part-date-day-idx-' + idx;
+      var dayParent = $('<div class="col">');
+      var dayLabel = $('<div style="text-align:center">Day</div>');
+      dayLabel.attr( 'for', dayId );
       var dayElement = $('<input type="text" class="form-control" type="number" min="1" max="31">' );
+      dayElement.attr( 'id', dayId );
       dayElement.attr( 'required', required );
       dayElement.prop( 'required', required );
       
-      var yearParent = $('<div class="col">');    
+      var yearId = 'three-part-date-year-idx- ' + idx;
+      var yearParent = $('<div class="col">');
       var yearLabel = $('<div style="text-align:center">Year</div>');
-      //Do not restrict year input range for now. 
+      yearLabel.attr( 'for', yearId );
+      //Do not restrict year input range for now.
       var yearElement = $('<input type="text" class="form-control" type="number">');
+      yearElement.attr( 'id', yearId );
       yearElement.attr( 'required', required );
       yearElement.prop( 'required', required );
         
@@ -85,7 +95,7 @@ js_text = """\
     
       // -- Day and year --
       // Use previous values if possible
-      if ( dateParts ) {    
+      if ( dateParts ) {
         dayElement.val( dateParts[ 1 ]);
         yearElement.val( dateParts[ 2 ]);
       }
@@ -112,6 +122,7 @@ js_text = """\
       yearElement.on('change', updateDate);
       monthElement.on('change', updateDate);
       dayElement.on('change', updateDate);
+      idx += 1;
     });
   });
   
