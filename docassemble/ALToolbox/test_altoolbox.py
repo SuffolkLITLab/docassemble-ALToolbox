@@ -15,8 +15,21 @@ class TestBusinessDays(unittest.TestCase):
         self.assertFalse(is_business_day(this_years_christmas))
 
     def test_get_date_after_n_business_days(self):
-        self.assertEquals(
+        self.assertEqual(
             get_date_after_n_business_days("2022-12-24", 5), as_datetime("2023-01-03")
+        )
+        self.assertEqual(
+            get_date_after_n_business_days("2022-12-12", 3), as_datetime("2022-12-15")
+        )
+        self.assertEqual(
+            get_date_after_n_business_days("2022-12-12", 3,
+                add_holidays={"12-13": "fake day 1", "12-14": "fake day2"}
+            ),
+            as_datetime("2022-12-19")
+        )
+        self.assertEqual(
+            get_date_after_n_business_days("2022-12-24", 5, remove_holidays=["Christmas Day"]),
+            as_datetime("2022-12-30")
         )
 
 

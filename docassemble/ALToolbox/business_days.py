@@ -33,6 +33,8 @@ def standard_holidays(
     Note that this draws on the "holidays" package which may deviate slightly from
     holidays observed by a local court, but should be very close to accurate.
 
+    add_holidays should be a dictionary from dates ("12-15") to the name of the holiday.
+
     Returns a dictionary like-object that you can treat like:
     {
         "2021-01-01": "New Year's Day",
