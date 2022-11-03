@@ -117,6 +117,15 @@ subquestion: |
 
   ${ x.add_action() }
 ---
+generic object: ALIncomeList
+continue button field: x.revisit
+question: |
+  Edit incomes
+subquestion: |
+  ${ x.table }
+
+  ${ x.add_action() }
+---
 generic object: ALItemizedValueDict
 table: x.table
 rows: x
@@ -127,6 +136,7 @@ columns:
       '$0' if hasattr(row_item, 'exists') and not row_item.exists else currency(row_item.value)
 edit:
   - exists
+  - value
 ---
 generic object: ALExpenseList 
 table: x.table
