@@ -12,7 +12,7 @@ class TestBusinessDays(unittest.TestCase):
 
 
     def test_get_date_after_n_business_days(self):
-        self.assertEquals(get_date_after_n_business_days("2022-12-24",5), as_datetime("2023-12-3"))
+        self.assertEquals(get_date_after_n_business_days("2022-12-24",5), as_datetime("2023-01-03"))
 
 
 if __name__ == "__main__":
