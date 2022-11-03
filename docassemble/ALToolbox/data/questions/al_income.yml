@@ -117,6 +117,15 @@ subquestion: |
 
   ${ x.add_action() }
 ---
+generic object: ALIncomeList
+continue button field: x.revisit
+question: |
+  Edit incomes
+subquestion: |
+  ${ x.table }
+
+  ${ x.add_action() }
+---
 generic object: ALItemizedValueDict
 table: x.table
 rows: x
