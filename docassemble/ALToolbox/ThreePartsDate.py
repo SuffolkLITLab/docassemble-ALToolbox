@@ -7,13 +7,14 @@ from docassemble.base.util import (
     date_difference,
     log,
 )
+from typing import Optional
 import re
 
 js_text = """\
   //this is an adaptation of Jonathan Pyle's datereplace.js
-  $(document).on('daPageLoad', function(){
+  $(document).on('daPageLoad', function(){{
     var idx = 0;
-    $('input[type="ThreePartsDate"]').each(function(){
+    $('input[type="ThreePartsDate"]').each(function(){{
       var dateElement = this;
       var required = $(dateElement).closest('.da-form-group').hasClass('darequired');
       $(dateElement).hide();
@@ -25,7 +26,7 @@ js_text = """\
       
       var monthId = 'three-part-date-month-idx-' + idx;
       var monthParent = $('<div class="col">');
-      var monthLabel = $('<div style="text-align:center">Month</div>');
+      var monthLabel = $('<label style="text-align:center">{month}</label>');
       monthLabel.attr( 'for', monthId );
       var monthElement = $('<select class="form-select" style="width:7.5em">');
       monthElement.attr( 'id', monthId );
@@ -34,7 +35,7 @@ js_text = """\
       
       var dayId = 'three-part-date-day-idx-' + idx;
       var dayParent = $('<div class="col">');
-      var dayLabel = $('<div style="text-align:center">Day</div>');
+      var dayLabel = $('<label style="text-align:center">{day}</label>');
       dayLabel.attr( 'for', dayId );
       var dayElement = $('<input type="text" class="form-control" type="number" min="1" max="31">' );
       dayElement.attr( 'id', dayId );
@@ -43,7 +44,7 @@ js_text = """\
       
       var yearId = 'three-part-date-year-idx- ' + idx;
       var yearParent = $('<div class="col">');
-      var yearLabel = $('<div style="text-align:center">Year</div>');
+      var yearLabel = $('<label style="text-align:center">{year}</label>');
       yearLabel.attr( 'for', yearId );
       //Do not restrict year input range for now.
       var yearElement = $('<input type="text" class="form-control" type="number">');
@@ -54,14 +55,19 @@ js_text = """\
       // If we're returning to a variable that has already been defined
       // prepare to use that variable's values
       var dateParts;
-      if ( $(dateElement).val() ) {
+      if ( $(dateElement).val() ) {{
         dateParts = $(dateElement).val().split( '/' );
-        dateParts.forEach( function( part, index, dateParts ) {
-          dateParts[ index ] = parseInt( part );
-        });
-      } else {
+        dateParts.forEach( function( part, index, dateParts ) {{
+          var partInt = parseInt( part );
+          if (isNaN(partInt)) {{
+            dateParts[ index ] = '';
+          }} else {{
+            dateParts[ index ] = partInt;
+          }}
+        }});
+      }} else {{
         dateParts = null;
-      }
+      }}
           
       // Insert previous answers if possible
       
@@ -73,39 +79,41 @@ js_text = """\
       monthElement.append( first_opt );
       // Add every calendar month (based on user's computer's date system? lanugage?)
       var option = null
-      for(var month=0; month < 12; month++){
+      for(var month=0; month < 12; month++) {{
         opt = $("<option>");
-        if ( month < 9 ){
+        if ( month < 9 ) {{
           opt.val('0' + (month + 1));
-        } else {
+        }} else {{
           opt.val(month + 1);
-        }
+        }}
         
         // Convert the month number to a month name for the option text
         var dt = new Date(1970, month, 1);
-        opt.text(dt.toLocaleString('default', { month: 'long' }));
+        opt.text(dt.toLocaleString('default', {{ month: 'long' }}));
         
         // Use previous values if possible
-        if ( dateParts && parseInt( opt.val() ) === dateParts[ 0 ]) {
+        if ( dateParts && parseInt( opt.val() ) === dateParts[ 0 ]) {{
           opt.attr('selected', 'selected');
-        }
+        }}
         
         monthElement.append(opt);
-      }  // ends for every month
+      }}  // ends for every month
     
       // -- Day and year --
       // Use previous values if possible
-      if ( dateParts ) {
+      if ( dateParts ) {{
         dayElement.val( dateParts[ 1 ]);
         yearElement.val( dateParts[ 2 ]);
-      }
+      }}
       
       // Update value of original input when changes values.
-      function updateDate(){
+      function updateDate() {{
         var val = $(monthElement).val() + '/' + $(dayElement).val() + '/' + $(yearElement).val();
-        if ( val === '//' ) { val = ''; }
+        if ( val === '//' ) {{
+          val = '';
+        }}
         $( dateElement ).val( val );
-      };  // Ends updateDate()
+      }};  // Ends updateDate()
       
       $(dateElement).before(parentElement); 
       $(monthParent).append(monthLabel);
@@ -123,24 +131,39 @@ js_text = """\
       monthElement.on('change', updateDate);
       dayElement.on('change', updateDate);
       idx += 1;
-    });
-  });
+    }});
+  }});
   
   // No jQuery validation, since it doesn't work on hidden elements
 """
 
+def check_empty_parts(item:str, default_msg="is not a valid date") -> Optional[str]:
+    parts = item.split('/')
+    empty_parts = [part == "" for part in parts]
+    if not any(empty_parts):
+        return None
+    if all(empty_parts):
+        return word("Enter a month, a day, and a year")
+    else:
+        empty_words = [empty_part[1] for empty_part in zip(empty_parts, ["month", "day", "year"]) if empty_part[0]]
+    if len(empty_words) == 2:
+        return word(f"Enter a {empty_words[0]} and a {empty_words[1]}")
+    elif len(empty_words) == 1:
+        return word(f"Enter a {empty_words[0]}")
+    else:
+        return f"{ item } {word(default_msg)}"
 
 class ThreePartsDate(CustomDataType):
     name = "ThreePartsDate"
     input_type = "ThreePartsDate"
-    javascript = js_text
+    javascript = js_text.format(month=word("Month"), day=word("Day"), year=word("Year"))
     jq_message = word("Answer with a valid date")
     is_object = True
     # Probably won't work because the input to validate is hidden
     jq_rule = "date"
 
     @classmethod
-    def validate(cls, item):
+    def validate(cls, item:str):
         # If there's no input in the item, it's valid
         if not isinstance(item, str) or item == "":
             return True
@@ -152,12 +175,13 @@ class ThreePartsDate(CustomDataType):
                 try:
                     date = as_datetime(item)
                 except Exception as error:
-                    msg = f"{ item } {word('is not a valid date')}"
-                    raise DAValidationError(msg)
-
+                    ex_msg = f"{ item } {word('is not a valid date')}"
+                    raise DAValidationError(ex_msg)
                 return True
             else:
-                raise DAValidationError(f"{ item } {word('is not a valid date')}")
+                msg = check_empty_parts(item)
+                if msg:
+                    raise DAValidationError(msg)
 
     @classmethod
     def transform(cls, item):
@@ -173,14 +197,14 @@ class ThreePartsDate(CustomDataType):
 class BirthDate(ThreePartsDate):
     name = "BirthDate"
     input_type = "BirthDate"
-    javascript = js_text.replace("ThreePartsDate", "BirthDate")
+    javascript = js_text.format(month=word("Month"), day=word("Day"), year=word("Year")).replace("ThreePartsDate", "BirthDate")
     jq_message = word("Answer with a valid date of birth")
     is_object = True
     # Probably won't work because the input to validate is hidden
     jq_rule = "date"
 
     @classmethod
-    def validate(cls, item):
+    def validate(cls, item:str):
         # If there's no input in the item, it's valid
         if not isinstance(item, str) or item == "":
             return True
@@ -191,18 +215,17 @@ class BirthDate(ThreePartsDate):
             try:
                 date = as_datetime(item)
             except Exception as error:
-                msg = f"{ item } {word('is not a valid date')}"
-                raise DAValidationError(msg)
+                ex_msg = f"{ item } {word('is not a valid date')}"
+                raise DAValidationError(ex_msg)
             if matches_date_pattern:
                 date_diff = date_difference(starting=date, ending=today())
                 if date_diff.days >= 0.0:
                     return True
                 else:
                     raise DAValidationError(
-                        word("Answer with a <strong>date of birth</strong>")
+                        word(f"Answer with a <strong>date of birth</strong> ({date} is in the future)")
                     )
             else:
-                msg = (
-                    f"{ item } {word('is not a valid <strong>date of birth</strong>')}"
-                )
-                raise DAValidationError(msg)
+                msg = check_empty_parts(item, default_msg="is not a valid <strong>date of birth</strong>")
+                if msg:
+                    raise DAValidationError(msg)
