@@ -202,7 +202,7 @@ def review_widget(
     *,
     up_action: str,
     down_action: str,
-    review_action: str = None,
+    review_action: Optional[str] = None,
     thumbs_display: str = "Did we help you?",
     review_display: str = "Thanks! Let us know what we could do better",
     submit_review_button: str = "Add your review",

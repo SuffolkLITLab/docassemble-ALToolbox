@@ -3,7 +3,7 @@ import pandas as pd
 import datetime
 from datetime import date as dt
 from docassemble.base.util import as_datetime, DADateTime
-from typing import Union, Dict, Iterable, Mapping
+from typing import Union, Dict, Iterable, Mapping, Optional
 
 """
   External docs: 
@@ -25,8 +25,8 @@ def standard_holidays(
     year,
     country="US",
     subdiv="MA",
-    add_holidays: Mapping = None,
-    remove_holidays: Iterable[str] = None,
+    add_holidays: Optional[Mapping] = None,
+    remove_holidays: Optional[Iterable[str]] = None,
 ) -> holidays.HolidayBase:
     """
     Get all holidays in the specified year, country, and state (or other subdivision).
@@ -72,8 +72,8 @@ def non_business_days(
     year,
     country="US",
     subdiv="MA",
-    add_holidays: Mapping = None,
-    remove_holidays: Iterable[str] = None,
+    add_holidays: Optional[Mapping] = None,
+    remove_holidays: Optional[Iterable[str]] = None,
     first_n_dates=0,
     last_n_dates=0,
 ) -> dict:
@@ -153,8 +153,8 @@ def is_business_day(
     date: Union[str, DADateTime],
     country="US",
     subdiv="MA",
-    add_holidays: Mapping = None,
-    remove_holidays: Iterable[str] = None,
+    add_holidays: Optional[Mapping] = None,
+    remove_holidays: Optional[Iterable[str]] = None,
 ) -> bool:
     """
     Returns true iff the specified date is a business day (i.e., not a holiday)
@@ -185,8 +185,8 @@ def get_next_business_day(
     wait_n_days=1,
     country="US",
     subdiv="MA",
-    add_holidays: Mapping = None,
-    remove_holidays: Iterable[str] = None,
+    add_holidays: Optional[Mapping] = None,
+    remove_holidays: Optional[Iterable[str]] = None,
 ) -> DADateTime:
     """
     Returns the first day AFTER the specified start date that is
@@ -218,8 +218,8 @@ def get_date_after_n_business_days(
     wait_n_days=1,
     country="US",
     subdiv="MA",
-    add_holidays: Mapping = None,
-    remove_holidays: Iterable[str] = None,
+    add_holidays: Optional[Mapping] = None,
+    remove_holidays: Optional[Iterable[str]] = None,
 ) -> DADateTime:
     """
     Returns a time period which contains a minimum of `n` business days.
