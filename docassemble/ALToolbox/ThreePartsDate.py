@@ -137,15 +137,20 @@ js_text = """\
   // No jQuery validation, since it doesn't work on hidden elements
 """
 
-def check_empty_parts(item:str, default_msg="is not a valid date") -> Optional[str]:
-    parts = item.split('/')
+
+def check_empty_parts(item: str, default_msg="is not a valid date") -> Optional[str]:
+    parts = item.split("/")
     empty_parts = [part == "" for part in parts]
     if not any(empty_parts):
         return None
     if all(empty_parts):
         return word("Enter a month, a day, and a year")
     else:
-        empty_words = [empty_part[1] for empty_part in zip(empty_parts, ["month", "day", "year"]) if empty_part[0]]
+        empty_words = [
+            empty_part[1]
+            for empty_part in zip(empty_parts, ["month", "day", "year"])
+            if empty_part[0]
+        ]
     if len(empty_words) == 2:
         return word(f"Enter a {empty_words[0]} and a {empty_words[1]}")
     elif len(empty_words) == 1:
@@ -153,12 +158,16 @@ def check_empty_parts(item:str, default_msg="is not a valid date") -> Optional[s
     else:
         return f"{ item } {word(default_msg)}"
 
+
 class ThreePartsDate(CustomDataType):
     name = "ThreePartsDate"
     input_type = "ThreePartsDate"
     javascript = js_text.format(month=word("Month"), day=word("Day"), year=word("Year"))
-    jq_message = {"date": word("Answer with a valid date"), "required": word("Enter a Month, a day, and a year")}
-    parameters=["required"]
+    jq_message = {
+        "date": word("Answer with a valid date"),
+        "required": word("Enter a Month, a day, and a year"),
+    }
+    parameters = ["required"]
     is_object = True
     # Probably won't work because the input to validate is hidden
     jq_rule = ["date", "required"]
@@ -198,7 +207,9 @@ class ThreePartsDate(CustomDataType):
 class BirthDate(ThreePartsDate):
     name = "BirthDate"
     input_type = "BirthDate"
-    javascript = js_text.format(month=word("Month"), day=word("Day"), year=word("Year")).replace("ThreePartsDate", "BirthDate")
+    javascript = js_text.format(
+        month=word("Month"), day=word("Day"), year=word("Year")
+    ).replace("ThreePartsDate", "BirthDate")
     jq_message = word("Answer with a valid date of birth")
     is_object = True
     # Probably won't work because the input to validate is hidden
@@ -224,9 +235,13 @@ class BirthDate(ThreePartsDate):
                     return True
                 else:
                     raise DAValidationError(
-                        word(f"Answer with a <strong>date of birth</strong> ({date} is in the future)")
+                        word(
+                            f"Answer with a <strong>date of birth</strong> ({date} is in the future)"
+                        )
                     )
             else:
-                msg = check_empty_parts(item, default_msg="is not a valid <strong>date of birth</strong>")
+                msg = check_empty_parts(
+                    item, default_msg="is not a valid <strong>date of birth</strong>"
+                )
                 if msg:
                     raise DAValidationError(msg)
