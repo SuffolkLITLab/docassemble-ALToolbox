@@ -14,7 +14,9 @@ __all__ = ["save_input_data"]
 
 
 def save_input_data(
-    title: str = "", input_dict: Optional[Dict[str, Any]] = None, tags: Optional[List[str]] = None
+    title: str = "",
+    input_dict: Optional[Dict[str, Any]] = None,
+    tags: Optional[List[str]] = None,
 ) -> None:
     """
     This function is used by survey type interviews to save input data for data reporting purposes.
