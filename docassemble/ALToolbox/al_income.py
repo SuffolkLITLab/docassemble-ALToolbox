@@ -307,7 +307,9 @@ class ALIncomeList(DAList):
         return result
 
     def move_checks_to_list(
-        self, selected_types: Optional[DADict] = None, selected_terms: Optional[Mapping] = None
+        self,
+        selected_types: Optional[DADict] = None,
+        selected_terms: Optional[Mapping] = None,
     ):
         """Gives a 'gather by checklist' option.
         If no selected_types param is passed, requires that a .selected_types
@@ -567,7 +569,9 @@ class ALAssetList(ALIncomeList):
         self.object_type = ALAsset
 
     def market_value(
-        self, source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
+        self,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the total `.market_value` of assets in the list. You can filter
@@ -583,7 +587,9 @@ class ALAssetList(ALIncomeList):
         return result
 
     def balance(
-        self, source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
+        self,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the total `.balance` of assets in the list,
@@ -603,7 +609,9 @@ class ALAssetList(ALIncomeList):
         return result
 
     def owners(
-        self, source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
+        self,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Set[str]:
         """
         Returns a set of the unique owners of the assets.  You can filter the
@@ -716,7 +724,9 @@ class ALSimpleValueList(DAList):
         return sources
 
     def total(
-        self, source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
+        self,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the total value in the list, gathering the list items if
@@ -1138,7 +1148,7 @@ class ALItemizedJobList(DAList):
         if not hasattr(self, "object_type") or self.object_type is None:
             self.object_type = ALItemizedJob
 
-    def sources(self, which_side:Optional[str]=None) -> Set[str]:
+    def sources(self, which_side: Optional[str] = None) -> Set[str]:
         """Returns a set of the unique sources in all of the jobs.
         By default gets from both sides, if which_side is "deductions", only gets from deductions."""
         sources = set()
@@ -1151,16 +1161,23 @@ class ALItemizedJobList(DAList):
                 sources.update(job.to_subtract.keys())
         return sources
 
-    def total(self, times_per_year: float = 1, source:Optional[SourceType]=None, exclude_source: Optional[SourceType]=None) -> Decimal:
+    def total(
+        self,
+        times_per_year: float = 1,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
+    ) -> Decimal:
         """
         Alias for ALItemizedJobList.gross_total to integrate with
         ALIncomeList math.
         """
-        return self.gross_total(times_per_year=times_per_year, source=source, exclude_source=exclude_source)
+        return self.gross_total(
+            times_per_year=times_per_year, source=source, exclude_source=exclude_source
+        )
 
     def gross_total(
         self,
-        times_per_year:float=1,
+        times_per_year: float = 1,
         source: Optional[SourceType] = None,
         exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
