@@ -8,13 +8,13 @@ from docassemble.base.generate_key import random_alphanumeric
 from docassemble.base.functions import get_current_info
 from docassemble.base.util import variables_snapshot_connection, user_info, DADict
 import random
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 __all__ = ["save_input_data"]
 
 
 def save_input_data(
-    title: str = "", input_dict: Dict[str, Any] = None, tags: List[str] = None
+    title: str = "", input_dict: Optional[Dict[str, Any]] = None, tags: Optional[List[str]] = None
 ) -> None:
     """
     This function is used by survey type interviews to save input data for data reporting purposes.

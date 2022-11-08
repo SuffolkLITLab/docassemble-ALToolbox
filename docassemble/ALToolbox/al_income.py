@@ -216,7 +216,7 @@ def _to_set(s: Optional[Union[Set, List, str]]) -> Set:
 
 
 def _source_to_callable(
-    source: SourceType = None, exclude_source: SourceType = None
+    source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
 ) -> Callable[[str], bool]:
     """Combines both a positive and negative lists into a single set that should be tested for inclusion"""
     exclude_set = _to_set(exclude_source)
@@ -256,7 +256,7 @@ class ALIncomeList(DAList):
         return sources
 
     def matches(
-        self, source: SourceType, exclude_source: SourceType = None
+        self, source: SourceType, exclude_source: Optional[SourceType] = None
     ) -> "ALIncomeList":
         """
         Returns an ALIncomeList consisting only of elements matching the specified
@@ -273,9 +273,9 @@ class ALIncomeList(DAList):
     def total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
-        owner: str = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
+        owner: Optional[str] = None,
     ) -> Decimal:
         """
         Returns the total periodic value in the list, gathering the list items
@@ -307,7 +307,7 @@ class ALIncomeList(DAList):
         return result
 
     def move_checks_to_list(
-        self, selected_types: DADict = None, selected_terms: Mapping = None
+        self, selected_types: Optional[DADict] = None, selected_terms: Optional[Mapping] = None
     ):
         """Gives a 'gather by checklist' option.
         If no selected_types param is passed, requires that a .selected_types
@@ -435,9 +435,9 @@ class ALJobList(ALIncomeList):
     def total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
-        owner: str = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
+        owner: Optional[str] = None,
     ) -> Decimal:
         """
         Returns the sum of the gross incomes of its ALJobs divided by the time
@@ -454,8 +454,8 @@ class ALJobList(ALIncomeList):
     def gross_total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the sum of the gross incomes of its ALJobs divided by the time
@@ -478,8 +478,8 @@ class ALJobList(ALIncomeList):
     def net_total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the sum of the net incomes of its ALJobs divided by the time
@@ -567,7 +567,7 @@ class ALAssetList(ALIncomeList):
         self.object_type = ALAsset
 
     def market_value(
-        self, source: SourceType = None, exclude_source: SourceType = None
+        self, source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
     ) -> Decimal:
         """
         Returns the total `.market_value` of assets in the list. You can filter
@@ -583,7 +583,7 @@ class ALAssetList(ALIncomeList):
         return result
 
     def balance(
-        self, source: SourceType = None, exclude_source: SourceType = None
+        self, source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
     ) -> Decimal:
         """
         Returns the total `.balance` of assets in the list,
@@ -603,7 +603,7 @@ class ALAssetList(ALIncomeList):
         return result
 
     def owners(
-        self, source: SourceType = None, exclude_source: SourceType = None
+        self, source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
     ) -> Set[str]:
         """
         Returns a set of the unique owners of the assets.  You can filter the
@@ -716,7 +716,7 @@ class ALSimpleValueList(DAList):
         return sources
 
     def total(
-        self, source: SourceType = None, exclude_source: SourceType = None
+        self, source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
     ) -> Decimal:
         """
         Returns the total value in the list, gathering the list items if
@@ -991,8 +991,8 @@ class ALItemizedJob(DAObject):
     def total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Alias for ALItemizedJob.gross_total to integrate with ALIncomeList math.
@@ -1004,8 +1004,8 @@ class ALItemizedJob(DAObject):
     def gross_total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the sum of positive values (payments) for a given times_per_year.
@@ -1034,8 +1034,8 @@ class ALItemizedJob(DAObject):
     def deduction_total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the sum of money going out (normally, deductions like union
@@ -1065,8 +1065,8 @@ class ALItemizedJob(DAObject):
     def net_total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the net (gross minus deductions) value of the job divided by
@@ -1138,7 +1138,7 @@ class ALItemizedJobList(DAList):
         if not hasattr(self, "object_type") or self.object_type is None:
             self.object_type = ALItemizedJob
 
-    def sources(self, which_side=None) -> Set[str]:
+    def sources(self, which_side:Optional[str]=None) -> Set[str]:
         """Returns a set of the unique sources in all of the jobs.
         By default gets from both sides, if which_side is "deductions", only gets from deductions."""
         sources = set()
@@ -1151,18 +1151,18 @@ class ALItemizedJobList(DAList):
                 sources.update(job.to_subtract.keys())
         return sources
 
-    def total(self, times_per_year: float = 1, source=None) -> Decimal:
+    def total(self, times_per_year: float = 1, source:Optional[SourceType]=None, exclude_source: Optional[SourceType]=None) -> Decimal:
         """
         Alias for ALItemizedJobList.gross_total to integrate with
         ALIncomeList math.
         """
-        return self.gross_total(times_per_year=times_per_year, source=source)
+        return self.gross_total(times_per_year=times_per_year, source=source, exclude_source=exclude_source)
 
     def gross_total(
         self,
-        times_per_year=1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
+        times_per_year:float=1,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the sum of the gross incomes of the list's jobs divided by the
@@ -1192,8 +1192,8 @@ class ALItemizedJobList(DAList):
     def deduction_total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the sum of the deductions of the list's jobs divided by the
@@ -1223,8 +1223,8 @@ class ALItemizedJobList(DAList):
     def net_total(
         self,
         times_per_year: float = 1,
-        source: SourceType = None,
-        exclude_source: SourceType = None,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
         Returns the net of the list's jobs (money in minus money out) divided by
