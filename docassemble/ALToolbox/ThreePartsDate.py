@@ -138,25 +138,32 @@ js_text = """\
 """
 
 
-def check_empty_parts(item: str, default_msg="is not a valid date") -> Optional[str]:
+def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Optional[str]:
     parts = item.split("/")
     empty_parts = [part == "" for part in parts]
+    if len(empty_parts) != 3:
+        return word(default_msg).format(item)
     if not any(empty_parts):
         return None
     if all(empty_parts):
         return word("Enter a month, a day, and a year")
+    elif sum(empty_parts) == 2:
+        # only on part was given, enumerate each
+        if not empty_parts[0]:
+            return word("Enter a day and a year")
+        elif not empty_parts[1]:
+            return word("Enter a month and a year")
+        else:
+            return word("Enter a month and a day")
+    elif sum(empty_parts) == 1:
+        if empty_parts[0]:
+            return word("Enter a month")
+        elif empty_parts[1]:
+            return word("Enter a day")
+        else:
+            return word("Enter a year")
     else:
-        empty_words = [
-            empty_part[1]
-            for empty_part in zip(empty_parts, ["month", "day", "year"])
-            if empty_part[0]
-        ]
-    if len(empty_words) == 2:
-        return word(f"Enter a {empty_words[0]} and a {empty_words[1]}")
-    elif len(empty_words) == 1:
-        return word(f"Enter a {empty_words[0]}")
-    else:
-        return f"{ item } {word(default_msg)}"
+        return word(default_msg).format(item)
 
 
 class ThreePartsDate(CustomDataType):
@@ -223,8 +230,7 @@ class BirthDate(ThreePartsDate):
             try:
                 date = as_datetime(item)
             except Exception as error:
-                ex_msg = f"{ item } {word('is not a valid date')}"
-                raise DAValidationError(ex_msg)
+                raise DAValidationError(word("{} is not a valid date").format(item))
             if matches_date_pattern:
                 date_diff = date_difference(starting=date, ending=today())
                 if date_diff.days >= 0.0:
@@ -232,12 +238,12 @@ class BirthDate(ThreePartsDate):
                 else:
                     raise DAValidationError(
                         word(
-                            f"Answer with a <strong>date of birth</strong> ({date} is in the future)"
-                        )
+                            "Answer with a <strong>date of birth</strong> ({} is in the future)"
+                        ).format(date)
                     )
             else:
                 msg = check_empty_parts(
-                    item, default_msg="is not a valid <strong>date of birth</strong>"
+                    item, default_msg="{} is not a valid <strong>date of birth</strong>"
                 )
                 if msg:
                     raise DAValidationError(msg)
