@@ -725,6 +725,31 @@ subquestion: |
 fields:
   - Job name: x[i].source
 ---
+generic object: ALJobList
+continue button field: x.revisit
+question: |
+  Edit jobs
+subquestion: |
+  ${ x.table }
+
+  ${ x.add_action() }
+---
+generic object: ALJobList
+table: x.table
+rows: x
+columns:
+  - Title: |
+      row_item.source
+  - Employer: |
+      row_item.employer.name if hasattr(row_item.employer.name, "first") else ""
+  - Annual Income: |
+      currency(row_item.net_total())
+edit:
+  - source
+  - employer.name.first
+  - net
+confirm: True
+---
 # SHARED BY ALAsset AND ALAssetList
 ---
 id: asset info
