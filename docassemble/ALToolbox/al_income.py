@@ -393,8 +393,9 @@ class ALJob(ALIncome):
 
         This will force the gathering of the ALJob's `.net` attribute.
         """
-        net = _currency_float_to_decimal(self.net)
-        return (net * Decimal(self.times_per_year)) / Decimal(times_per_year)
+        value = _currency_float_to_decimal(self.value)
+        deduction = _currency_float_to_decimal(self.deduction)
+        return ((value - deduction) * Decimal(self.times_per_year)) / Decimal(times_per_year)
 
     def employer_name_address_phone(self) -> str:
         """
