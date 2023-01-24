@@ -743,11 +743,11 @@ columns:
   - Employer: |
       row_item.employer.name if hasattr(row_item.employer.name, "first") else ""
   - Annual Income: |
-      currency(row_item.net_total())
+      currency(row_item.gross_total())
 edit:
   - source
   - employer.name.first
-  - net
+  - value
 confirm: True
 ---
 # SHARED BY ALAsset AND ALAssetList
