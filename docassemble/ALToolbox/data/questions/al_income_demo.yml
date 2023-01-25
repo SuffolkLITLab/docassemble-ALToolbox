@@ -130,7 +130,15 @@ generic object: ALJob
 sets: x.employer.name.first
 code: |
   if x.is_self_employed:
-    x.employer.name = "Self-employed"
+    x.employer.name.first = "Self-employed"
+    x.employer.name.last = ""
+---
+generic object: ALItemizedJob
+sets: x.employer.name.first
+code: |
+  if x.is_self_employed:
+    x.employer.name.first = "Self-employed"
+    x.employer.name.last = ""
 ---
 comment: |
   Notes on itemized job items:
