@@ -130,7 +130,6 @@ class ALPeriodicAmount(DAObject):
     .times_per_year {float | Decimal} Represents a number of the annual frequency of
         the income. E.g. 12 for a monthly income.
     .source {str} (Optional) The "source" of the income, like a "job" or a "house".
-    .owner {str} (Optional) Full name of the income's owner as a single string.
     .display_name {str} (Optional) If present, will have a translated string to show the
         user, as opposed to a raw english string from the program
     """
@@ -511,8 +510,8 @@ class ALExpenseList(ALIncomeList):
     A list of expenses
 
     * each element has a:
+        * value
         * source
-        * owner
         * display name
     """
 
