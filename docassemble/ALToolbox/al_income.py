@@ -267,7 +267,7 @@ class ALIncomeList(DAList):
         # Construct the filtered list
         return ALIncomeList(
             elements=[item for item in self.elements if satifies_sources(item.source)],
-            object_type = self.object_type
+            object_type=self.object_type,
         )
 
     def total(
