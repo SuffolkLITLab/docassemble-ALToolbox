@@ -167,6 +167,15 @@ code: |
   x.to_subtract.gather()
   x.complete = True
 ---
+generic object: ALItemizedJob
+sets: x.employer.name.first
+code: |
+  if x.is_self_employed:
+    x.employer.name.first = "Self-employed"
+    x.employer.name.last = ""
+    x.employer.phone = ""
+    x.employer.address.address = ""
+---
 generic object: ALIncome
 code: |
   x.source
@@ -628,6 +637,15 @@ code: |
   x.source
   x.value
   x.complete = True
+---
+generic object: ALJob
+sets: x.employer.name.first
+code: |
+  if x.is_self_employed:
+    x.employer.name.first = "Self-employed"
+    x.employer.name.last = ""
+    x.employer.phone = ""
+    x.employer.address.address = ""
 ---
 id: regular job name
 generic object: ALJob
