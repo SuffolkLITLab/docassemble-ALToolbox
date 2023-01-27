@@ -234,6 +234,15 @@ fields:
       variable: x.is_self_employed
       is: False
 ---
+generic object: ALItemizedJob
+sets: x.employer.name.first
+code: |
+  if x.is_self_employed:
+    x.employer.name.first = "Self-employed"
+    x.employer.name.last = ""
+    x.employer.phone = ""
+    x.employer.address.address = ""
+---
 id: itemized job line items
 generic object: ALItemizedJob
 question: |
@@ -678,6 +687,15 @@ fields:
       variable: x.is_self_employed
       is: False
 ---
+generic object: ALJob
+sets: x.employer.name.first
+code: |
+  if x.is_self_employed:
+    x.employer.name.first = "Self-employed"
+    x.employer.name.last = ""
+    x.employer.phone = ""
+    x.employer.address.address = ""
+---
 id: regular job value
 generic object: ALJob
 question: |
@@ -724,6 +742,31 @@ subquestion: |
   % endif
 fields:
   - Job name: x[i].source
+---
+generic object: ALJobList
+continue button field: x.revisit
+question: |
+  Edit jobs
+subquestion: |
+  ${ x.table }
+
+  ${ x.add_action() }
+---
+generic object: ALJobList
+table: x.table
+rows: x
+columns:
+  - Title: |
+      row_item.source
+  - Employer: |
+      row_item.employer.name if hasattr(row_item.employer.name, "first") else ""
+  - Annual Income: |
+      currency(row_item.gross_total())
+edit:
+  - source
+  - employer.name.first
+  - value
+confirm: True
 ---
 # SHARED BY ALAsset AND ALAssetList
 ---
