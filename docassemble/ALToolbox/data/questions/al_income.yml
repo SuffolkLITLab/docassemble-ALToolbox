@@ -237,11 +237,20 @@ fields:
     show if:
       variable: x.is_self_employed
       is: False
-  - Phone number: x.employer.phone_number
+  - Employer's phone number: x.employer.phone_number
     required: False
     show if:
       variable: x.is_self_employed
       is: False
+---
+generic object: ALItemizedJob
+sets: x.employer.name.first
+code: |
+  if x.is_self_employed:
+    x.employer.name.first = "Self-employed"
+    x.employer.name.last = ""
+    x.employer.phone = ""
+    x.employer.address.address = ""
 ---
 id: itemized job line items
 generic object: ALItemizedJob
@@ -691,10 +700,19 @@ fields:
     show if:
       variable: x.is_self_employed
       is: False
-  - Phone: x.employer.phone
+  - Employer's phone: x.employer.phone
     show if:
       variable: x.is_self_employed
       is: False
+---
+generic object: ALJob
+sets: x.employer.name.first
+code: |
+  if x.is_self_employed:
+    x.employer.name.first = "Self-employed"
+    x.employer.name.last = ""
+    x.employer.phone = ""
+    x.employer.address.address = ""
 ---
 id: regular job value
 generic object: ALJob
