@@ -355,8 +355,9 @@ class ALJob(ALIncome):
     .hours_per_period {float} (Optional) The number of hours during the annual
         frequency of this job. E.g. if the annual frequency is 52 (weekly), the
         hours per week might be 50. That is, 50 hours per week.
-    .deduction {float} (Optional) A number representing an amount of money deducted from the total value
-        each period. `.value` minus `.deduction` is the net income in that time perioid.
+    .deduction {float} (Optional) The amount of money deducted from the total value each period.
+        If this job is hourly, deduction is still from each period, not each hour. Used to
+        calculate the net income in `net_income()`.
     .employer {Individual} (Optional) A docassemble Individual object, employer.address is the address
         and employer.phone is the phone
     """
@@ -383,16 +384,20 @@ class ALJob(ALIncome):
 
     def net_total(self, times_per_year: float = 1) -> Decimal:
         """
-        Returns `value - deduction`, divided by the time times_per_year.
+        Returns the net income over a time period, found using 
+        `self.value` and `self.deduction`.
 
         `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
 
+        `self.deduction` is the amount deducted from one's pay over a period (not
+        per hour if hourly).
+
         This will force the gathering of the ALJob's `.value` and `.deduction` attributes.
         """
-        value = _currency_float_to_decimal(self.value)
         deduction = _currency_float_to_decimal(self.deduction)
-        return ((value - deduction) * Decimal(self.times_per_year)) / Decimal(times_per_year)
+        total_deduction = (deduction * Decimal(self.times_per_year)) / Decimal(times_per_year)
+        return self.total(times_per_year=times_per_year) - total_deduction
 
     def employer_name_address_phone(self) -> str:
         """
