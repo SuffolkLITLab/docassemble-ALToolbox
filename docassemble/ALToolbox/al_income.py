@@ -416,7 +416,13 @@ class ALJob(ALIncome):
         gathering the `.employer`, `.employer_address`, and `.employer_phone`
         attributes.
         """
-        return f"{self.employer.name}: {self.employer.address}, {self.employer.phone}"
+        if self.employer.address.address and self.employer.phone:
+            return f"{self.employer.name}: {self.employer.address}, {self.employer.phone}"
+        if self.employer.address.address:
+            return f"{self.employer.name}: {self.employer.address}"
+        if self.employer.phone:
+            return f"{self.employer.name}: {self.employer.phone}"
+        return f"{self.employer.name}"
 
     def normalized_hours(self, times_per_year: float = 1) -> float:
         """

@@ -199,10 +199,11 @@ question: |
 fields:
   - I am self-employed: x.is_self_employed
     datatype: yesno
-  - Name: x.employer.name.first
+  - Employer's name: x.employer.name.first
     show if:
       variable: x.is_self_employed
       is: False
+  - note: Employer's address
   - Street: x.employer.address.address
     required: False
     show if:
@@ -652,15 +653,11 @@ question: |
 fields:
   - I am self-employed: x.is_self_employed
     datatype: yesno
-  - First name: x.employer.name.first
+  - Employer's name: x.employer.name.first
     show if:
       variable: x.is_self_employed
       is: False
-  - Last name: x.employer.name.last
-    required: False
-    show if:
-      variable: x.is_self_employed
-      is: False
+  - note: Employer's address
   - Street address: x.employer.address.address
     show if:
       variable: x.is_self_employed
@@ -711,7 +708,13 @@ fields:
   - How many hours do you work in each period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
-  - What do you get paid?: x.value
+  - label: |
+      % if x.is_hourly:
+      What is your hourly pay for this job?
+      % else:
+      What are your wages for this job?
+      % endif
+    field: x.value
     datatype: currency
     show if: x.is_hourly
   - Amount you get paid: x.value
@@ -741,7 +744,7 @@ subquestion: |
   You've already told us about ${ comma_and_list([job.source for job in x.complete_elements()]) }.
   % endif
 fields:
-  - Job name: x[i].source
+  - Job title: x[i].source
 ---
 generic object: ALJobList
 continue button field: x.revisit
