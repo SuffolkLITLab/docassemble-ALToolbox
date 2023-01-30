@@ -239,7 +239,7 @@ class BirthDate(ThreePartsDate):
                     raise DAValidationError(
                         word(
                             "Answer with a <strong>date of birth</strong> ({} is in the future)"
-                        ).format(date)
+                        ).format(item)
                     )
             else:
                 msg = check_empty_parts(
