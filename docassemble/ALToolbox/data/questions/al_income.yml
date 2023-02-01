@@ -728,16 +728,10 @@ fields:
   - How many hours do you work in each period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
-  - label: |
-      % if x.is_hourly:
-      What is your hourly pay for this job?
-      % else:
-      What are your wages for this job?
-      % endif
-    field: x.value
+  - What is your hourly pay for this job?: x.value
     datatype: currency
     show if: x.is_hourly
-  - Amount you get paid: x.value
+  - What are your wages for this job?: x.value
     datatype: currency
     show if:
       variable: x.is_hourly
