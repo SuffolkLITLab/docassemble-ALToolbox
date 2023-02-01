@@ -9,12 +9,15 @@ comment: |
     - map dict/lookup from key to lang word. See https://github.com/nonprofittechy/docassemble-HousingCodeChecklist/blob/0cbfe02b29bbec66b8a2b925b36b3c67bb300e84/docassemble/HousingCodeChecklist/data/questions/language.yml#L41
 ---
 objects:
+  - to_show: DADict
+---
+objects:
   - itemized_job: ALItemizedJob.using()
   - itemized_job_list: ALItemizedJobList.using(
       complete_attribute='complete',
       ask_number=True)
   - al_income: ALIncome
-  - al_income_list: ALIncomeList.using(auto_gather=False)
+  - al_income_list: ALIncomeList.using(complete_attribute='complete', auto_gather=False)
   - al_job: ALJob
   - al_job_list: ALJobList.using(
       complete_attribute='complete',
@@ -36,54 +39,70 @@ id: interview order
 mandatory: True
 code: |
   if to_run['ALItemizedJob'] or to_run['all']:
-    itemized_job.source = 'itemized taxi driver'
+    to_show['ALItemizedJob']
     itemized_job.complete
   
   if to_run['ALItemizedJobList'] or to_run['all']:
+    to_show['ALItemizedJobList']
     itemized_job_list.gather()
   
   if to_run['ALIncome'] or to_run['all']:
-    al_income.source = 'pension'
+    to_show['ALIncome']
+    al_income.source = "Money Stash"
     al_income.complete
   
   if to_run['ALIncomeList'] or to_run['all']:
-    income_sources
+    to_show['ALIncomeList']
     al_income_list.gathered  # get which sources in the list to use
-    get_alincome_list_item_values
   
   if to_run['ALJob'] or to_run['all']:
-    al_job.source = 'unitemized flight attendant'
+    to_show['ALJob']
     al_job.complete
   
   if to_run['ALJobList'] or to_run['all']:
+    to_show['ALJobList']
     al_job_list.gather()
   
   if to_run['ALAsset'] or to_run['all']:
-    al_asset.source = 'real estate'
+    to_show['ALAsset']
     al_asset.complete
   
   if to_run['ALAssetList'] or to_run['all']:
+    to_show['ALAssetList']
     al_asset_list.gather()
     
   if to_run['ALVehicle'] or to_run['all']:
+    to_show['ALVehicle']
     al_vehicle.complete
   
   if to_run['ALVehicleList'] or to_run['all']:
+    to_show['ALVehicleList']
     al_vehicle_list.gather()
   
   if to_run['ALSimpleValue'] or to_run['all']:
+    to_show['ALSimpleValue']
     al_simple_value.value
   
   if to_run['ALSimpleValueList'] or to_run['all']:
+    to_show['ALSimpleValueList']
     al_value_list.gather()
   
   end
 ---
+question: ${ i }
+subquestion: |
+  The next screens will demonstrate how a ${ i } will appear in an interview.
+
+  % if i == "ALIncome"
+  This income's source will be automatically set to "Money Stash". This info is
+  usually chosen from a selection when the income is part of an ALIncomeList.
+  % endif
+
+continue button field: to_show[i]
+---
 code: |
     al_income_list.there_are_any = income_sources.any_true
     al_income_list.target_number = len(income_sources.true_values())
----
-# UNIQUE CODE FOR ALIncomeList
 ---
 code: |
   if income_sources.any_true():
@@ -91,11 +110,6 @@ code: |
       one_income = al_income_list.appendObject(source=source)
       # Never put anything else in here
   al_income_list.gathered = True
----
-code: |
-  for income in al_income_list.elements:
-    income.complete
-  get_alincome_list_item_values = True
 ---
 id: which to test
 # TODO: Accumulate them all in one ALIncomeList at the end to test the ability of ALIncomeList to run its functions appropriately on all types of values (other than ALIncomeLists themselves)
@@ -125,20 +139,6 @@ fields:
       - ALIncomeList: ALIncomeList
       - ALJobList: ALJobList
       - ALItemizedJobList: ALItemizedJobList
----
-generic object: ALJob
-sets: x.employer.name.first
-code: |
-  if x.is_self_employed:
-    x.employer.name.first = "Self-employed"
-    x.employer.name.last = ""
----
-generic object: ALItemizedJob
-sets: x.employer.name.first
-code: |
-  if x.is_self_employed:
-    x.employer.name.first = "Self-employed"
-    x.employer.name.last = ""
 ---
 comment: |
   Notes on itemized job items:

@@ -1,5 +1,5 @@
 ---
-modules: 
+modules:
   - .al_income
 ---
 # Returns a list of lists, each of which contains the number of
