@@ -117,6 +117,26 @@ subquestion: |
 
   ${ x.add_action() }
 ---
+generic object: ALItemizedJob
+continue button field: x.to_add.revisit
+question: |
+  Edit incomes
+subquestion: |
+  ${ x.to_add.table }
+
+  ${ x.to_add.add_action() }
+---
+generic object: ALItemizedJob
+continue button field: x.to_subtract.revisit
+question: |
+  Edit deductions
+subquestion: |
+  These are amounts that are taken out of your pay.
+
+  ${ x.to_subtract.table }
+
+  ${ x.to_subtract.add_action() }
+---
 generic object: ALIncomeList
 continue button field: x.revisit
 question: |
@@ -382,7 +402,7 @@ fields:
   - Deduction name: x.to_subtract.new_item_name
 validation code: |
   if x.to_subtract.new_item_name in x.to_subtract.complete_elements().keys():
-    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.to_subtract.new_item_name, x.to_subtract.new_item_name) }</strong> that take out { currency( x.to_subtract[ x.to_subtract.new_item_name ].value )}. Pick a different name.')
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.to_subtract.new_item_name, x.to_subtract.new_item_name) }</strong> that takes out { currency( x.to_subtract[ x.to_subtract.new_item_name ].value )}. Pick a different name.')
 ---
 id: other itemized job reduction value
 generic object: ALItemizedJob
