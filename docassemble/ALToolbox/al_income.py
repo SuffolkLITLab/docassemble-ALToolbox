@@ -384,7 +384,7 @@ class ALJob(ALIncome):
 
     def net_total(self, times_per_year: float = 1) -> Decimal:
         """
-        Returns the net income over a time period, found using 
+        Returns the net income over a time period, found using
         `self.value` and `self.deduction`.
 
         `times_per_year` is some denominator of a year. E.g, to express a weekly
@@ -396,7 +396,9 @@ class ALJob(ALIncome):
         This will force the gathering of the ALJob's `.value` and `.deduction` attributes.
         """
         deduction = _currency_float_to_decimal(self.deduction)
-        total_deduction = (deduction * Decimal(self.times_per_year)) / Decimal(times_per_year)
+        total_deduction = (deduction * Decimal(self.times_per_year)) / Decimal(
+            times_per_year
+        )
         return self.total(times_per_year=times_per_year) - total_deduction
 
     def employer_name_address_phone(self) -> str:
