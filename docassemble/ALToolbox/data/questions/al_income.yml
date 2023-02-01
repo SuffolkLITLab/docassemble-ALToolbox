@@ -760,8 +760,10 @@ columns:
       row_item.source
   - Employer: |
       row_item.employer.name if hasattr(row_item.employer.name, "first") else ""
-  - Annual Income: |
+  - Annual Gross Income: |
       currency(row_item.gross_total())
+  - Annual Deductions: |
+      currency(row_item.deductions())
 edit:
   - source
   - employer.name.first

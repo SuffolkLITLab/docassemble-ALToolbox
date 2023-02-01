@@ -382,6 +382,17 @@ class ALJob(ALIncome):
         """
         return self.total(times_per_year=times_per_year)
 
+    def deductions(self, times_per_year: float = 1) -> Decimal:
+        """
+        Returns the total deductions from someone's pay over the specificed times_per_year
+        (not per hour if hourly).
+
+        `times_per_year` is some denominator of a year. E.g. to express a weekly
+        period, use 52. The default is 1 (a year).
+        """
+        deduction = _currency_float_to_decimal(self.deduction)
+        return (deduction * Decimal(self.times_per_year)) / Decimal(times_per_year)
+
     def net_total(self, times_per_year: float = 1) -> Decimal:
         """
         Returns the net income over a time period, found using
@@ -395,11 +406,9 @@ class ALJob(ALIncome):
 
         This will force the gathering of the ALJob's `.value` and `.deduction` attributes.
         """
-        deduction = _currency_float_to_decimal(self.deduction)
-        total_deduction = (deduction * Decimal(self.times_per_year)) / Decimal(
-            times_per_year
+        return self.total(times_per_year=times_per_year) - self.deductions(
+            times_per_year=times_per_year
         )
-        return self.total(times_per_year=times_per_year) - total_deduction
 
     def employer_name_address_phone(self) -> str:
         """
@@ -507,6 +516,27 @@ class ALJobList(ALIncomeList):
         for job in self.elements:
             if satisfies_sources(job.source):
                 result += Decimal(job.net_total(times_per_year=times_per_year))
+        return result
+
+    def deductions(
+        self,
+        times_per_year: float = 1,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
+    ) -> Decimal:
+        """
+        Returns the sum of the deductions of its ALJobs divided by the time
+        times_per_year. You can filter the jobs by `source`. Leaving out `source`
+        will use all sources.
+        """
+        self._trigger_gather()
+        result: Decimal = Decimal(0)
+        if times_per_year == 0:
+            return result
+        satisfies_sources = _source_to_callable(source, exclude_source)
+        for job in self.elements:
+            if satisfies_sources(job.source):
+                result += Decimal(job.deductions(times_per_year=times_per_year))
         return result
 
 
