@@ -267,7 +267,7 @@ class ALIncomeList(DAList):
         # Construct the filtered list
         return ALIncomeList(
             elements=[item for item in self.elements if satifies_sources(item.source)],
-            object_type = self.object_type
+            object_type=self.object_type,
         )
 
     def total(
@@ -417,7 +417,9 @@ class ALJob(ALIncome):
         attributes.
         """
         if self.employer.address.address and self.employer.phone:
-            return f"{self.employer.name}: {self.employer.address}, {self.employer.phone}"
+            return (
+                f"{self.employer.name}: {self.employer.address}, {self.employer.phone}"
+            )
         if self.employer.address.address:
             return f"{self.employer.name}: {self.employer.address}"
         if self.employer.phone:
