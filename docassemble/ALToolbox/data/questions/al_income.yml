@@ -223,7 +223,10 @@ fields:
     show if:
       variable: x.is_self_employed
       is: False
-  - note: Employer's address
+  - note: Employer's contact information
+    show if:
+      variable: x.is_self_employed
+      is: False
   - Street: x.employer.address.address
     required: False
     show if:
