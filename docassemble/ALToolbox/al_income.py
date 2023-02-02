@@ -918,8 +918,8 @@ class ALItemizedValueDict(DAOrderedDict):
 
     def __str__(self) -> str:
         """
-        Returns a string of the dictionary's key/value pairs in a list. E.g.
-        "['federal_taxes': '2500.00', 'wages': '15.50']"
+        Returns a string of the dictionary's key/value pairs as two-element lists in a list.
+        E.g. '[["federal_taxes", "2500.00"], ["wages", "15.50"]]'
         """
         to_stringify = []
         for key in self:
