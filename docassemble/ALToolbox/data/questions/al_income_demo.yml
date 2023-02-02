@@ -38,54 +38,54 @@ objects:
 id: interview order
 mandatory: True
 code: |
-  if to_run['ALItemizedJob'] or to_run['all']:
-    to_show['ALItemizedJob']
-    itemized_job.complete
+  if to_run['ALSimpleValue'] or to_run['all']:
+    to_show['ALSimpleValue']
+    al_simple_value.value
+
+  if to_run['ALAsset'] or to_run['all']:
+    to_show['ALAsset']
+    al_asset.complete
   
-  if to_run['ALItemizedJobList'] or to_run['all']:
-    to_show['ALItemizedJobList']
-    itemized_job_list.gather()
-  
+  if to_run['ALVehicle'] or to_run['all']:
+    to_show['ALVehicle']
+    al_vehicle.complete
+
   if to_run['ALIncome'] or to_run['all']:
     to_show['ALIncome']
     al_income.source = "Money Stash"
     al_income.complete
   
-  if to_run['ALIncomeList'] or to_run['all']:
-    to_show['ALIncomeList']
-    al_income_list.gathered  # get which sources in the list to use
-  
   if to_run['ALJob'] or to_run['all']:
     to_show['ALJob']
     al_job.complete
   
-  if to_run['ALJobList'] or to_run['all']:
-    to_show['ALJobList']
-    al_job_list.gather()
+  if to_run['ALItemizedJob'] or to_run['all']:
+    to_show['ALItemizedJob']
+    itemized_job.complete
   
-  if to_run['ALAsset'] or to_run['all']:
-    to_show['ALAsset']
-    al_asset.complete
+  if to_run['ALSimpleValueList'] or to_run['all']:
+    to_show['ALSimpleValueList']
+    al_value_list.gather()
   
   if to_run['ALAssetList'] or to_run['all']:
     to_show['ALAssetList']
     al_asset_list.gather()
     
-  if to_run['ALVehicle'] or to_run['all']:
-    to_show['ALVehicle']
-    al_vehicle.complete
-  
   if to_run['ALVehicleList'] or to_run['all']:
     to_show['ALVehicleList']
     al_vehicle_list.gather()
   
-  if to_run['ALSimpleValue'] or to_run['all']:
-    to_show['ALSimpleValue']
-    al_simple_value.value
+  if to_run['ALIncomeList'] or to_run['all']:
+    to_show['ALIncomeList']
+    al_income_list.gathered  # get which sources in the list to use
   
-  if to_run['ALSimpleValueList'] or to_run['all']:
-    to_show['ALSimpleValueList']
-    al_value_list.gather()
+  if to_run['ALJobList'] or to_run['all']:
+    to_show['ALJobList']
+    al_job_list.gather()
+  
+  if to_run['ALItemizedJobList'] or to_run['all']:
+    to_show['ALItemizedJobList']
+    itemized_job_list.gather()
   
   end
 ---
@@ -100,20 +100,8 @@ subquestion: |
 
 continue button field: to_show[i]
 ---
-code: |
-    al_income_list.there_are_any = income_sources.any_true
-    al_income_list.target_number = len(income_sources.true_values())
----
-code: |
-  if income_sources.any_true():
-    for source in income_sources.true_values():
-      one_income = al_income_list.appendObject(source=source)
-      # Never put anything else in here
-  al_income_list.gathered = True
----
 id: which to test
 # TODO: Accumulate them all in one ALIncomeList at the end to test the ability of ALIncomeList to run its functions appropriately on all types of values (other than ALIncomeLists themselves)
-# TODO: Check these: Does ALAssetList cover all of ALIncomeList? Does ALAsset cover all of ALIncome?
 question: |
   ALIncome Demo
 subquestion: |
