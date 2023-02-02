@@ -132,6 +132,20 @@ edit:
   - value
   - times_per_year
 ---
+generic object: ALIncomeList
+code: |
+  x.selected_types
+  x.move_checks_to_list(selected_terms=non_wage_income_terms)
+  x.moved = True
+---
+generic object: ALIncomeList
+code: |
+  x.moved
+  for income_type in x.elements:
+    income_type.complete
+  x.revisit = True
+  x.gathered = True
+---
 generic object: ALItemizedValueDict
 table: x.table
 rows: x
@@ -503,7 +517,7 @@ code: |
 id: income info
 generic object: ALIncome
 question: |
-  How much do you get from ${ x.source }?
+  How much do you get from ${ x.display_name if hasattr(x, 'display_name') else x.source }?
 fields:
   - Is it an hourly amount?: x.is_hourly
     datatype: yesnoradio
@@ -629,15 +643,15 @@ subquestion: |
 
   ${ x.add_action() }
 ---
-# Why is this not being triggered
 id: which incomes
+generic object: ALIncomeList
 question: |
-  What are your sources of income?
+  What sources of income do you have, not including employment?
 fields:
-  - no label: income_sources
+  - no label: x.selected_types
     datatype: checkboxes
     code: |
-      income_terms_ordered
+      non_wage_income_terms_ordered
 ---
 # SHARED BY ALJob AND ALJobList
 ---
@@ -898,16 +912,10 @@ fields:
   - How often is the income earned?: x.times_per_year
     datatype: integer
     code: times_per_year_list
+    required: False
   - Who owns this?: x.owner
 ---
 # UNIQUE FOR ALVehicleList
----
-# Has to have its own. Otherwise it's overridden by ALAssetList.
-generic object: ALVehicleList
-code: |
-  # .source is automatically 'vehicle'
-  x[i].market_value
-  x[i].complete = True
 ---
 id: how many vehicles
 generic object: ALVehicleList
@@ -939,11 +947,18 @@ fields:
     hint: e.g, Ford, Honda
   - Model: x[i].model
     hint: e.g., Fusion, Civic
-  - Current value: x[i].value
+  - Current value: x[i].market_value
     datatype: currency
   - Loan balance: x[i].balance
     datatype: currency
   - Who owns this?: x[i].owner
+---
+# Has to have its own. Otherwise it's overridden by ALAssetList.
+generic object: ALVehicleList
+code: |
+  # .source is automatically 'vehicle'
+  x[i].market_value
+  x[i].complete = True
 ---
 # UNIQUE FOR ALSimpleValue
 ---
