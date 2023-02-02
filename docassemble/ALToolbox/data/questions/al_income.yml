@@ -861,7 +861,7 @@ fields:
     datatype: integer
     required: False
 ---
-generic: ALAssetList
+generic object: ALAssetList
 table: x.table
 rows: x
 columns:
