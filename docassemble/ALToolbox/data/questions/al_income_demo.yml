@@ -34,56 +34,61 @@ objects:
   - al_value_list: ALSimpleValueList.using(
       complete_attribute='complete',
       ask_number=True)
+  - al_expense_list: ALExpenseList.using(auto_gather=False, complete_attribute="exists")
 ---
 id: interview order
 mandatory: True
 code: |
-  if to_run['ALSimpleValue'] or to_run['all']:
+  if to_run['ALSimpleValue']:
     to_show['ALSimpleValue']
     al_simple_value.value
 
-  if to_run['ALAsset'] or to_run['all']:
+  if to_run['ALAsset']:
     to_show['ALAsset']
     al_asset.complete
   
-  if to_run['ALVehicle'] or to_run['all']:
+  if to_run['ALVehicle']:
     to_show['ALVehicle']
     al_vehicle.complete
 
-  if to_run['ALIncome'] or to_run['all']:
+  if to_run['ALIncome']:
     to_show['ALIncome']
     al_income.source = "Money Stash"
     al_income.complete
-  
-  if to_run['ALJob'] or to_run['all']:
+
+  if to_run['ALJob']:
     to_show['ALJob']
     al_job.complete
   
-  if to_run['ALItemizedJob'] or to_run['all']:
+  if to_run['ALItemizedJob']:
     to_show['ALItemizedJob']
     itemized_job.complete
   
-  if to_run['ALSimpleValueList'] or to_run['all']:
+  if to_run['ALSimpleValueList']:
     to_show['ALSimpleValueList']
     al_value_list.gather()
   
-  if to_run['ALAssetList'] or to_run['all']:
+  if to_run['ALAssetList']:
     to_show['ALAssetList']
     al_asset_list.gather()
     
-  if to_run['ALVehicleList'] or to_run['all']:
+  if to_run['ALVehicleList']:
     to_show['ALVehicleList']
     al_vehicle_list.gather()
   
-  if to_run['ALIncomeList'] or to_run['all']:
+  if to_run['ALIncomeList']:
     to_show['ALIncomeList']
     al_income_list.gathered  # get which sources in the list to use
   
-  if to_run['ALJobList'] or to_run['all']:
+  if to_run['ALExpenseList']:
+    to_show['ALExpenseList']
+    al_expense_list.gathered
+
+  if to_run['ALJobList']:
     to_show['ALJobList']
     al_job_list.gather()
-  
-  if to_run['ALItemizedJobList'] or to_run['all']:
+
+  if to_run['ALItemizedJobList']:
     to_show['ALItemizedJobList']
     itemized_job_list.gather()
   
@@ -108,25 +113,39 @@ subquestion: |
   This interview let's you try out functionalities from the `al_income` module. You can also
   look at the [Massachusetts fee waiver supplement](https://github.com/SuffolkLITLab/docassemble-ALAffidavitOfIndigency)
   for other examples using the `al_income` module.
-
 fields:
   - "What functionality do you want to try?": to_run
     datatype: checkboxes
     none of the above: False
-    choices:
-      - All of the them: all
-      - ALSimpleValue: ALSimpleValue
-      - ALAsset: ALAsset
-      - ALVehicle: ALVehicle
-      - ALIncome: ALIncome
-      - ALJob: ALJob
-      - ALItemizedJob: ALItemizedJob
-      - ALSimpleValueList: ALSimpleValueList
-      - ALAssetList: ALAssetList
-      - ALVehicleList: ALVehicleList
-      - ALIncomeList: ALIncomeList
-      - ALJobList: ALJobList
-      - ALItemizedJobList: ALItemizedJobList
+    all of the above: True
+    code: |
+      func_ordered
+---
+variable name: functionality_list
+data: !!omap
+  - ALSimpleValue: ALSimpleValue
+  - ALAsset: ALAsset
+  - ALVehicle: ALVehicle
+  - ALIncome: ALIncome
+  - ALJob: ALJob
+  - ALItemizedJob: ALItemizedJob
+  - ALSimpleValueList: ALSimpleValueList
+  - ALAssetList: ALAssetList
+  - ALVehicleList: ALVehicleList
+  - ALIncomeList: ALIncomeList
+  - ALExpenseList: ALExpenseList
+  - ALJobList: ALJobList
+  - ALItemizedJobList: ALItemizedJobList
+---
+objects:
+  - func_ordered: DAOrderedDict.using(elements=functionality_list, auto_gather=False, gathered=True)
+---
+if: url_args.get('use_feature')
+code: |
+  to_run = DADict('to_run')
+  for key in functionality_list:
+    to_run[functionality_list[key]] = False
+  to_run[url_args.get('use_feature')] = True
 ---
 comment: |
   Notes on itemized job items:
@@ -147,7 +166,7 @@ buttons:
   - Restart: restart
 subquestion: |
   
-  % if to_run['ALItemizedJob'] or to_run['all']:
+  % if to_run['ALItemizedJob']:
   ## Single ALItemizedJob: ${ itemized_job.source }
   
   Job's `.to_add` as a string: ${ itemized_job.to_add }
@@ -168,7 +187,7 @@ subquestion: |
   
   % endif
 
-  % if to_run['ALItemizedJobList'] or to_run['all']:
+  % if to_run['ALItemizedJobList']:
   ### Itemized jobs list
   
   #### All jobs
@@ -214,7 +233,7 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALIncome'] or to_run['all']:
+  % if to_run['ALIncome']:
   ### A single ALIncome:
   
   Plain `al_income` in Mako: ${ al_income }
@@ -227,7 +246,7 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALIncomeList'] or to_run['all']:
+  % if to_run['ALIncomeList']:
   ### ALIncomeList
   
   **Sources:** ${ al_income_list.sources() }[BR]
@@ -245,7 +264,7 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALJob'] or to_run['all']:
+  % if to_run['ALJob']:
   
   ### Single ALJob: ${ al_job.source }
   
@@ -255,7 +274,7 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALJobList'] or to_run['all']:
+  % if to_run['ALJobList']:
   ### ALJobList
   
   Calculation Type | Frequency | Total
@@ -278,7 +297,7 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALAsset'] or to_run['all']:
+  % if to_run['ALAsset']:
   ### A single ALAsset:
   
   Source | Owner | Period | Total
@@ -289,7 +308,7 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALAssetList'] or to_run['all']:
+  % if to_run['ALAssetList']:
   ### ALAssetList:
   
   **Sources:** ${ al_asset_list.sources() }[BR]
@@ -320,7 +339,7 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALVehicle'] or to_run['all']:
+  % if to_run['ALVehicle']:
   ### A single ALVehicle:
   
   Owner | Year/Make/Model | Current market value
@@ -331,7 +350,7 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALVehicleList'] or to_run['all']:
+  % if to_run['ALVehicleList']:
   ### ALVehicleList:
   
   ${ al_vehicle_list.output }
@@ -340,7 +359,7 @@ subquestion: |
   
   % endif
 
-  % if to_run['ALSimpleValue'] or to_run['all']:
+  % if to_run['ALSimpleValue']:
   ### A single ALSimpleValue
   
   An ALSimpleValue is not a periodic value. Its `.total()` is negative if its `transaction_type` is an "expense", otherwise it's positive.
@@ -352,13 +371,22 @@ subquestion: |
   
   % endif
   
-  % if to_run['ALSimpleValueList'] or to_run['all']:
+  % if to_run['ALSimpleValueList']:
   ### ALSimpleValueList
   
   ${ al_value_list.output }
   
   ---
-  
+
+  % endif
+
+  % if to_run['ALExpenseList']:
+  ### ALExpenseList
+
+  ${ al_expense_list.output }
+
+  ---
+
   % endif
 ---
 # OUTPUT TEMPLATES
@@ -448,7 +476,7 @@ template: x.output
 content: |
   * **sources:** ${ x.sources() }
   * **total:** ${ currency(x.total()) }
-  * **total of sources called "cash":** ${ currency(x.total(source=['cash'])) }
+  * **total of sources called "cash":** ${ currency(x.total(source='cash')) }
   
   An item's `.total()` results are negative if their `transaction_type` is an "expense", otherwise they're positive.
   
@@ -461,3 +489,19 @@ content: |
   ${ val.source } | Total currency | ${ currency(val.total()) }
   % endfor
 ---
+generic object: ALExpenseList
+template: x.output
+content: |
+  * **sources:** ${ x.sources() }
+  * **total:** ${ currency(x.total()) }
+  * **monthly total:** ${ currency(x.total(times_per_year=12)) }
+  * **total of sources called "rent":** ${ currency(x.total(source='rent')) }
+
+  **Expenses:**
+
+  Source | Functionality | Value
+  - | - | -
+  % for exp in x:
+  ${ exp.source } | As string | ${ exp }
+  ${ exp.source } | Total cost | ${ currency(exp.total()) }
+  % endfor
