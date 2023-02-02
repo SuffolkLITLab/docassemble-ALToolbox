@@ -93,7 +93,7 @@ question: ${ i }
 subquestion: |
   The next screens will demonstrate how a ${ i } will appear in an interview.
 
-  % if i == "ALIncome"
+  % if i == "ALIncome":
   This income's source will be automatically set to "Money Stash". This info is
   usually chosen from a selection when the income is part of an ALIncomeList.
   % endif
@@ -394,11 +394,11 @@ content: |
   
   Name | Calculation type | Frequency | Gross amount
   - | - | - | -
-  % for name, item in x.to_add.complete_elements().items():
-  ${ job_items_names.get(name, name) } | Gross | Monthly | ${ currency(x.gross_total( source=name, times_per_year=12 )) }
+  % for source, item in x.to_add.complete_elements().items():
+  ${ job_items_names.get(source, source) } | Gross | Monthly | ${ currency(x.gross_total( source=source, times_per_year=12 )) }
   % endfor
   % for name, item in x.to_subtract.complete_elements().items():
-  ${ job_items_names.get(name, name) } | Net | Monthly | ${ currency(x.net_total( source=name, times_per_year=12 )) }
+  ${ job_items_names.get(source, source) } | Net | Monthly | ${ currency(x.net_total( source=source, times_per_year=12 )) }
   % endfor
   
   **Hours for hourly job:**
@@ -407,7 +407,7 @@ content: |
   * ${ x.normalized_hours() } hours per year
   * ${ x.normalized_hours(times_per_year=52) } hours per week
   % else:
-  **${ x.name }** is not hourly
+  **${ x.source }** is not hourly
   % endif
 ---
 generic object: ALIncome
