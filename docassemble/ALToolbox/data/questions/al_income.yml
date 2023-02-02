@@ -108,35 +108,6 @@ objects:
 ---
 ########## Questions
 ---
-generic object: ALItemizedValueDict
-continue button field: x.revisit
-question: |
-  Edit values
-subquestion: |
-  ${ x.table }
-
-  ${ x.add_action() }
----
-generic object: ALItemizedJob
-continue button field: x.to_add.revisit
-question: |
-  Edit incomes
-subquestion: |
-  ${ x.to_add.table }
-
-  ${ x.to_add.add_action() }
----
-generic object: ALItemizedJob
-continue button field: x.to_subtract.revisit
-question: |
-  Edit deductions
-subquestion: |
-  These are amounts that are taken out of your pay.
-
-  ${ x.to_subtract.table }
-
-  ${ x.to_subtract.add_action() }
----
 generic object: ALIncomeList
 continue button field: x.revisit
 question: |
@@ -145,6 +116,21 @@ subquestion: |
   ${ x.table }
 
   ${ x.add_action() }
+---
+generic object: ALIncomeList
+table: x.table
+rows: x
+columns:
+  - Type: |
+      row_item.source.replace("_", " ").lower()
+  - Times per year: |
+      times_per_year(times_per_year_list, row_item.times_per_year)
+  - Amount: |
+      currency(row_item.value)
+edit:
+  - source
+  - value
+  - times_per_year
 ---
 generic object: ALItemizedValueDict
 table: x.table
@@ -158,17 +144,14 @@ edit:
   - exists
   - value
 ---
-generic object: ALExpenseList 
-table: x.table
-rows: x
-columns:
-  - Type: |
-      row_index
-  - Amount: |
-      '$0' if hasattr(row_item, 'exists') and not row_item.exists else currency(row_item.value)
-edit:
-  - source
-  - value
+generic object: ALItemizedValueDict
+continue button field: x.revisit
+question: |
+  Edit values
+subquestion: |
+  ${ x.table }
+
+  ${ x.add_action() }
 ---
 generic object: ALItemizedJob
 code: |
@@ -438,8 +421,27 @@ generic object: ALItemizedJob
 code: |
   x.to_subtract[i].exists = True
 ---
-# UNIQUE ITEMS FOR ALItemizedJobList
+generic object: ALItemizedJob
+continue button field: x.to_add.revisit
+question: |
+  Edit incomes from ${ x.source }
+subquestion: |
+  ${ x.to_add.table }
+
+  ${ x.to_add.add_action() }
 ---
+generic object: ALItemizedJob
+continue button field: x.to_subtract.revisit
+question: |
+  Edit deductions from ${ x.source }
+subquestion: |
+  These are amounts that are taken out of your pay.
+
+  ${ x.to_subtract.table }
+
+  ${ x.to_subtract.add_action() }
+---
+# UNIQUE ITEMS FOR ALItemizedJobList
 id: how many itemized jobs
 generic object: ALItemizedJobList
 question: |
@@ -486,24 +488,6 @@ edit:
   - to_add.revisit
   - to_subtract.revisit
 confirm: True
----
-generic object: ALItemizedJobList
-continue button field: x.to_subtract.revisit
-question: |
-  Edit deductions from ${ x.source }
-subquestion: |
-  ${ x.to_subtract.table }
-
-  ${ x.add_action() }
----
-generic object: ALItemizedJobList
-continue button field: x.to_add.revisit
-question: |
-  Edit incomes from ${ x.source }
-subquestion: |
-  ${ x.table }
-
-  ${ x.add_action() }
 ---
 # SHARED CODE FOR ALIncome and ALIncomeList and single ALAsset
 ---
@@ -851,6 +835,18 @@ fields:
       times_per_year_list
     datatype: integer
     required: False
+---
+generic: ALAssetList
+table: x.table
+rows: x
+columns:
+  - Name: |
+      row_item.name
+  - Amount: |
+      currency(row_item.balance)
+edit:
+  - name
+  - balance
 ---
 # UNIQUE FOR ALVehicle
 ---
