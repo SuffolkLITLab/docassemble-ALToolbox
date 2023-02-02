@@ -1193,7 +1193,8 @@ class ALItemizedJobList(DAList):
 
     def sources(self, which_side: Optional[str] = None) -> Set[str]:
         """Returns a set of the unique sources in all of the jobs.
-        By default gets from both sides, if which_side is "deductions", only gets from deductions."""
+        By default gets from both sides, if which_side is "deductions", only gets from deductions.
+        """
         sources = set()
         if not which_side:
             which_side = "all"
