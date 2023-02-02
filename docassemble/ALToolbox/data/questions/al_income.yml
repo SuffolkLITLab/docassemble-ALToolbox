@@ -206,11 +206,14 @@ fields:
     show if:
       variable: x.is_self_employed
       is: False
-  - note: Employer's contact information
+  - note: |
+      ---
+
+      Employer's contact information
     show if:
       variable: x.is_self_employed
       is: False
-  - Street: x.employer.address.address
+  - Street address: x.employer.address.address
     required: False
     show if:
       variable: x.is_self_employed
@@ -230,7 +233,7 @@ fields:
     show if:
       variable: x.is_self_employed
       is: False
-  - Zip: x.employer.address.zip
+  - Zip or postal code: x.employer.address.zip
     required: False
     show if:
       variable: x.is_self_employed
@@ -664,32 +667,40 @@ fields:
     show if:
       variable: x.is_self_employed
       is: False
-  - note: Employer's contact information
+  - note: |
+      ---
+
+      Employer's contact information
     show if:
       variable: x.is_self_employed
       is: False
   - Street address: x.employer.address.address
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
   - Unit: x.employer.address.unit 
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
-    required: False
   - City: x.employer.address.city
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
   - State: x.employer.address.state
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
-  - Postal code: x.employer.address.zip
+  - Zip or postal code: x.employer.address.zip
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
   - Phone: x.employer.phone
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
