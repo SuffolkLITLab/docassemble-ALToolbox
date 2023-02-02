@@ -97,7 +97,7 @@ def times_per_year(
 
 
 def recent_years(
-    past: int = 15, order: str = "descending", future: int = 1
+    past: int = 25, order: str = "descending", future: int = 1
 ) -> List[int]:
     """
     Returns a list of the most recent past years, continuing into the future.
