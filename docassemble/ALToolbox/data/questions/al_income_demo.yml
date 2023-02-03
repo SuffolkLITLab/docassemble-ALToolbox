@@ -413,7 +413,7 @@ content: |
   % for source, item in x.to_add.complete_elements().items():
   ${ job_items_names.get(source, source) } | Gross | Monthly | ${ currency(x.gross_total( source=source, times_per_year=12 )) }
   % endfor
-  % for name, item in x.to_subtract.complete_elements().items():
+  % for source, item in x.to_subtract.complete_elements().items():
   ${ job_items_names.get(source, source) } | Net | Monthly | ${ currency(x.net_total( source=source, times_per_year=12 )) }
   % endfor
   
