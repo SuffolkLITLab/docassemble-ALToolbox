@@ -110,7 +110,7 @@ id: which to test
 question: |
   ALIncome Demo
 subquestion: |
-  This interview let's you try out functionalities from the `al_income` module. You can also
+  This interview lets you try out functionalities from the `al_income` module. You can also
   look at the [Massachusetts fee waiver supplement](https://github.com/SuffolkLITLab/docassemble-ALAffidavitOfIndigency)
   for other examples using the `al_income` module.
 fields:
