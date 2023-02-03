@@ -97,7 +97,7 @@ def times_per_year(
 
 
 def recent_years(
-    past: int = 15, order: str = "descending", future: int = 1
+    past: int = 25, order: str = "descending", future: int = 1
 ) -> List[int]:
     """
     Returns a list of the most recent past years, continuing into the future.
@@ -130,7 +130,6 @@ class ALPeriodicAmount(DAObject):
     .times_per_year {float | Decimal} Represents a number of the annual frequency of
         the income. E.g. 12 for a monthly income.
     .source {str} (Optional) The "source" of the income, like a "job" or a "house".
-    .owner {str} (Optional) Full name of the income's owner as a single string.
     .display_name {str} (Optional) If present, will have a translated string to show the
         user, as opposed to a raw english string from the program
     """
@@ -267,7 +266,8 @@ class ALIncomeList(DAList):
         satifies_sources = _source_to_callable(source, exclude_source)
         # Construct the filtered list
         return ALIncomeList(
-            elements=[item for item in self.elements if satifies_sources(item.source)]
+            elements=[item for item in self.elements if satifies_sources(item.source)],
+            object_type=self.object_type,
         )
 
     def total(
@@ -325,7 +325,7 @@ class ALIncomeList(DAList):
         if not selected_terms:
             selected_terms = {}
         self.elements.clear()
-        for source in selected_types.true_values():
+        for source in selected_types.true_values(insertion_order=True):
             if source == "other":
                 self.appendObject()
             else:
@@ -416,7 +416,15 @@ class ALJob(ALIncome):
         gathering the `.employer`, `.employer_address`, and `.employer_phone`
         attributes.
         """
-        return f"{self.employer.name}: {self.employer.address}, {self.employer.phone}"
+        if self.employer.address.address and self.employer.phone:
+            return (
+                f"{self.employer.name}: {self.employer.address}, {self.employer.phone}"
+            )
+        if self.employer.address.address:
+            return f"{self.employer.name}: {self.employer.address}"
+        if self.employer.phone:
+            return f"{self.employer.name}: {self.employer.phone}"
+        return f"{self.employer.name}"
 
     def normalized_hours(self, times_per_year: float = 1) -> float:
         """
@@ -545,8 +553,8 @@ class ALExpenseList(ALIncomeList):
     A list of expenses
 
     * each element has a:
+        * value
         * source
-        * owner
         * display name
     """
 
@@ -910,8 +918,8 @@ class ALItemizedValueDict(DAOrderedDict):
 
     def __str__(self) -> str:
         """
-        Returns a string of the dictionary's key/value pairs in a list. E.g.
-        "['federal_taxes': '2500.00', 'wages': '15.50']"
+        Returns a string of the dictionary's key/value pairs as two-element lists in a list.
+        E.g. '[["federal_taxes", "2500.00"], ["wages", "15.50"]]'
         """
         to_stringify = []
         for key in self:
@@ -1185,7 +1193,8 @@ class ALItemizedJobList(DAList):
 
     def sources(self, which_side: Optional[str] = None) -> Set[str]:
         """Returns a set of the unique sources in all of the jobs.
-        By default gets from both sides, if which_side is "deductions", only gets from deductions."""
+        By default gets from both sides, if which_side is "deductions", only gets from deductions.
+        """
         sources = set()
         if not which_side:
             which_side = "all"

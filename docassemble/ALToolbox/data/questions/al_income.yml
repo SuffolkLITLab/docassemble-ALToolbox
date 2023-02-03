@@ -1,5 +1,5 @@
 ---
-modules: 
+modules:
   - .al_income
 ---
 # Returns a list of lists, each of which contains the number of
@@ -108,15 +108,6 @@ objects:
 ---
 ########## Questions
 ---
-generic object: ALItemizedValueDict
-continue button field: x.revisit
-question: |
-  Edit values
-subquestion: |
-  ${ x.table }
-
-  ${ x.add_action() }
----
 generic object: ALIncomeList
 continue button field: x.revisit
 question: |
@@ -125,6 +116,35 @@ subquestion: |
   ${ x.table }
 
   ${ x.add_action() }
+---
+generic object: ALIncomeList
+table: x.table
+rows: x
+columns:
+  - Type: |
+      row_item.source.replace("_", " ").lower()
+  - Times per year: |
+      times_per_year(times_per_year_list, row_item.times_per_year)
+  - Amount: |
+      currency(row_item.value)
+edit:
+  - source
+  - value
+  - times_per_year
+---
+generic object: ALIncomeList
+code: |
+  x.selected_types
+  x.move_checks_to_list(selected_terms=non_wage_income_terms)
+  x.moved = True
+---
+generic object: ALIncomeList
+code: |
+  x.moved
+  for income_type in x.elements:
+    income_type.complete
+  x.revisit = True
+  x.gathered = True
 ---
 generic object: ALItemizedValueDict
 table: x.table
@@ -138,17 +158,14 @@ edit:
   - exists
   - value
 ---
-generic object: ALExpenseList 
-table: x.table
-rows: x
-columns:
-  - Type: |
-      row_index
-  - Amount: |
-      '$0' if hasattr(row_item, 'exists') and not row_item.exists else currency(row_item.value)
-edit:
-  - source
-  - value
+generic object: ALItemizedValueDict
+continue button field: x.revisit
+question: |
+  Edit values
+subquestion: |
+  ${ x.table }
+
+  ${ x.add_action() }
 ---
 generic object: ALItemizedJob
 code: |
@@ -199,11 +216,18 @@ question: |
 fields:
   - I am self-employed: x.is_self_employed
     datatype: yesno
-  - Name: x.employer.name.first
+  - Employer's name: x.employer.name.first
     show if:
       variable: x.is_self_employed
       is: False
-  - Street: x.employer.address.address
+  - note: |
+      ---
+
+      Employer's contact information
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - Street address: x.employer.address.address
     required: False
     show if:
       variable: x.is_self_employed
@@ -223,7 +247,7 @@ fields:
     show if:
       variable: x.is_self_employed
       is: False
-  - Zip: x.employer.address.zip
+  - Zip or postal code: x.employer.address.zip
     required: False
     show if:
       variable: x.is_self_employed
@@ -381,7 +405,7 @@ fields:
   - Deduction name: x.to_subtract.new_item_name
 validation code: |
   if x.to_subtract.new_item_name in x.to_subtract.complete_elements().keys():
-    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.to_subtract.new_item_name, x.to_subtract.new_item_name) }</strong> that take out { currency( x.to_subtract[ x.to_subtract.new_item_name ].value )}. Pick a different name.')
+    validation_error(f'You already told us about your <strong>{ job_items_names.get(x.to_subtract.new_item_name, x.to_subtract.new_item_name) }</strong> that takes out { currency( x.to_subtract[ x.to_subtract.new_item_name ].value )}. Pick a different name.')
 ---
 id: other itemized job reduction value
 generic object: ALItemizedJob
@@ -414,8 +438,27 @@ generic object: ALItemizedJob
 code: |
   x.to_subtract[i].exists = True
 ---
-# UNIQUE ITEMS FOR ALItemizedJobList
+generic object: ALItemizedJob
+continue button field: x.to_add.revisit
+question: |
+  Edit incomes from ${ x.source }
+subquestion: |
+  ${ x.to_add.table }
+
+  ${ x.to_add.add_action() }
 ---
+generic object: ALItemizedJob
+continue button field: x.to_subtract.revisit
+question: |
+  Edit deductions from ${ x.source }
+subquestion: |
+  These are amounts that are taken out of your pay.
+
+  ${ x.to_subtract.table }
+
+  ${ x.to_subtract.add_action() }
+---
+# UNIQUE ITEMS FOR ALItemizedJobList
 id: how many itemized jobs
 generic object: ALItemizedJobList
 question: |
@@ -462,52 +505,6 @@ edit:
   - to_add.revisit
   - to_subtract.revisit
 confirm: True
----
-generic object: ALItemizedJobList
-continue button field: x.to_subtract.revisit
-question: |
-  Edit deductions from ${ x.source }
-subquestion: |
-  ${ x.to_subtract.table }
-
-  ${ x.add_action() }
----
-generic object: ALItemizedJobList
-continue button field: x.to_add.revisit
-question: |
-  Edit incomes from ${ x.source }
-subquestion: |
-  ${ x.table }
-
-  ${ x.add_action() }
----
-# SHARED CODE FOR ALIncome and ALIncomeList and single ALAsset
----
-generic object: ALIncome
-code: |
-  x.source  # assigned where object is added to list
-  x.value
-  x.complete = True
----
-id: income info
-generic object: ALIncome
-question: |
-  How much do you get from ${ x.source }?
-fields:
-  - Is it an hourly amount?: x.is_hourly
-    datatype: yesnoradio
-  - Period: x.times_per_year
-    input type: radio
-    code: |
-      times_per_year_list
-    datatype: integer
-  - How many hours do you work per period?: x.hours_per_period
-    datatype: number
-    show if: x.is_hourly
-  - Amount: x.value
-    datatype: currency
-  - Who owns this?: x.owner
-    required: False
 ---
 # UNIQUE FOR ALExpenseList
 ---
@@ -618,15 +615,65 @@ subquestion: |
 
   ${ x.add_action() }
 ---
-# Why is this not being triggered
 id: which incomes
+generic object: ALIncomeList
 question: |
-  What are your sources of income?
+  What sources of income do you have, not including employment?
 fields:
-  - no label: income_sources
+  - no label: x.selected_types
     datatype: checkboxes
     code: |
-      income_terms_ordered
+      non_wage_income_terms_ordered
+---
+id: income info for list
+generic object: ALIncomeList
+question: |
+  Tell us about your ${ ordinal(i) } income
+subquestion: |
+  % if i > 1:
+  You have already told us about your incomes from ${ comma_and_list([income.source for income in x.complete_elements()]) }.
+  % elif i > 0:
+  You have already told us about your income from ${ comma_and_list([income.source for income in x.complete_elements()]) }.
+  % endif
+fields:
+  - Source of income: x[i].source
+    input type: dropdown
+    code: |
+      non_wage_income_terms_ordered
+    default: other
+  - What type of income?: x[i].source
+    show if:
+      variable: x[i].source
+      is: other
+  - Times per year you receive this income: x[i].times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+  - Amount of income: x[i].value
+    datatype: currency
+---
+# SHARED CODE FOR ALIncome and ALIncomeList and single ALAsset
+---
+generic object: ALIncome
+code: |
+  x.source  # assigned where object is added to list
+  x.value
+  x.complete = True
+---
+id: income info
+generic object: ALIncome
+question: |
+  How much do you get from ${ x.display_name if hasattr(x, 'display_name') else x.source }?
+fields:
+  - Times per year you receive this income: x.times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+    datatype: integer
+  - Amount: x.value
+    datatype: currency
+  - Who owns this?: x.owner
+    required: False
 ---
 # SHARED BY ALJob AND ALJobList
 ---
@@ -652,37 +699,44 @@ question: |
 fields:
   - I am self-employed: x.is_self_employed
     datatype: yesno
-  - First name: x.employer.name.first
+  - Employer's name: x.employer.name.first
     show if:
       variable: x.is_self_employed
       is: False
-  - Last name: x.employer.name.last
-    required: False
+  - note: |
+      ---
+
+      Employer's contact information
     show if:
       variable: x.is_self_employed
       is: False
   - Street address: x.employer.address.address
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
   - Unit: x.employer.address.unit 
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
-    required: False
   - City: x.employer.address.city
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
   - State: x.employer.address.state
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
-  - Postal code: x.employer.address.zip
+  - Zip or postal code: x.employer.address.zip
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
   - Phone: x.employer.phone
+    required: False
     show if:
       variable: x.is_self_employed
       is: False
@@ -711,10 +765,10 @@ fields:
   - How many hours do you work in each period?: x.hours_per_period
     datatype: number
     show if: x.is_hourly
-  - What do you get paid?: x.value
+  - What is your hourly pay for this job?: x.value
     datatype: currency
     show if: x.is_hourly
-  - Amount you get paid: x.value
+  - What are your wages for this job?: x.value
     datatype: currency
     show if:
       variable: x.is_hourly
@@ -741,7 +795,7 @@ subquestion: |
   You've already told us about ${ comma_and_list([job.source for job in x.complete_elements()]) }.
   % endif
 fields:
-  - Job name: x[i].source
+  - Job title: x[i].source
 ---
 generic object: ALJobList
 continue button field: x.revisit
@@ -829,6 +883,18 @@ fields:
     datatype: integer
     required: False
 ---
+generic object: ALAssetList
+table: x.table
+rows: x
+columns:
+  - Name: |
+      row_item.name
+  - Amount: |
+      currency(row_item.balance)
+edit:
+  - name
+  - balance
+---
 # UNIQUE FOR ALVehicle
 ---
 generic object: ALVehicle
@@ -862,22 +928,9 @@ fields:
   - Loan balance: x.balance
     datatype: currency
     required: False
-  - Income earned: x.value
-    datatype: currency
-    required: False
-  - How often is the income earned?: x.times_per_year
-    datatype: integer
-    code: times_per_year_list
   - Who owns this?: x.owner
 ---
 # UNIQUE FOR ALVehicleList
----
-# Has to have its own. Otherwise it's overridden by ALAssetList.
-generic object: ALVehicleList
-code: |
-  # .source is automatically 'vehicle'
-  x[i].market_value
-  x[i].complete = True
 ---
 id: how many vehicles
 generic object: ALVehicleList
@@ -909,11 +962,18 @@ fields:
     hint: e.g, Ford, Honda
   - Model: x[i].model
     hint: e.g., Fusion, Civic
-  - Current value: x[i].value
+  - Current value: x[i].market_value
     datatype: currency
   - Loan balance: x[i].balance
     datatype: currency
   - Who owns this?: x[i].owner
+---
+# Has to have its own. Otherwise it's overridden by ALAssetList.
+generic object: ALVehicleList
+code: |
+  # .source is automatically 'vehicle'
+  x[i].market_value
+  x[i].complete = True
 ---
 # UNIQUE FOR ALSimpleValue
 ---
