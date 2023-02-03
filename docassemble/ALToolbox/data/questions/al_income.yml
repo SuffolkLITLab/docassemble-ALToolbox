@@ -506,34 +506,6 @@ edit:
   - to_subtract.revisit
 confirm: True
 ---
-# SHARED CODE FOR ALIncome and ALIncomeList and single ALAsset
----
-generic object: ALIncome
-code: |
-  x.source  # assigned where object is added to list
-  x.value
-  x.complete = True
----
-id: income info
-generic object: ALIncome
-question: |
-  How much do you get from ${ x.display_name if hasattr(x, 'display_name') else x.source }?
-fields:
-  - Is it an hourly amount?: x.is_hourly
-    datatype: yesnoradio
-  - Period: x.times_per_year
-    input type: radio
-    code: |
-      times_per_year_list
-    datatype: integer
-  - How many hours do you work per period?: x.hours_per_period
-    datatype: number
-    show if: x.is_hourly
-  - Amount: x.value
-    datatype: currency
-  - Who owns this?: x.owner
-    required: False
----
 # UNIQUE FOR ALExpenseList
 ---
 generic object: ALExpenseList
@@ -652,6 +624,56 @@ fields:
     datatype: checkboxes
     code: |
       non_wage_income_terms_ordered
+---
+id: income info for list
+generic object: ALIncomeList
+question: |
+  Tell us about your ${ ordinal(i) } income
+subquestion: |
+  % if i > 1:
+  You have already told us about your incomes from ${ comma_and_list([income.source for income in x.complete_elements()]) }.
+  % elif i > 0:
+  You have already told us about your income from ${ comma_and_list([income.source for income in x.complete_elements()]) }.
+  % endif
+fields:
+  - Source of income: x[i].source
+    input type: dropdown
+    code: |
+      non_wage_income_terms_ordered
+    default: other
+  - What type of income?: x[i].source
+    show if:
+      variable: x[i].source
+      is: other
+  - Times per year you receive this income: x[i].times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+  - Amount of income: x[i].value
+    datatype: currency
+---
+# SHARED CODE FOR ALIncome and ALIncomeList and single ALAsset
+---
+generic object: ALIncome
+code: |
+  x.source  # assigned where object is added to list
+  x.value
+  x.complete = True
+---
+id: income info
+generic object: ALIncome
+question: |
+  How much do you get from ${ x.display_name if hasattr(x, 'display_name') else x.source }?
+fields:
+  - Times per year you receive this income: x.times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+    datatype: integer
+  - Amount: x.value
+    datatype: currency
+  - Who owns this?: x.owner
+    required: False
 ---
 # SHARED BY ALJob AND ALJobList
 ---
@@ -905,13 +927,6 @@ fields:
     datatype: currency
   - Loan balance: x.balance
     datatype: currency
-    required: False
-  - Income earned: x.value
-    datatype: currency
-    required: False
-  - How often is the income earned?: x.times_per_year
-    datatype: integer
-    code: times_per_year_list
     required: False
   - Who owns this?: x.owner
 ---
