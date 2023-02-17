@@ -37,6 +37,7 @@ class shortenMe:
             originalURL, 60 * 60 * 24 * 7, False, False
         )
 
+
 # The following three functions are from Quinten
 def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
     """
@@ -65,7 +66,7 @@ def fa_icon(
     icon: str, color="primary", color_css=None, size="sm", fa_class="fa-solid"
 ) -> str:
     """Display a fontawesome icon inline.
-    
+
     Docassemble allows you to display an icon from [fontawesome](https://fontawesome.com),
     but it does not provide control over the size or color of the icon. This function gives
     you more control over the icon that is inserted.
@@ -303,7 +304,7 @@ def output_checkbox(
       checked_value: defaults to `[X]` but can be set to any string or even a `DAFile` or `DAStaticFile`
           with the image of a checkbox
       unchecked_value: opposite meaning of `checked_value` and defaults to `[  ]`
-    
+
     """
     if value_to_check:
         return checked_value
