@@ -63,7 +63,7 @@ def tel(phone_number) -> str:
 
 
 def fa_icon(
-    icon: str, color="primary", color_css=None, size="sm", fa_class="fa-solid"
+    icon: str, color:Optional[str]="primary", color_css:Optional[str]=None, size:Optional[str]="sm", fa_class:str="fa-solid"
 ) -> str:
     """Display a fontawesome icon inline.
 
@@ -92,7 +92,7 @@ def fa_icon(
         size_str = " fa-" + size
     if not size and not color and not color_css:
         return ":" + icon + ":"  # Default to letting Docassemble handle it
-    elif color_css:
+    if color_css:
         return (
             f'<i class="{fa_class} fa-'
             + icon
@@ -101,7 +101,7 @@ def fa_icon(
             + color_css
             + ';"></i>'
         )
-    else:
+    if color:
         return (
             f'<i class="{fa_class} fa-'
             + icon
@@ -110,6 +110,12 @@ def fa_icon(
             + color
             + ');"></i>'
         )
+    return (
+        f'<i class="{fa_class} fa-'
+        + icon
+        + size_str
+        + '"></i>'
+    )
 
 
 def space(var_name: str, prefix=" ", suffix="") -> str:
@@ -218,7 +224,7 @@ def review_widget(
     down_action: str,
     review_action: Optional[str] = None,
     thumbs_display: str = "Did we help you?",
-    review_display: str = "Thanks! Let us know what we could do better",
+    review_display: str = "Thank you for your feedback. Let us know what we could do better",
     submit_review_button: str = "Add your review",
     post_review_display: str = "Thank you for your review!",
 ) -> str:
