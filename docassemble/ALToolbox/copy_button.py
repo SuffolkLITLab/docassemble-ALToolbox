@@ -13,7 +13,17 @@ def copy_button_html(
     style_class: str = "",
     adjust_height: str = "",
 ) -> str:
-    """Return the html for a button that will let a user copy the given text"""
+    """Return the html for a button that will let a user copy the given text
+
+    To use, include `docassemble.ALToolbox:copy_button.yml` in your DA interview.
+
+    Args:
+      text_to_copy: text you want the user to be able to copy.
+      text_before: the prompt that will appear to the left of the HTML input
+      label: the label of the Button
+      tooltip_inert_text: text shown when the button is hovered over, before it's clicked
+      tooltip_copied_text: text shown when the button is hovered over, after the text is placed on the clipboard
+    """
 
     button_str = '<div class="al_copy">\n'
     if text_before != "":
