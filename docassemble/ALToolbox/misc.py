@@ -63,7 +63,11 @@ def tel(phone_number) -> str:
 
 
 def fa_icon(
-    icon: str, color:Optional[str]="primary", color_css:Optional[str]=None, size:Optional[str]="sm", fa_class:str="fa-solid"
+    icon: str,
+    color: Optional[str] = "primary",
+    color_css: Optional[str] = None,
+    size: Optional[str] = "sm",
+    fa_class: str = "fa-solid",
 ) -> str:
     """Display a fontawesome icon inline.
 
@@ -110,12 +114,7 @@ def fa_icon(
             + color
             + ');"></i>'
         )
-    return (
-        f'<i class="{fa_class} fa-'
-        + icon
-        + size_str
-        + '"></i>'
-    )
+    return f'<i class="{fa_class} fa-' + icon + size_str + '"></i>'
 
 
 def space(var_name: str, prefix=" ", suffix="") -> str:
