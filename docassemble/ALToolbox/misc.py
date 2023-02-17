@@ -37,7 +37,6 @@ class shortenMe:
             originalURL, 60 * 60 * 24 * 7, False, False
         )
 
-
 # The following three functions are from Quinten
 def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
     """
@@ -45,7 +44,7 @@ def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
     Optionally, format with 2 decimal points (for a PDF form with the
     currency symbol already present in the form)
 
-    If `trucate`, will call `int(num)`, truncating the decimals instead of
+    If `show_decimals`, will call `int(num)`, truncating the decimals instead of
     rounding to the closest int.
     """
     try:
@@ -65,12 +64,26 @@ def tel(phone_number) -> str:
 def fa_icon(
     icon: str, color="primary", color_css=None, size="sm", fa_class="fa-solid"
 ) -> str:
-    """
-    Return HTML for a font-awesome icon of the specified size and color. You can reference
-    a CSS variable (such as Bootstrap theme color) or a true CSS color reference, such as 'blue' or
-    '#DDDDDD'. Defaults to Bootstrap theme color "primary".
+    """Display a fontawesome icon inline.
+    
+    Docassemble allows you to display an icon from [fontawesome](https://fontawesome.com),
+    but it does not provide control over the size or color of the icon. This function gives
+    you more control over the icon that is inserted.
 
-    Sizes can be '2xs', 'xs', 'sm', 'md' (or None), 'lg', 'xl', '2xl'.
+    Args:
+      icon: a string representing a fontawesome icon. The icon needs to be in the
+        [free library](https://fontawesome.com/search?o=r&m=free).
+      color: can be any [Bootstrap color variable](https://getbootstrapc.mo/docs/4.0/utilities/colors).
+        For example: `primary`, `secondary`, `warning`
+      color_css: allows you to use a CSS code to represent the color, e.g., `blue`, or `#fff` for black
+      size: used to control the [fontawesome size](https://fontawesome.com/v6.0/docs/web/style/size)
+        (without the `fa-` prefix). Valid values include `2xs`, `xs`, the default of `sm`,
+        `md`, `lg`, `xl`, `2x1`, and the python `None`, which defaults to `md`.
+      fa_class: let's you specify the fontawesome class, needed for any icon that isn't
+        the default class of `fa-solid`, like `fa-brands`, or `fa-regular` and `fa-light`.
+
+    Returns:
+      HTML for a font-awesome icon of the specified size and color.
     """
     if not size or size == "md":
         size_str = ""
@@ -216,17 +229,19 @@ def review_widget(
     a submit button appears, and once the text review is submitted (or after the thumbs, if no
     `review_action` was provided), a final "thank you" messsage is displayed.
 
-    @param up_action {string} - the variable name of an event to be executed on the server if the
-        thumbs up is pressed
-    @param down_action {string} - the variable name of an event to be executed on the server i
-        the thumbs down is pressed
-    @param (optional) review_action {string} - the variable name of an event to be execute on the
-        server when someone submits their text review
-    @param (optional) thumbs_display {string} - text displayed to user describing the thumbs
-    @param (optional) review_display {string} - text displayed to user describing the text input
-    @param (optional) submit_review_button {string} - text on the button to submit their text review
-    @param (optional) post_review_display {string} - text displayed to user after review is
-        submitted
+    Args:
+        up_action: the variable name of an event to be executed on the server if the
+            thumbs up is pressed
+        down_action: the variable name of an event to be executed on the server if the
+            thumbs down is pressed
+        review_action: the variable name of an event to be execute on the
+            server when someone submits their text review
+        thumbs_display: text displayed to user describing the thumbs
+        review_display: text displayed to user describing the text input
+        submit_review_button: text on the button to submit their text review
+        post_review_display: text displayed to user after review is submitted
+    Returns:
+        the HTML string of the widget
     """
     js_thumbs_up = f"javascript:altoolbox_thumbs_up_send('{up_action}', {'true' if review_action else 'false'})"
     js_thumbs_down = f"javascript:altoolbox_thumbs_down_send('{down_action}', {'true' if review_action else 'false'})"
@@ -282,7 +297,14 @@ def add_records(obj, labels):
 def output_checkbox(
     value_to_check: bool, checked_value: str = "[X]", unchecked_value: str = "[  ]"
 ):
-    """Generate a conditional checkbox for docx templates"""
+    """Generate a conditional checkbox for docx templates
+
+    Args:
+      checked_value: defaults to `[X]` but can be set to any string or even a `DAFile` or `DAStaticFile`
+          with the image of a checkbox
+      unchecked_value: opposite meaning of `checked_value` and defaults to `[  ]`
+    
+    """
     if value_to_check:
         return checked_value
     else:
