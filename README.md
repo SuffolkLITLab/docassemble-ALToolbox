@@ -1,5 +1,7 @@
 # ALToolbox
 
+[![PyPI version](https://badge.fury.io/py/docassemble-ALToolbox.svg)](https://badge.fury.io/py/docassemble-ALToolbox)
+
 This repository is used to host small Python modules, widgets, and JavaScript web components js files that enhance Docassemble interviews. These modules were
 built as part of the Suffolk University Law School LIT Lab's [Document Assembly Line project](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/).
 They are placed here
