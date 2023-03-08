@@ -1,0 +1,12 @@
+/* ALThreePartDate and ALBirthDate */
+
+/* More room for month name text. */
+.al_split_date .col-year {
+  padding-left: 0;
+}
+.al_split_date .col-month {
+  padding-right: 0;
+}
+.al_split_date.al_invalid .col-year {
+  padding-right: 0;
+}
