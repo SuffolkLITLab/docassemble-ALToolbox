@@ -423,10 +423,10 @@ function set_up_validation($al_date) {{
     add_to_groups(field);
   }});
   
-  //let validator = $("#daform").data('validator');
-  //set_up_errorPlacement(validator);
-  //set_up_highlight(validator);
-  //set_up_unhighlight(validator);
+  let validator = $("#daform").data('validator');
+  set_up_errorPlacement(validator);
+  set_up_highlight(validator);
+  set_up_unhighlight(validator);
 }};  // Ends set_up_validation()
   
 
@@ -786,6 +786,80 @@ function setDate({{year, month, date}}) {{
   newDate.setFullYear(year, month, date);
   return newDate;
 }};
+  
+  
+// ==================================================
+// ===== Visual feedback management =====
+// ==================================================
+  
+function set_up_errorPlacement(validator) {{
+  /** Sometimes override existing errorPlacement.
+  *
+  * @param {{obj}} validator The form's validator object.
+  * 
+  * @returns undefined
+  */
+  let original_error_placement = validator.settings.errorPlacement;
+  validator.settings.errorPlacement = function al_errorPlacement(error, field) {{
+    /** Put all errors in one spot at the bottom of the parent.
+    *   Only runs once per field.
+    */
+    let $al_date = get_$al_date(field);
+    // If this isn't an AL date, use the original behavior
+    if (!$al_date[0] && original_error_placement !== undefined) {{
+      original_error_placement(error, field);
+      return;
+    }}
+
+    $(error).appendTo($al_date.find('.al_error')[0]);
+  }};  // Ends al_errorPlacement()
+  
+}};  // Ends set_up_errorPlacement()
+  
+function set_up_highlight(validator) {{
+  /** For our date elements, override pre-existing highlight method.
+  *
+  * @param {{obj}} validator The form's validator object.
+  * 
+  * @returns undefined
+  */
+  let original_highlight = validator.settings.highlight;
+  validator.settings.highlight = function al_highlight(field, errorClass, validClass) {{
+    /** Highlight parent instead of individual fields. MVP */
+    let $al_date = get_$al_date(field);
+    // If this isn't an AL date, use the original behavior
+    if (!$al_date[0] && original_highlight !== undefined) {{
+      original_highlight(field, errorClass, validClass);
+      return;
+    }}
+    
+    $al_date.addClass('al_invalid');
+    // Avoid highlighting individual elements
+    $al_date.find('.al_field').each(function(index, field) {{
+      $(field).removeClass('is-invalid');  // Just a Bootstrap class
+      // TODO: try just the below alone
+      $(field).removeClass(errorClass);  // Just a Bootstrap class
+    }});
+    
+  }};  // Ends al_highlight()
+}};  // Ends set_up_highlight()
+  
+function set_up_unhighlight(validator) {{
+  /** For our date elements, override pre-existing highlight method.
+  *
+  * @param {{obj}} validator The form's validator object.
+  * 
+  * @returns undefined
+  */
+  let original_unhighlight = validator.settings.unhighlight;
+  validator.settings.unhighlight = function al_unhighlight(field, errorClass, validClass) {{
+    /** Unhighlight parent instead of individual fields. MVP */
+    // During invalid required day, this is triggered for month and unhighlights all. Why?
+    let $al_date = get_$al_date(field);
+    $al_date.removeClass('al_invalid');
+    original_unhighlight(field, errorClass, validClass);
+  }};  // Ends al_unhighlight()
+}};  // Ends set_up_unhighlight()
   
   
   
