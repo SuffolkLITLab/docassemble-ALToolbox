@@ -31,6 +31,8 @@ js_text = """\
 *     separately from the other fields. Possibly add the original date field
 *     to the list of elements that have shared validation feedback (like month, day, year).
 *   - Deal with internation user date input and international dev date attributes
+*   - Give a specific message about which date field is missing values, just like
+*     in the CustomDataType client side validation messages.
 *
 * Post MVP validation priority (https://design-system.service.gov.uk/components/date-input/#error-messages):
 *  1. missing or incomplete information (when parent is no longer in focus, highlight fields missing info?)
@@ -48,7 +50,7 @@ try {{
 $(document).on('daPageLoad', function(){{
   $('input[type="ThreePartsDate"]').each(function(){{
     let $al_date = replace_date(this);
-    //set_up_validation($al_date);
+    set_up_validation($al_date);
   }});  // ends for each date datatype
 }});  // ends on da page load
   
@@ -402,6 +404,390 @@ function get_$al_date(element) {{
 }};  // Ends get_$al_date()
   
   
+// ==================================================
+// ==================================================
+// === Validation ===
+// ==================================================
+// ==================================================
+  
+function set_up_validation($al_date) {{
+  /** Uses jQuery validation plugin to set up validation functionality
+  * 
+  * @param {{$ obj}} $al_date jQuery obj of the al parent of our split date parts.
+  * 
+  * @returns undefined
+  */
+  $al_date.find('.al_field').each(function make_validator_options (index, field) {{
+    add_rules(field);
+    add_messages(field);
+    add_to_groups(field);
+  }});
+  
+  //let validator = $("#daform").data('validator');
+  //set_up_errorPlacement(validator);
+  //set_up_highlight(validator);
+  //set_up_unhighlight(validator);
+}};  // Ends set_up_validation()
+  
+
+// ==================================================
+// ===== Valdiation plugin configs =====
+// ==================================================
+  
+function add_rules(field) {{
+  /** Add all date rules to a given field.
+  * 
+  * @param {{HTML Node}} field An al split date field.
+  * 
+  * @returns undefined
+  */
+  let rules = {{
+    alMin: get_$original_date(field).attr('data-alMin') || false,
+    // TODO: try:
+    alMax: is_birthdate(field) || get_$original_date(field).attr('data-alMax'),
+    _alInvalidDay: true,  // e.g. 1/54/2000 is invalid. TODO: Should devs be able to disable this?
+    _alInvalidYear: true,  // e.g. 200 or 012. TODO: Should devs be able to disable this?
+    // Normal `required` only deals with one field being empty, not empty siblings
+    _alRequired: is_required(field),
+  }};  // ends rules
+  
+  $(field).rules('add', rules);
+}};  // Ends add_rules()
+  
+  
+function add_messages(field) {{
+  /** Adds custom messages that are in the validator object
+  *   and don't need parameters.
+  * 
+  * @param {{HTML Node}} field An al split date field.
+  * 
+  * @returns undefined
+  */
+  let messages = $("#daform").data('validator').settings.messages;
+  let name = get_$original_date(field).attr('name');
+  
+  // If there's are custom messages in the validator object, use them
+  if (messages[name]) {{
+    $(field).rules('add', {{
+      messages: {{
+        // We can access the original da `required` message
+        required: messages[get_$original_date(field).attr('name')].required,
+        // Normal `required` only deals with one field being empty, not empty siblings
+        _alRequired: messages[get_$original_date(field).attr('name')].required,
+      }}
+    }});  // ends add rules
+  }}  // ends if required message exists
+  
+}};  // Ends add_messages()
+  
+  
+function add_to_groups(field) {{
+  /** Add field to its group dynamically after-the-fact. We have
+  *   to do this because da has already created its groups and we
+  *   don't want to override anything.
+  *   Note: Adding groups dynamically here won't be reflected in `validator.settings`
+  * 
+  *   Inspired by https://stackoverflow.com/a/9688284/14144258
+  * 
+  * @param {{HTML Node}} field An al split date field.
+  * 
+  * @returns undefined
+  */
+  let groups = $("#daform").data('validator').groups;
+  groups[ $(field).attr('name') ] = get_$original_date(field).attr('id');
+}};  // Ends add_to_groups()
+  
+  
+// ==================================================
+// ===== Validation methods =====
+// ==================================================
+  
+// -- Whole date validations --
+
+$.validator.addMethod('alMin', function(value, field, params) {{
+  /** Returns true if full date is >= min date or incomplete. */
+  if (!date_is_ready_for_min_max(field)) {{
+    return true;
+  }}
+  
+  // Avoid usinig `params`, which could be in many different formats.
+  // Just get date data from the actual fields
+  var data = get_date_data(field);
+  // TODO: Catch invalid `data-alMin` attr values? Useful for devs.
+  // Otherwise very hard for devs to track down. Log in console?
+  // Non-MVP. Make an issue.
+  var date_min = new Date( get_$original_date(field).attr('data-alMin') );
+  var date_val = new Date(data.year + '-' + data.month + '-' + data.day);
+  
+  return date_val >= date_min;
+  
+}}, function alMinMessage (validity, field) {{
+  /** Returns the string of the invalidation message. */
+  let min_date = get_$original_date(field).attr('data-alMin');
+  let locale_long_date = new Date(min_date).toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }})
+  return (
+    get_$original_date(field).attr('data-alMinMessage')
+    || get_$original_date(field).attr('data-alDefaultMessage')
+    // || `The date needs to be on or after ${{ get_$original_date(field).attr('data-alMin') }}.`
+    || `The date needs to be on or after ${{ locale_long_date }}.`
+  );
+}});  // ends validate 'alMin'
+  
+  
+$.validator.addMethod('alMax', function(value, field, params) {{
+  /** Returns true if full date is <= max date or is incomplete. */
+  if (!date_is_ready_for_min_max(field)) {{
+    return true;
+  }}
+
+  // Avoid usinig `params`, which could be in many different formats.
+  // Just get date data from the actual fields
+  var data = get_date_data(field);
+
+  // TODO: Catch invalid alMax attr values for devs? Log in console? Make post MVP issue
+  var max_attr = get_$original_date(field).attr('data-alMax');
+  var date_max = new Date(max_attr);
+  if ( isNaN(date_max) && is_birthdate(field)) {{
+    date_max = new Date(Date.now());
+  }}
+  
+  var date_val = new Date(data.year + '-' + data.month + '-' + data.day);
+  
+  return date_val <= date_max;
+  
+}}, function alMaxMessage (validity, field) {{
+  /** Returns the string of the invalidation message. */
+  
+  let max_date = get_$original_date(field).attr('data-alMax');
+  let locale_long_date = new Date(max_date).toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }})
+  var default_MaxMessage = `The date needs to be on or before ${{ locale_long_date }}.`;
+  // Birthdays have a different default max message
+  if (!get_$original_date(field).attr('data-alMax') && is_birthdate(field)) {{
+    default_MaxMessage = 'A <strong>birthdate</strong> must be in the past.';
+  }}
+  
+  return (
+    get_$original_date(field).attr('data-alMaxMessage')
+    || get_$original_date(field).attr('data-alDefaultMessage')
+    || default_MaxMessage
+  );
+}});  // ends validate 'alMax'
+  
+  
+// --- Validate individual fields ---
+// Always check each others' field any time any field is validated. That
+// way one valid field can't take away the message/highlighting for another
+// invalid field.
+  
+$.validator.addMethod('_alInvalidDay', function(value, field, params) {{
+  /** Returns false if full input values cannot be converted to a
+  *   matching Date object. E.g. HTML won't recognize 12/32/2000 as an
+  *   invalid date. It will instead convert it to 1/1/2001.
+  *   Only day inputs can create mismatching dates, but this must be
+  *   checked whenever any field is updated. If the user puts Jan 30 and
+  *   then change month to Feb, we need to show the error then. If the
+  *   user puts 2/29/2020 and changes to 2021, that must be shown too.
+  */
+  // Doesn't need to be abstracted anymore in some ways, but it does
+  // make this addMethod section of the code cleaner.
+  return has_valid_day(field);
+}}, function alInvalidDayMessage (validity, field) {{
+  /** Returns the string of the invalidation message. */
+  
+  // Always return a custom message first
+  let custom_msg = get_$original_date(field).attr('data-alInvalidDayMessage')
+                   || get_$original_date(field).attr('data-alDefaultMessage');
+  if (custom_msg) {{
+    return custom_msg;
+  }}
+  
+  let input_date = get_$al_date(field).find('.day').val();
+  
+  // If the date is only partly filled, we can't give a useful message
+  // without a heck of  a lot of work, so give a generalized invalid day
+  // default message.
+  let data = get_date_data(field);
+  if (data.year == '' || data.month == '') {{
+    return `No month has ${{input_date}} days.`;
+  }}
+  
+  // Otherwise we can give the full default message
+  let input_year = get_$al_date(field).find('.year').val();
+  let converted_year = (new Date(`1/1/${{input_year}}`)).getFullYear();
+  let input_month = get_$al_date(field).find('.month option:selected').text();
+  
+  return `${{input_month}} ${{converted_year}} doesn't have ${{input_date}} days.`;
+}});  // ends validate '_alInvalidDay'
+  
+
+$.validator.addMethod('_alInvalidYear', function(value, field, params) {{
+  /** Returns true if year is empty or has 4 digits.
+  * 
+  * @returns {{bool}}
+  */
+  let text = get_$al_date(field).find('input.year')[0].value;
+  // Empty year is not invalid in this way
+  if (text.length === 0) {{return true;}}
+  // Dates will remove leading 0's, thus sadly 0011 == 2011
+  if (text.length !== 4 || text[0] === '0') {{
+    return false;
+  }} else {{
+    return true;
+  }}
+  
+}}, function alInvalidYearMessage (validity, field) {{
+  /** Returns the string of the invalidation message. */
+  return (
+    get_$original_date(field).attr('data-alInvalidYearMessage')
+    || get_$original_date(field).attr('data-alDefaultMessage')
+    || `The year needs to be 4 digits long and cannot start with "0".`
+  );
+}});  // ends validate '_alInvalidYear'
+  
+
+$.validator.addMethod('_alRequired', function(value, field, params) {{
+  /** Returns true if
+  *   - original field is hidden/disabled
+  *   - all fields have contents
+  *   - current field has contents and other fields haven't been interacted with yet
+  *   Otherwise returns false.
+  * 
+  * @returns {{bool}}
+  */
+  // Remember that this field has been interacted with for validation.
+  $(field).addClass('al_dirty');
+  
+  // For clarity, if the field itself has just been made empty, easy choice
+  if ($(field).val() === '') {{
+    return false;
+  }}
+  
+  let all_dirty_fields_have_contents = true;
+  // For all related split date fields
+  get_$al_date(field).find('.al_field').each(function (index, a_field) {{
+    // If a field has been interacted with by this rule at least once
+    if ( $(a_field).hasClass('al_dirty') ) {{
+      // and it's now empty
+      if ($(a_field).val() === '') {{
+        // all fields should be invalid
+        all_dirty_fields_have_contents = false;
+      }}
+    }}
+  }});
+  
+  return all_dirty_fields_have_contents;
+}});  // ends validate 'required'
+  
+  
+// ==================================================
+// ===== Validation calculations =====
+// ==================================================
+
+function date_is_ready_for_min_max(element) {{
+  /** Return true if date input is ready to be evaluated for min/max
+  *   date value invalidation.
+  * 
+  * @param {{HTML Node}} element Any al split date element, including the parent.
+  * 
+  * @returns {{bool}}
+  */
+  var data = get_date_data(element);
+  // Don't evaluate min/max if the date is only partly filled
+  if (data.year == '' || data.month == '' || data.day === '') {{
+    return false;
+  }}
+  // Not sure how we'd get here, but don't evaluate min/max if the date is
+  // invalid in some other way. Maybe negative numbers?
+  var date_val = new Date(data.year + '-' + data.month + '-' + data.day);
+  if (isNaN(date_val)) {{
+    return false;
+  }}
+  
+  // Don't need to avoid an invalid day situation. Seems to work
+  // without that check in here.
+  
+  return true;
+}};  // Ends date_is_not_ready_for_min_max()
+  
+
+function has_valid_day(element) {{
+  /** Given a date part element, returns true if:
+  *   - the day is <= 31 and year or month is empty
+  *   - all fields are filled and the day date is <= max days in the given month in the given year
+  *   Returns false if either:
+  *   - The day date is > 31 or
+  *   - The day date is > the max days in the given month of the given year
+  *
+  * Inspired by https://github.com/uswds/uswds/blob/728ba785f0c186e231a81865b0d347f38e091f96/packages/usa-date-picker/src/index.js#L735
+  * 
+  * @param element {{HTML Node}} Any element in the al split date picker
+  * 
+  * @returns bool True if day date is valid
+  * 
+  * @examples:
+  * 10//2000  // true
+  * /10/2000  // true
+  * 10/10/2000  // true
+  * /42/2000  // false
+  * 2/29/2021  // false
+  */
+  var data = get_date_data(element);
+
+  if (parseInt(data.day) > 31) {{
+    return false;
+  }}
+  // Don't invalidate if the date is only partly filled. Empty input fields
+  // should get handled other places.
+  if (data.year === '' || data.month === '' || data.day === '') {{
+    return true;
+  }}
+
+  const dateStringParts = [data.year, data.month, data.day];
+  const [year, month, day] = dateStringParts.map((str) => {{
+    let value;
+    const parsed = parseInt(str, 10);
+    if (!Number.isNaN(parsed)) value = parsed;
+    return value;
+  }});
+  
+  // WARNING: If we change the `type` of the year or day
+  // to be 'text', we need to check return false if any
+  // dateStringParts part === null. See inspiration link.
+  
+  const checkDate = setDate({{
+    year: year,
+    month: month - 1,
+    date: day
+  }});
+
+  // 12/32/2000 would have transformed into 1/1/2001
+  if (
+    checkDate.getFullYear() !== year ||
+    checkDate.getMonth() !== (month - 1) ||
+    checkDate.getDate() !== day
+  ) {{
+    return false;
+  }}
+
+  return true;
+}};  // Ends has_valid_day()
+
+function setDate({{year, month, date}}) {{
+  /**
+  * Set date from month day year
+  *
+  * @param {{number}} year the year to set
+  * @param {{number}} month the month to set (zero-indexed)
+  * @param {{number}} date the date to set
+  * 
+  * @returns {{Date}} the set date
+  */
+  const newDate = new Date(0);
+  newDate.setFullYear(year, month, date);
+  return newDate;
+}};
+  
+  
   
 }} catch (error) {{
   console.error('Error in AL date CusotmDataTypes', error);
@@ -445,8 +831,10 @@ class ThreePartsDate(CustomDataType):
     javascript = js_text.format(month=word("Month"), day=word("Day"), year=word("Year"))
     jq_message = word("Answer with a valid date")
     is_object = True
-    ## Probably won't work because the input to validate is hidden
-    #jq_rule = "date"
+    mako_parameters = [
+      'alMin', 'alMinMessage', 'alMax', 'alMaxMessage',
+      'alInvalidDayMessage', 'alInvalidYearMessage', 'alDefaultMessage'
+    ]
 
     @classmethod
     def validate(cls, item: str):
@@ -488,8 +876,10 @@ class BirthDate(ThreePartsDate):
     ).replace("ThreePartsDate", "BirthDate")
     jq_message = word("Answer with a valid date of birth")
     is_object = True
-    ## Probably won't work because the input to validate is hidden
-    #jq_rule = "date"
+    mako_parameters = [
+      'alMin', 'alMinMessage', 'alMax', 'alMaxMessage',
+      'alInvalidDayMessage', 'alInvalidYearMessage', 'alDefaultMessage'
+    ]
 
     @classmethod
     def validate(cls, item: str):
