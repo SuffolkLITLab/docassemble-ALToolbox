@@ -170,8 +170,8 @@ def collapse_template(
 
     Optionally, you can specify a custom icon to override the defaults:
 
-    The default icons are "🞂" which displays when the text is collapsed (`closed_icon`) and
-    "▼" which displays when the text is open (`open_icon`).
+    The default icons are "right caret" which displays when the text is collapsed (`closed_icon`) and
+    "down caret" which displays when the text is open (`open_icon`).
     """
     if not template.subject_as_html(trim=True) and not template.content_as_html():
         return ""
@@ -233,7 +233,7 @@ def review_widget(
 
     If `review_action` is provided, once you press either of the thumbs, a text input screen with
     a submit button appears, and once the text review is submitted (or after the thumbs, if no
-    `review_action` was provided), a final "thank you" messsage is displayed.
+    `review_action` was provided), a final "thank you" message is displayed.
 
     Args:
         up_action: the variable name of an event to be executed on the server if the
