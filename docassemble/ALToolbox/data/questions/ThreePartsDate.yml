@@ -36,12 +36,14 @@ fields:
     required: False
     alMin: ${ today(format='MM/dd/yyyy') }
     alMax: 12/31/2040
+    default: 02/3/2040
   - note: |
       The `BirthDate` datatype is like `ThreePartsDate`, but it stops users entering dates in the future.
   - Birth date (today is valid): date_of_birth
     datatype: BirthDate
-    default: 02/3/2020
     required: True
+    #validation messages:
+    #  required: This is a custom 'required' message
   - note: |
       These fields can be hidden just like any docassemble field.
   - Show hidden date fields: show_fields
@@ -101,7 +103,7 @@ subquestion: |
   % endif
 
   % if date_of_graduation:
-  Your graduation date is ${ date_of_graduation }.
+  Your graduation date will be ${ date_of_graduation }.
   % endif
 
   % if defined('court_date'):
@@ -112,7 +114,6 @@ subquestion: |
   The date lost your first tooth was ${ tooth_date }.
   % endif
   
-
   % if anniversary_date:
   Your 50th anniversary will be ${ anniversary_date }.
   % endif

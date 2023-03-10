@@ -16,32 +16,38 @@ js_text = """\
 /*
 * Notes to keep around:
 * - Rule names must avoid dashes.
-* - Hidden custom datatype elements are not disabled on first load. Disable them ourselves.
-* - Our custom highlighting doesn't work on submit. It might be because it's the original date validation going on.
 * - Avoid a min date default for birthdays. Too hard to predict developer
 *   needs, like great-grandmother's birthday. Document that developers need
 *   to set a min value if they want one.
-* - Year input of "1" counts as a date of 2001 and "11" is 2011
-* - Only handles US formatted dates
 * 
 * TODO: (post MVP)
-*   - Get the 'Month'/'Day'/'Year' word values as mako_parameters too so
-*     they can be translated. Pretty easy.
-*   - On submit, validation feedback shows up for the original date field
-*     separately from the other fields. Possibly add the original date field
-*     to the list of elements that have shared validation feedback (like month, day, year).
-*   - Deal with internation user date input and international dev date attributes
-*   - Give a specific message about which date field is missing values, just like
-*     in the CustomDataType client side validation messages.
+* - Get the 'Month'/'Day'/'Year' word values as mako_parameters too so
+*   they can be translated. Pretty easy.
+* - Deal with international user date input and international dev date attributes.
+* - Handle non-US formatted dates.
 *
 * Post MVP validation priority (https://design-system.service.gov.uk/components/date-input/#error-messages):
 *  1. missing or incomplete information (when parent is no longer in focus, highlight fields missing info?)
-*  2. information that cannot be correct (for example, the number ‘13’ in the month field)
-*     (Maybe less than 4 digits in year counts? Maybe it's #3 priority?)
+*  2. information that cannot be correct (for example, the number ‘13’ in the month field, 3-digit year)
 *  3. information that fails validation for another reason
 * Or validate from left to right
 *
-* For invalidation styling see al_split_dates.css.
+* Bugs:
+* - Double validation message after submit: two validation messages will
+*   appear under the date fields. This needs to be replicated consistently
+*   to see if `add_to_groups()` can solve this.
+* - Wrong validation error placement: If an error is first shown on
+*   submit, it and any following errors will be placed below all the
+*   other elements, not in the box we've created for it. Our custom
+*   errorPlacement doesn't run. Maybe try moving any existing error
+*   on daPageLoad, though not sure this runs after form submission.
+*   (Upstream?)
+* - Missing error messages: Submit validation only shows an error for one field,
+*   even if there are multiple fields on the page. This is a preexisting bug.
+*   (Upstream?)
+* - Required fields with default values don't get invalidated when they are first
+*   emptied. They have to have a value put in them and then that value removed.
+*   (Upstream?)
 */
 
 // da doesn't log the full error sometimes, so we'll do our own try/catch
@@ -107,7 +113,7 @@ function replace_date(original_date) {{
   
   // Ensure original date field is updated when needed so that
   // submitting the form sends the right data.
-  // Updates will be triggered when the user leaves an input field
+  // Updates will be triggered when the user leaves an input field.
   $year.on('change', update);
   $month.on('change', update);
   $day.on('change', update);
@@ -119,7 +125,6 @@ function replace_date(original_date) {{
 }};  // Ends replace_date()
   
 
-// A shame these have to be split into month and others
 function create_date_part({{type, date_id}}) {{
   /** Return one date part with a label and input inside a container.
   *   TODO: Should we use the original dates's `name` instead of `id`?
@@ -138,9 +143,9 @@ function create_date_part({{type, date_id}}) {{
   // For python formatting, need to have {{day}} and {{year}}
   let $label = '';
   if (type === 'day') {{
-    $label = $('<label for="' + name + '">{{day}}</label>');
+    $label = $('<label for="' + name + '">{day}</label>');
   }} else {{
-    $label = $('<label for="' + name + '">{{year}}</label>');
+    $label = $('<label for="' + name + '">{year}</label>');
   }}
   $col.append($label);
   
@@ -156,10 +161,8 @@ function create_date_part({{type, date_id}}) {{
   var $field = $('<input class="form-control al_field ' + type + ' ' + date_id + '" type="number" min="1" inputmode="numeric">');
   $field.attr('id', id);
   $field.attr('name', name);
-  // There's only one message element, so all fields are described by it
-  // I think jquery validation plugin uses the error message's `for` attrib,
-  // but I'm not sure where that originally comes from. Looks like the original
-  // input's `id`, but I'm not sure why the plugin is using that.
+  // There's only one message element, so all fields are described by it.
+  // Not sure how the validation plugin associates the original input's id with this.
   $field.attr('aria-describedby', date_id + '-error');
   $col.append($field);
   
@@ -182,7 +185,7 @@ function create_month(date_id) {{
   // '_ignore' prevents the field from being submitted, avoiding a da error
   let name =  '_ignore_' + id;
   
-  let $label = $('<label for="' + name + '">{{month}}</label>');
+  let $label = $('<label for="' + name + '">{month}</label>');
   $col.append($label);
   
   // aria-describedby is ok to have, even when the date-part error is
@@ -191,16 +194,14 @@ function create_month(date_id) {{
   // https://developer.mozilla.org/en-US/docs/Web/CSS/display#display_none
   // https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-hidden
   
-  // There's only one message element, so all fields are described by it
-  // I think jquery validation plugin uses the error message's `for` attrib,
-  // but I'm not sure where that originally comes from. Looks like the original
-  // input's `id`, but I'm not sure where the plugin is getting that.
-  var $field = $('<select class="form-select al_field month ' + date_id + '">');  // unique
+  // There's only one message element, so all fields are described by it.
+  // Not sure how the validation plugin associates the original input's id with this.
+  var $field = $('<select class="form-select al_field month ' + date_id + '">');
   $field.attr('id', id);
   $field.attr('name', name);
   // There's only one message element, so all fields are described by it
   $field.attr('aria-describedby', date_id + '-error');
-  add_month_options($field);  // unique
+  add_month_options($field);
   
   $col.append($field);
   
@@ -217,7 +218,8 @@ function add_month_options(select) {{
   */
   let $select = $(select);
   
-  // "No month selected" option
+  // "No month selected" option.
+  // TODO: Should this have text for accessibility?
   let $blank_opt = $('<option value=""></option>');
   $select.append( $blank_opt );
   
@@ -260,7 +262,7 @@ function use_previous_values({{$original_date, $al_date}}) {{
     date_parts = null;
   }}
   
-  // TODO: Select "" if month is empty string?
+  // TODO: Select "" option if month is empty string?
   if (date_parts && date_parts[0]) {{
     // Ensure 1 becomes "01", etc.
     let month_str = date_parts[0].toString().padStart(2,0);
@@ -389,7 +391,8 @@ function get_$original_date(element) {{
   
   
 function get_$al_date(element) {{
-  /** Return the element we created to surround our date elements.
+  /** Using any element inside the element containing our split date,
+  *   return the element we created to surround our date elements.
   *   If it doesn't exist, will return an empty jQuery object.
   *   Easier to maintain all in one place. Consider returning
   *   a plain element - calling functs won't have to know how
@@ -400,7 +403,7 @@ function get_$al_date(element) {{
   * @returns {{jQuery obj}} Note: can be an "empty" jQuery object.
   */
   // `.closest()` will get the element itself if appropriate
-  return $(element).closest('.al_split_date');
+  return $(element).closest('.dafieldpart').find('.al_split_date');
 }};  // Ends get_$al_date()
   
   
@@ -422,6 +425,16 @@ function set_up_validation($al_date) {{
     add_messages(field);
     add_to_groups(field);
   }});
+  
+  // TODO: If an invalid date is submitted before it gets page validation
+  // (e.g. a missing date part for a non-required date), the error message
+  // is stuck in its old spot instead of in the place this code specifies.
+  // The below doesn't work. We should only need `add_to_groups`, but
+  // our error placement doesn't run when submit validation happens first.
+  // let $original_date = get_$original_date($al_date);
+  // add_to_groups($original_date);
+  // // add_rules($original_date);
+  // // add_messages($original_date);
   
   let validator = $("#daform").data('validator');
   set_up_errorPlacement(validator);
@@ -651,6 +664,10 @@ $.validator.addMethod('_alRequired', function(value, field, params) {{
   *   - all fields have contents
   *   - current field has contents and other fields haven't been interacted with yet
   *   Otherwise returns false.
+  *
+  * Unable to give a specific message about which date field is missing values
+  *   (like in the CustomDataType 'submit' validation messages do) as we'd have
+  *   to show a lot of premature error messages.
   * 
   * @returns {{bool}}
   */
@@ -803,6 +820,8 @@ function set_up_errorPlacement(validator) {{
   validator.settings.errorPlacement = function al_errorPlacement(error, field) {{
     /** Put all errors in one spot at the bottom of the parent.
     *   Only runs once per field.
+    *   WARNING: If submission validation happens first, this function will
+    *   not be run and the error won't be placed inside our AL date.
     */
     let $al_date = get_$al_date(field);
     // If this isn't an AL date, use the original behavior
@@ -862,9 +881,8 @@ function set_up_unhighlight(validator) {{
 }};  // Ends set_up_unhighlight()
   
   
-  
 }} catch (error) {{
-  console.error('Error in AL date CusotmDataTypes', error);
+  console.error('Error in AL split date CusotmDataTypes', error);
 }}
 
 """
@@ -905,6 +923,9 @@ class ThreePartsDate(CustomDataType):
     javascript = js_text.format(month=word("Month"), day=word("Day"), year=word("Year"))
     jq_message = word("Answer with a valid date")
     is_object = True
+    # Unable to get messages for plain `min`/`max` attributes
+    # Unable to use `-` in names for validation plugin.
+    # Unable to use `_` in names which da turns into `-`
     mako_parameters = [
       'alMin', 'alMinMessage', 'alMax', 'alMaxMessage',
       'alInvalidDayMessage', 'alInvalidYearMessage', 'alDefaultMessage'
@@ -950,6 +971,9 @@ class BirthDate(ThreePartsDate):
     ).replace("ThreePartsDate", "BirthDate")
     jq_message = word("Answer with a valid date of birth")
     is_object = True
+    # Unable to get messages for plain `min`/`max` attributes
+    # Unable to use `-` in names for validation plugin.
+    # Unable to use `_` in names which da turns into `-`
     mako_parameters = [
       'alMin', 'alMinMessage', 'alMax', 'alMaxMessage',
       'alInvalidDayMessage', 'alInvalidYearMessage', 'alDefaultMessage'
