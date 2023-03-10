@@ -33,21 +33,16 @@ js_text = """\
 * Or validate from left to right
 *
 * Bugs:
-* - Double validation message after submit: two validation messages will
-*   appear under the date fields. This needs to be replicated consistently
-*   to see if `add_to_groups()` can solve this.
-* - Wrong validation error placement: If an error is first shown on
-*   submit, it and any following errors will be placed below all the
-*   other elements, not in the box we've created for it. Our custom
-*   errorPlacement doesn't run. Maybe try moving any existing error
-*   on daPageLoad, though not sure this runs after form submission.
-*   (Upstream?)
-* - Missing error messages: Submit validation only shows an error for one field,
-*   even if there are multiple fields on the page. This is a preexisting bug.
-*   (Upstream?)
-* - Required fields with default values don't get invalidated when they are first
-*   emptied. They have to have a value put in them and then that value removed.
-*   (Upstream?)
+* Bad things happen when a user submits invalid fields (Can `add_to_groups()` solve some of these?) (upstream?). Note that no other invalidation highlighting appears. If any, it's only our new stuff:
+* - Required:
+*   - No interaction with required field, 2 messages inside outline. Thereafter there will always be 2 messages.
+*   - An on-page required message triggered and all fields are empty, 2 messages inside the outline. Thereafter there will always be 2 messages.
+*   - Any on-page invalid message(s) with any fields filled, message will lose the outline, but only have 1 message. Thereafter, the outline for on-page invalidation will appear, but won't contain the error message.
+*   - Required fields with default values don't get invalidated when they are first emptied. They have to have a value put in them and then that value removed. (Upstream?)
+* - Sometimes after submission, one validation message will be inside the outline and another outside it. This needs to be replicated consistently to see if `add_to_groups()` can solve this. (upstream?)
+* - When one non-required field is empty on submission and there is no on-page invalidation error, the error appears with no red outline. After that, getting a non-submission invalidation message will show the red outline, but the error will be outside of it.
+* - Note: At the very least, when submitting before getting a split date on-page validation message, our custom errorPlacement doesn't run. There may be other times too. Maybe try moving any existing error on daPageLoad, though not sure this runs after form submission. (Upstream?)
+* - Missing error messages: Submit validation only shows an error for one split date, even if there are multiple fields on the page. This is a preexisting bug. (Upstream?)
 */
 
 // da doesn't log the full error sometimes, so we'll do our own try/catch

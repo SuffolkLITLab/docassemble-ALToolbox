@@ -30,7 +30,7 @@ subquestion: |
 
 fields:
   - note: |
-      This field has a min date of today and a max date of 12/31/2040.
+      This first field has a min date of today and a max date of 12/31/2040.
   - When will your high school graduation be?: date_of_graduation
     datatype: ThreePartsDate
     required: False
@@ -42,8 +42,8 @@ fields:
   - Birth date (today is valid): date_of_birth
     datatype: BirthDate
     required: True
-    #validation messages:
-    #  required: This is a custom 'required' message
+    validation messages:
+      required: This is a custom 'required' message.
   - note: |
       These fields can be hidden just like any docassemble field.
   - Show hidden date fields: show_fields
