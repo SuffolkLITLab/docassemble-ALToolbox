@@ -426,8 +426,8 @@ function set_up_validation($al_date) {{
   // is stuck in its old spot instead of in the place this code specifies.
   // The below doesn't work. We should only need `add_to_groups`, but
   // our error placement doesn't run when submit validation happens first.
-  // let $original_date = get_$original_date($al_date);
-  // add_to_groups($original_date);
+  let $original_date = get_$original_date($al_date);
+  add_to_groups($original_date);
   // // add_rules($original_date);
   // // add_messages($original_date);
   
