@@ -16,15 +16,14 @@ js_text = """\
 /*
 * Notes to keep around:
 * - Rule names must avoid dashes.
-* - Avoid a min date default for birthdays. Too hard to predict developer
-*   needs, like great-grandmother's birthday. Document that developers need
-*   to set a min value if they want one.
+* - Avoid a min date default for birthdays. Too hard to predict developer needs, like great-grandmother's birthday. Document that developers need to set a min value if they want one.
+* - Cannot use regular `min`/`max` attributes. We can get that the rules exist, but we can't get their messages.
 * 
 * TODO: (post MVP)
-* - Get the 'Month'/'Day'/'Year' word values as mako_parameters too so
-*   they can be translated. Pretty easy.
+* - Get the 'Month'/'Day'/'Year' word values as mako_parameters too so they can be translated. Same as we do within the message functions.
 * - Deal with international user date input and international dev date attributes.
 * - Handle non-US formatted dates.
+* - Consider decreasing padding-right of the day and year fields as sometimes extra numbers get hidden. e.g. A day of 331 only shows the 33. Maybe remove the padding completely to make sure it's clear the text has gone past the edge.
 *
 * Post MVP validation priority (https://design-system.service.gov.uk/components/date-input/#error-messages):
 *  1. missing or incomplete information (when parent is no longer in focus, highlight fields missing info?)
@@ -33,14 +32,12 @@ js_text = """\
 * Or validate from left to right
 *
 * Bugs:
-* Bad things happen when a user submits invalid fields (Can `add_to_groups()` solve some of these?) (upstream?). Note that no other invalidation highlighting appears. If any, it's only our new stuff:
+* Bad things happen when a user submits invalid fields (upstream?). Note that no other invalidation highlighting appears. If any, it's only our new stuff:
 * - Required:
-*   - No interaction with required field, 2 messages inside outline. Thereafter there will always be 2 messages.
-*   - An on-page required message triggered and all fields are empty, 2 messages inside the outline. Thereafter there will always be 2 messages.
-*   - Any on-page invalid message(s) with any fields filled, message will lose the outline, but only have 1 message. Thereafter, the outline for on-page invalidation will appear, but won't contain the error message.
+*   - (partly solved by `add_to_groups()` - outline is restored after new on-page error) Any on-page invalid message(s) with any fields filled, message will lose the outline, but only have 1 message. Thereafter, the outline for on-page invalidation will appear, but won't contain the error message.
 *   - Required fields with default values don't get invalidated when they are first emptied. They have to have a value put in them and then that value removed. (Upstream?)
 * - Sometimes after submission, one validation message will be inside the outline and another outside it. This needs to be replicated consistently to see if `add_to_groups()` can solve this. (upstream?)
-* - When one non-required field is empty on submission and there is no on-page invalidation error, the error appears with no red outline. After that, getting a non-submission invalidation message will show the red outline, but the error will be outside of it.
+* - When one non-required field is empty on submission and there is no on-page invalidation error, the error appears with no red outline. After that, getting a non-submission invalidation message will show the red outline, but the error will be outside of it. Not solved by `add_to_groups()`.
 * - Note: At the very least, when submitting before getting a split date on-page validation message, our custom errorPlacement doesn't run. There may be other times too. Maybe try moving any existing error on daPageLoad, though not sure this runs after form submission. (Upstream?)
 * - Missing error messages: Submit validation only shows an error for one split date, even if there are multiple fields on the page. This is a preexisting bug. (Upstream?)
 */
@@ -421,15 +418,12 @@ function set_up_validation($al_date) {{
     add_to_groups(field);
   }});
   
-  // TODO: If an invalid date is submitted before it gets page validation
-  // (e.g. a missing date part for a non-required date), the error message
-  // is stuck in its old spot instead of in the place this code specifies.
-  // The below doesn't work. We should only need `add_to_groups`, but
-  // our error placement doesn't run when submit validation happens first.
+  // There's some strange behavior on submission outlined in the
+  // description of bugs. This helps with those involving multiple
+  // messages cropping up. Avoid adding rules and messages to the
+  // original field for now, though. That seemed to cause issues.
   let $original_date = get_$original_date($al_date);
   add_to_groups($original_date);
-  // // add_rules($original_date);
-  // // add_messages($original_date);
   
   let validator = $("#daform").data('validator');
   set_up_errorPlacement(validator);
