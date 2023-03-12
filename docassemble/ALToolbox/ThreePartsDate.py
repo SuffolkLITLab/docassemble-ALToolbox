@@ -15,7 +15,7 @@ js_text = """\
 
 /*
 * Notes to keep around:
-* - Rule names must avoid dashes.
+* - Rule names must avoid dashes and underscores because of plugin and da limitations.
 * - Avoid a min date default for birthdays. Too hard to predict developer needs, like great-grandmother's birthday. Document that developers need to set a min value if they want one.
 * - Cannot use regular `min`/`max` attributes. We can get that the rules exist, but we can't get their messages.
 * 
