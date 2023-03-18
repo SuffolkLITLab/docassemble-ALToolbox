@@ -1,0 +1,30 @@
+---
+include:
+  - multiselect.yml
+---
+mandatory: True
+id: demo question
+question: |
+  Demo hierarchical multi-select
+fields:
+  - Example: example_select
+    datatype: multiselect
+    choices:
+      - label: A
+        key: a
+        group: Z
+      - label: B
+        key: b
+        group: Z
+      - label: C
+        key: c
+        group: Y  
+script: |
+  <script type="text/javascript">
+    /* Need to activate the multiselect JavaScript on each input, after base64 encoding the name
+     of the input (it is "example_select" here)
+     */  
+     $(document).ready(function() {
+       $("#${ base64.b64encode(str('example_select').encode()).decode().replace('=', '') } ").multiselect({enableCaseInsensitiveFiltering: true, inheritClass: true, enableClickableOptGroups: true, enableCollapsibleOptGroups: true, collapseOptGroupsByDefault: true});
+      });
+  </script>

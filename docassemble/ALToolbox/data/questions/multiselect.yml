@@ -3,6 +3,9 @@ features:
   css: bootstrap-multiselect.css
   javascript: bootstrap-multiselect.js
 ---
+imports:
+  - base64
+---
 comment: |
   This feature requires JavaScript on the multiselect that you want to 
   transform into a filterable dropdown. 
@@ -16,7 +19,7 @@ comment: |
   script: |
     <script type="text/javascript">
         $(document).ready(function() {
-            $('#bXNlbGVjdA').multiselect({enableCaseInsensitiveFiltering: true, inheritClass: true});
+            $("#${ base64.b64encode("input_name") }").multiselect({enableCaseInsensitiveFiltering: true, inheritClass: true});
         });
     </script>
     
