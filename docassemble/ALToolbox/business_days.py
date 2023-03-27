@@ -157,10 +157,15 @@ def is_business_day(
     remove_holidays: Optional[Iterable[str]] = None,
 ) -> bool:
     """
-    Returns true iff the specified date is a business day (i.e., not a holiday)
+    Returns true if and only if the specified date is a business day (i.e., not a holiday)
     in the specified jurisdiction. Business days are considered to be:
     1. weekdays other than Saturday and Sunday and
     1. days that are not a federal or state-observed holiday
+
+    Example:
+    ```
+    assert(is_business_day("2023-03-26") == False)
+    ```
     """
     if not isinstance(date, DADateTime):
         date = as_datetime(date)
@@ -196,7 +201,19 @@ def get_next_business_day(
 
     Relies on the Python holidays package, which has fairly good support for
     holidays around the world and in various states and provinces, but local
-    court rules may differ.
+    court rules may differ. You can see what holidays are used at
+    https://github.com/dr-prodigy/python-holidays/tree/master/holidays/countries
+
+    Args:
+      start_date: the date to start with. Can be a date-formatted string (i.e. "2023-03-37", or
+          "3-27-2023") or a DADateTime object
+      wait_n_days: the number of days to find the find the date after. If 0, it returns the given
+          date if it's a business day.
+      country: the county to use business days from
+      subdiv: the subdivision (e.g. state or province) to use business days from
+      add_holidays: a dictionary from the date string ("12/25") to the name of the holiday,
+          will add those holidays to be considered
+      remove_holidays: the list of date strings ("12/25") of dates that are no longer holidays
     """
     if not isinstance(start_date, DADateTime):
         start_date = as_datetime(start_date)
@@ -223,6 +240,17 @@ def get_date_after_n_business_days(
 ) -> DADateTime:
     """
     Returns a time period which contains a minimum of `n` business days.
+
+    Args:
+      start_date: the date to start with. Can be a date-formatted string (i.e. "2023-03-37", or
+          "3-27-2023") or a DADateTime object
+      wait_n_days: the number of businesses days to wait for. For example, `start_date` is a
+          Friday, and `wait_n_days` is 2, then the date returned will be the next Tuesday.
+      country: the county to use business days from
+      subdiv: the subdivision (e.g. state or province) to use business days from
+      add_holidays: a dictionary from the date string ("12/25") to the name of the holiday,
+          will add those holidays to be considered
+      remove_holidays: the list of date strings ("12/25") of dates that are no longer holidays
     """
     if not isinstance(start_date, DADateTime):
         start_date = as_datetime(start_date)
