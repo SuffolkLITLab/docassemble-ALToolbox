@@ -5,6 +5,7 @@
   background: lightcyan; 
   color: darkgreen; 
 }
-h5 {
+
+h5, .h5 {
   color: brown;
 }

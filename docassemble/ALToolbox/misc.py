@@ -162,7 +162,9 @@ def number_to_letter(n: Optional[int]) -> str:
 def collapse_template(
     template,
     classname=None,
-    closed_icon="caret-right",
+    container_classname=None,
+    container_id_tag=None,
+    closed_icon="caret-right", 
     open_icon="caret-down",
 ):
     """
@@ -175,14 +177,26 @@ def collapse_template(
     """
     if not template.subject_as_html(trim=True) and not template.content_as_html():
         return ""
+      
     if classname is None:
         classname = " bg-light"
     else:
         classname = " " + classname.strip()
+    container_classes_plus = "al_collapse_template"
+    if container_classname:
+      container_classes_plus += f" { container_classname }"
+      
     the_id = re.sub(r"[^A-Za-z0-9]", "", template.instanceName)
+    container_id = container_id_tag or f'{ the_id }_container'
+    
     return f"""\
-<a class="collapsed" data-bs-toggle="collapse" href="#{ the_id }" role="button" aria-expanded="false" aria-controls="{ the_id }"><span class="pdcaretopen">{ fa_icon(open_icon) }</span><span class="pdcaretclosed">{ fa_icon(closed_icon) }</span> { template.subject_as_html(trim=True) }</a>
-<div class="collapse" id="{ the_id }"><div class="card card-body pb-1{ classname }">{ template.content_as_html() }</div></div>\
+<p id="{ container_id }" class="{ container_classes_plus }">
+<a class="collapsed al_toggle" data-bs-toggle="collapse" href="#{ the_id }" role="button" aria-expanded="false" aria-controls="{ the_id }"><span class="toggle-icon pdcaretopen">{ fa_icon(open_icon) }</span><span class="toggle-icon pdcaretclosed">{ fa_icon(closed_icon) }</span>
+<span class="subject">{ template.subject_as_html(trim=True) }</span></a>
+<div class="collapse" id="{ the_id }">
+<div class="card card-body pb-1{ classname }">{ template.content_as_html() }</div>
+</div>
+</p>\
 """
 
 

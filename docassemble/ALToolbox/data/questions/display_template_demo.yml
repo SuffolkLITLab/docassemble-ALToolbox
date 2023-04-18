@@ -31,8 +31,12 @@ subquestion: |
   1. **copy** (default=False) 
       - It adds a copy button under the template for users to copy/share the template content.
       - This feature applies the **copy_button_html()** function to template content. See [copy button demo](${interview_url(i=user_info().package + ":copy_button_demo.yml")}).
-  1. **class_name** (default=None) 
-      - To style your template, include a class_name input in the call, and add your css rules either on the screen or to a .css file.  
+  1. **classname** (default="bg-light") 
+      - To style your template content, include a `classname` keyword argument when you call the function and add your css rules either on the screen or to a .css file.
+  1. **container_classname** (default=None) 
+      - To style the whole container of your subject and content, include a `content_classname` keyword argument when you call the function and add your css rules either on the screen or to a .css file.
+  1. **container_id_tag** (default=a generated id based on the template's name) 
+      - To add a custom id to the container of your subject and content, include a `container_id_tag` keyword argument when you call the function.
       
   You can mix and match these features. The following screens will show you how. 
   
@@ -44,10 +48,10 @@ question: |
   Scrollable examples
 subquestion: |    
   ##### Srollable only
-  ${ display_template(my_template1) }<br>
+  ${ display_template(my_template1, container_classname="my_class", container_id_tag="my_id") }<br>
   
   ##### Style only
-  ${ display_template(my_template2, scrollable=False, class_name="my_color")}
+  ${ display_template(my_template2, scrollable=False, classname="my_color")}
 ---
 id: collapse and scrollable examples
 continue button field: collapse_n_scrollable_examples
@@ -55,26 +59,28 @@ question: |
   Collase and scrollable examples
 subquestion: |
   ##### Collapse only with a style
-  ${ display_template(my_template1, scrollable=False, collapse=True, class_name="my_color") }
+  ${ display_template(my_template1, scrollable=False, collapse=True, classname="my_color") }
   
   ##### Collapse and scrollable, without the copy button
   ${ display_template(my_template2, collapse=True) }
 ---
 id: copy button examples
-continue button field: copy_button_examples
+event: copy_button_examples
 question: |
   Copy button examples
-fields:  
-  - html: <h5>Copy and scrollable</h5>
-  - note: |      
-      ${ display_template(my_template1, copy=True) }
-  - html: <h5>Copy and collapse but not scrollable</h5> 
-  - note: | 
-      _(Hover over the box to see the full template content. If this is annoying, keep the default value scrollable=True as shown in the very last example.)_<br><br>
-      ${ display_template(my_template1, scrollable=False, collapse=True, copy=True) }  
-  - html: <h5>Copy and collapse and scrollable</h5>
-  - note: |      
-      ${ display_template(my_template2, collapse=True, copy=True) }  
+subquestion: |
+  <h5>Copy and scrollable</h5>
+      
+  ${ display_template(my_template1, copy=True) }
+  
+  <h5>Copy and collapse but not scrollable</h5>
+  
+  _(Hover over the box to see the full template content. If this is annoying, keep the default value scrollable=True as shown in the very last example.)_
+  
+  ${ display_template(my_template1, scrollable=False, collapse=True, copy=True) }  
+  <h5>Copy and collapse and scrollable</h5>
+  
+  ${ display_template(my_template2, collapse=True, copy=True) } 
 ---
 template: my_template1
 subject: |

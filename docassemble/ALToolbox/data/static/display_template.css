@@ -1,3 +1,7 @@
+.al_display_template {
+  padding-bottom: 1rem;
+}
+
 .scrollable-panel{
   height:200px;
   overflow-y:scroll;
