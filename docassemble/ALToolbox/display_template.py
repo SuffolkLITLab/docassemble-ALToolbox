@@ -33,6 +33,10 @@ def display_template(
 
     the_id = re.sub(r"[^A-Za-z0-9]", "", template.instanceName)
     actual_container_id_tag = container_id_tag or f"{ the_id }_container"
+    
+    subject_html = ''
+    if not template.subject == "":
+      subject_html = f'<div class="panel-heading"><h3 class="subject">{template.subject_as_html(trim=True)}</h3></div>'
 
     # 2. If copiable, call copy_button_html() to generate the template content along with a copy button
     if copy:
@@ -52,7 +56,7 @@ def display_template(
         else:
             return f"""
 <div id="{actual_container_id_tag}" class="{container_classname_plus}">
-<div class="panel-heading"><h3 class="subject">{template.subject_as_html(trim=True)}</h3></div>
+{subject_html}
 {text}
 </div>
 """
@@ -60,7 +64,7 @@ def display_template(
     # 3. If not copiable, generate the whole output
     else:
         if not collapse:
-            return f'<div id="{actual_container_id_tag}" class="{container_classname_plus} {scroll_class} card card-body {class_name} pb-1" id="{the_id}"><div class="panel-heading"><h3 class="subject">{template.subject_as_html(trim=True)}</h3></div><div>{template.content_as_html()}</div></div>'
+            return f'<div id="{actual_container_id_tag}" class="{container_classname_plus} {scroll_class} card card-body {class_name} pb-1" id="{the_id}">{subject_html}<div>{template.content_as_html()}</div></div>'
 
         else:
             return f'<div id="{actual_container_id_tag}" class="{container_classname_plus}"><a class="collapsed" data-bs-toggle="collapse" href="#{the_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span><span class="subject">{template.subject_as_html(trim=True)}</span></a><div class="collapse" id="{the_id}"><div class="{scroll_class} card card-body {class_name} pb-1">{template.content_as_html()}</div></div></div>'

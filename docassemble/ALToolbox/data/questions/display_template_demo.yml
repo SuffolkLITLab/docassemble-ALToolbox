@@ -48,10 +48,13 @@ question: |
   Scrollable examples
 subquestion: |    
   ##### Srollable only
-  ${ display_template(my_template1, container_classname="my_class", container_id_tag="my_id") }<br>
+  ${ display_template(my_template1, container_classname="my_class", container_id_tag="my_id") }
   
   ##### Style only
-  ${ display_template(my_template2, scrollable=False, classname="my_color")}
+  ${ display_template(my_template2, scrollable=False, classname="my_color") }
+  
+  ##### Template with no subject
+  ${ display_template(template_no_subject) }
 ---
 id: collapse and scrollable examples
 continue button field: collapse_n_scrollable_examples
@@ -101,3 +104,9 @@ content: |
   Est ad autem vitae, ius graeco delicata eu. Vim quod postea ad. Vero omnis iuvaret in ius. Eu noster volumus sed.
 
   Qui eu dictas senserit. Ne affert doctus his. Eius dicta utinam ex pri, tota equidem vel at. Cu nec habemus definitiones, eos oratio impedit mediocrem ex, inermis necessitatibus duo et. Malis graeco dicunt ei mea. Ei idque cetero est.
+---
+template: template_no_subject
+content: |
+  Qui eu dictas senserit. Ne affert doctus his. Eius dicta utinam ex pri, tota equidem vel at. Cu nec habemus definitiones, eos oratio impedit mediocrem ex, inermis necessitatibus duo et. Malis graeco dicunt ei mea. Ei idque cetero est.
+  
+  Est ad autem vitae, ius graeco delicata eu. Vim quod postea ad. Vero omnis iuvaret in ius. Eu noster volumus sed.

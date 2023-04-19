@@ -1,3 +1,7 @@
+.al_collapse_template {
+  padding-bottom: 1rem;
+}
+
 a span.pdcaretopen {
     display: inline;
 }
