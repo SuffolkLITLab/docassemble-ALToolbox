@@ -77,7 +77,7 @@ fields:
   - When do you hope to retire?: retirement_date
     datatype: ThreePartsDate
     required: False
-    default: 02/3/2055
+    default: 02/28/2055
     alMin: ${ today() }
     alMax: 12/31/2080
     alMinMessage: ${ word('Custom alMinMessage.') }
@@ -103,7 +103,7 @@ subquestion: |
   % endif
 
   % if defined('tooth_date') and not tooth_date is None:
-  The date lost your first tooth was ${ tooth_date }.
+  The date you lost your first tooth was ${ tooth_date }.
   % endif
   
   % if anniversary_date:

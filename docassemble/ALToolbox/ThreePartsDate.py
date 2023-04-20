@@ -38,8 +38,8 @@ js_text = """\
 *   - Required fields with default values don't get invalidated when they are first emptied. They have to have a value put in them and then that value removed. (Upstream?)
 * - Sometimes after submission, one validation message will be inside the outline and another outside it. This needs to be replicated consistently to see if `add_to_groups()` can solve this. (upstream?)
 * - When one non-required field is empty on submission and there is no on-page invalidation error, the error appears with no red outline. After that, getting a non-submission invalidation message will show the red outline, but the error will be outside of it. Not solved by `add_to_groups()`.
-* - Note: At the very least, when submitting before getting a split date on-page validation message, our custom errorPlacement doesn't run. There may be other times too. Maybe try moving any existing error on daPageLoad, though not sure this runs after form submission. (Upstream?)
-* - Missing error messages: Submit validation only shows an error for one split date, even if there are multiple fields on the page. This is a preexisting bug. (Upstream?)
+* - Note: At the very least, when submitting before getting a three parts date on-page validation message, our custom errorPlacement doesn't run. There may be other times too. Maybe try moving any existing error on daPageLoad, though not sure this runs after form submission. (Upstream?)
+* - Missing error messages: Submit validation only shows an error for one three parts date, even if there are multiple fields on the page. This is a preexisting bug. (Upstream?)
 */
 
 // da doesn't log the full error sometimes, so we'll do our own try/catch
@@ -59,14 +59,14 @@ function replace_date(original_date) {{
   * 
   * @param {{HTML Node}} date The original date element.
   * 
-  * @returns {{jQuery obj}} AL container for all the split date elements
+  * @returns {{jQuery obj}} AL container for all the three parts date elements
   */
   let $original_date = $(original_date);
   $original_date.hide();
   $original_date.attr('type', 'hidden');
   $original_date.attr('aria-hidden', 'true');
   
-  var $al_date = $('<div class="al_split_date form-row row">');
+  var $al_date = $('<div class="al_three_parts_date form-row row">');
   $original_date.before($al_date);
 
   var date_id = $original_date.attr('id');
@@ -234,7 +234,7 @@ function use_previous_values({{$original_date, $al_date}}) {{
   *   E.g. If we're returning to a variable that has already been defined.
   * 
   * @param {{$ obj}} $original_date jQuery obj of the original date element.
-  * @param {{$ obj}} $al_date jQuery obj of the al parent of our split date parts.
+  * @param {{$ obj}} $al_date jQuery obj of the al parent of our three parts date parts.
   * 
   * @returns undefined
   */
@@ -272,7 +272,7 @@ function use_previous_values({{$original_date, $al_date}}) {{
 function add_error_container($al_date) {{
   /** Add element that will contain all errors.
   * 
-  * @param {{$ obj}} $al_date The al parent of our split date parts.
+  * @param {{$ obj}} $al_date The al parent of our three parts date parts.
   * 
   * @returns undefined
   */
@@ -285,10 +285,10 @@ function add_error_container($al_date) {{
 
 function update_original_date($al_date) {{
   /** Update value in original date field using the values
-  *   of the al split date parts.
+  *   of the al three parts date parts.
   * 
   * @param {{$ obj}} $original_date The original date element.
-  * @param {{$ obj}} $al_date The al parent of our split date parts.
+  * @param {{$ obj}} $al_date The al parent of our three parts date parts.
   * 
   * @returns undefined
   */
@@ -325,7 +325,7 @@ function update_original_date($al_date) {{
 function is_required(element) {{
   /*** Returns true if date value is required, otherwise returns false.
   * 
-  * @param {{Node}} element AL split date element. Can be parent of date parts.
+  * @param {{Node}} element AL three parts date element. Can be parent of date parts.
   * 
   * @returns {{bool}}
   */
@@ -339,7 +339,7 @@ function get_date_data(element) {{
   * Given an element that holds a part of the date information,
   * return the full date data as an object.
   * 
-  * @param {{HTML Node | $ obj}} element Any al split date element, including parent.
+  * @param {{HTML Node | $ obj}} element Any al three parts date element, including parent.
   * 
   * @returns {{year: str, month: str, day: str}}
   */
@@ -358,7 +358,7 @@ function get_date_data(element) {{
 function is_birthdate(element) {{
   /** If the element is part of a al birthdate field, returns true, otherwise false.
   * 
-  * @param {{HTML Node}} element Any al split date element, including al parent.
+  * @param {{HTML Node}} element Any al three parts date element, including al parent.
   * @returns {{bool}}
   */
   // For actual environment:
@@ -374,7 +374,7 @@ function is_birthdate(element) {{
 function get_$original_date(element) {{
   /** Returns jQuery obj of original date element or an empty jQuery object.
   * 
-  * @param {{HTML Node}} element Any al split date element, including al parent.
+  * @param {{HTML Node}} element Any al three parts date element, including al parent.
   * 
   * @returns {{jQuery obj}}
   */
@@ -383,7 +383,7 @@ function get_$original_date(element) {{
   
   
 function get_$al_date(element) {{
-  /** Using any element inside the element containing our split date,
+  /** Using any element inside the element containing our three parts date,
   *   return the element we created to surround our date elements.
   *   If it doesn't exist, will return an empty jQuery object.
   *   Easier to maintain all in one place. Consider returning
@@ -395,7 +395,7 @@ function get_$al_date(element) {{
   * @returns {{jQuery obj}} Note: can be an "empty" jQuery object.
   */
   // `.closest()` will get the element itself if appropriate
-  return $(element).closest('.dafieldpart').find('.al_split_date');
+  return $(element).closest('.dafieldpart').find('.al_three_parts_date');
 }};  // Ends get_$al_date()
   
   
@@ -408,7 +408,7 @@ function get_$al_date(element) {{
 function set_up_validation($al_date) {{
   /** Uses jQuery validation plugin to set up validation functionality
   * 
-  * @param {{$ obj}} $al_date jQuery obj of the al parent of our split date parts.
+  * @param {{$ obj}} $al_date jQuery obj of the al parent of our three parts date parts.
   * 
   * @returns undefined
   */
@@ -439,7 +439,7 @@ function set_up_validation($al_date) {{
 function add_rules(field) {{
   /** Add all date rules to a given field.
   * 
-  * @param {{HTML Node}} field An al split date field.
+  * @param {{HTML Node}} field An al three parts date field.
   * 
   * @returns undefined
   */
@@ -461,7 +461,7 @@ function add_messages(field) {{
   /** Adds custom messages that are in the validator object
   *   and don't need parameters.
   * 
-  * @param {{HTML Node}} field An al split date field.
+  * @param {{HTML Node}} field An al three parts date field.
   * 
   * @returns undefined
   */
@@ -491,7 +491,7 @@ function add_to_groups(field) {{
   * 
   *   Inspired by https://stackoverflow.com/a/9688284/14144258
   * 
-  * @param {{HTML Node}} field An al split date field.
+  * @param {{HTML Node}} field An al three parts date field.
   * 
   * @returns undefined
   */
@@ -669,7 +669,7 @@ $.validator.addMethod('_alRequired', function(value, field, params) {{
   }}
   
   let all_dirty_fields_have_contents = true;
-  // For all related split date fields
+  // For all related three parts date fields
   get_$al_date(field).find('.al_field').each(function (index, a_field) {{
     // If a field has been interacted with by this rule at least once
     if ( $(a_field).hasClass('al_dirty') ) {{
@@ -693,7 +693,7 @@ function date_is_ready_for_min_max(element) {{
   /** Return true if date input is ready to be evaluated for min/max
   *   date value invalidation.
   * 
-  * @param {{HTML Node}} element Any al split date element, including the parent.
+  * @param {{HTML Node}} element Any al three parts date element, including the parent.
   * 
   * @returns {{bool}}
   */
@@ -726,7 +726,7 @@ function has_valid_day(element) {{
   *
   * Inspired by https://github.com/uswds/uswds/blob/728ba785f0c186e231a81865b0d347f38e091f96/packages/usa-date-picker/src/index.js#L735
   * 
-  * @param element {{HTML Node}} Any element in the al split date picker
+  * @param element {{HTML Node}} Any element in the al three parts date picker
   * 
   * @returns bool True if day date is valid
   * 
@@ -871,7 +871,7 @@ function set_up_unhighlight(validator) {{
   
   
 }} catch (error) {{
-  console.error('Error in AL split date CusotmDataTypes', error);
+  console.error('Error in AL three parts date CusotmDataTypes', error);
 }}
 
 """
