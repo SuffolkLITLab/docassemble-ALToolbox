@@ -916,8 +916,13 @@ class ThreePartsDate(CustomDataType):
     # Unable to use `-` in names for validation plugin.
     # Unable to use `_` in names which da turns into `-`
     mako_parameters = [
-      'alMin', 'alMinMessage', 'alMax', 'alMaxMessage',
-      'alInvalidDayMessage', 'alInvalidYearMessage', 'alDefaultMessage'
+        "alMin",
+        "alMinMessage",
+        "alMax",
+        "alMaxMessage",
+        "alInvalidDayMessage",
+        "alInvalidYearMessage",
+        "alDefaultMessage",
     ]
 
     @classmethod
@@ -964,8 +969,13 @@ class BirthDate(ThreePartsDate):
     # Unable to use `-` in names for validation plugin.
     # Unable to use `_` in names which da turns into `-`
     mako_parameters = [
-      'alMin', 'alMinMessage', 'alMax', 'alMaxMessage',
-      'alInvalidDayMessage', 'alInvalidYearMessage', 'alDefaultMessage'
+        "alMin",
+        "alMinMessage",
+        "alMax",
+        "alMaxMessage",
+        "alInvalidDayMessage",
+        "alInvalidYearMessage",
+        "alDefaultMessage",
     ]
 
     @classmethod
