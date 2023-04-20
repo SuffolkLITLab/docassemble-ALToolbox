@@ -1,0 +1,116 @@
+metadata:
+  title: ALToolbox Date CustomDataTypes Demo
+---
+include:
+  - ThreePartsDate.yml
+---
+mandatory: True
+code: |
+  date_of_birth
+  anniversary_date
+  end
+---
+question: |
+  ThreePartsDate and BirthDate datatypes
+subquestion: | 
+  This example shows you how to use the `ThreePartsDate` datatype and the `BirthDate` datatype. You can look at the source code of this page for detailed examples. To get all the styles, include the ALToolbox package's `ThreePartsDate.yml` file in your `include` block.
+  
+  A date like this is good for dates such as a passport date, where it's easier for a user to type than to navigate to a date that might be far in the past or future, or when a browser doesn't honor a datepicker.
+  
+  You can give your dates custom min and max values using the attributes `alMin:` and `alMax:` instead of the usual docassemble min and max attributes. Give the value as a US date - mm/dd/yyyy. For example, `alMax: 12/31/2040`. The value you give can also use Mako. For example, `alMax: ${ "${" } today() }`.
+
+  This custom datatype only supports the US date format at the moment - mm/dd/yyyy.
+fields:
+  - note: |
+      This first field has a min date of today and a max date of 12/31/2040.
+  - When will your high school graduation be?: date_of_graduation
+    datatype: ThreePartsDate
+    required: False
+    alMin: ${ today(format='MM/dd/yyyy') }
+    alMax: 12/31/2040
+    default: 02/3/2040
+  - note: |
+      The `BirthDate` datatype is like `ThreePartsDate`, but it stops users entering dates in the future.
+  - Birth date (today is valid): date_of_birth
+    datatype: BirthDate
+    required: True
+    validation messages:
+      required: This is a custom 'required' message.
+  - note: |
+      These fields can be hidden just like any docassemble field.
+  - Show hidden date fields: show_fields
+    datatype: yesno
+  - Court date: court_date
+    datatype: ThreePartsDate
+    default: ${ today(format='MM/dd/yyyy') }
+    required: True
+    show if: show_fields
+  - Date you lost your first tooth: tooth_date
+    datatype: BirthDate
+    required: False
+    show if: show_fields
+---
+question: |
+  Custom validation messages
+subquestion: |
+  You can choose to give your own custom validation messages if you want, so they can be translatable for on-page validations. When a user press to continue, though, they will get different messages that we can't customize yet.
+  
+  * `alDefaultMessage` will show instead of any of Assembly Line's default messages for any invalid input as long as you haven't given a more specific message to use.
+  * `alMinMessage` will show when the user has put a date too far in the past, overriding the default messages.
+  * `alMaxMessage` will show when the user has put a date too far in the future, overriding the default messages.
+  * `alInvalidDayMessage` will show when a user has put too many days in a month, overriding the default messages. For example, 2/30/2020.
+  * `alInvalidYearMessage` will show when a year is less than 4 digits long or starts with "0", overriding the default messages.
+
+  The fields below have a min date of today and a max date of 12/31/2080.
+fields:
+  - note: |
+      This field just has a custom default message. The message will be the same for any invalid input.
+  - When will your 50th anniversary be?: anniversary_date
+    datatype: ThreePartsDate
+    required: False
+    default: 02/3/2035
+    alMin: ${ today() }
+    alMax: 12/31/2080
+    alDefaultMessage: ${ word('Custom alDefaultMessage.') }
+  - note: |
+      This field has a different custom message for every kind of invalid input.
+  - When do you hope to retire?: retirement_date
+    datatype: ThreePartsDate
+    required: False
+    default: 02/28/2055
+    alMin: ${ today() }
+    alMax: 12/31/2080
+    alMinMessage: ${ word('Custom alMinMessage.') }
+    alMaxMessage: ${ word('Custom alMaxMessage.') }
+    alInvalidDayMessage: ${ word('Custom alInvalidDayMessage.') }
+    alInvalidYearMessage: ${ word('Custom alInvalidYearMessage.') }
+---
+event: end
+question: |
+  Your dates
+subquestion: |
+
+  % if date_of_birth:
+  You were born ${ date_of_birth }.
+  % endif
+
+  % if date_of_graduation:
+  Your graduation date will be ${ date_of_graduation }.
+  % endif
+
+  % if defined('court_date'):
+  Your court date is ${ court_date }.
+  % endif
+
+  % if defined('tooth_date') and not tooth_date is None:
+  The date you lost your first tooth was ${ tooth_date }.
+  % endif
+  
+  % if anniversary_date:
+  Your 50th anniversary will be ${ anniversary_date }.
+  % endif
+
+  % if retirement_date:
+  You hope to retire on ${ retirement_date }.
+  % endif
+---
