@@ -2,3 +2,5 @@
 .vscode/
 docassemble.ALToolbox.egg-info/**
 .history/
+
+.venv
