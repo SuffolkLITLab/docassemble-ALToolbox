@@ -26,3 +26,8 @@
 .al_three_parts_date.al_invalid .col-year {
   padding-right: 0;
 }
+
+/* Avoid AL styles elongating date and year fields and codify widths. */
+.al_three_parts_date .col > * {
+  width: 100%;
+}
