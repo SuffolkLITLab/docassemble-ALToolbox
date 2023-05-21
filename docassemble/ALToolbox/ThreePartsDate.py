@@ -277,7 +277,7 @@ function add_error_container($al_date) {{
   * @returns undefined
   */
   let $original_date = get_$original_date($al_date);
-  let $error = $('<div id="al_' + $original_date.attr('id') + '_error" class="da-has-error al_error"></div>');
+  let $error = $('<div id="al_' + $original_date.attr('id') + '_error" class="al_error"></div>');
   $al_date.append($error);
   return $error;
 }};  // Ends add_error_container()
