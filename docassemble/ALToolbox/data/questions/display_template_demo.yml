@@ -35,8 +35,6 @@ subquestion: |
       - To style your template content, include a `classname` keyword argument when you call the function and add your css rules either on the screen or to a .css file.
   1. **container_classname** (default=None) 
       - To style the whole container of your subject and content, include a `content_classname` keyword argument when you call the function and add your css rules either on the screen or to a .css file.
-  1. **container_id_tag** (default=a generated id based on the template's name) 
-      - To add a custom id to the container of your subject and content, include a `container_id_tag` keyword argument when you call the function.
       
   You can mix and match these features. The following screens will show you how. 
   
@@ -48,7 +46,7 @@ question: |
   Scrollable examples
 subquestion: |    
   ##### Srollable only
-  ${ display_template(my_template1, container_classname="my_class", container_id_tag="my_id") }
+  ${ display_template(my_template1, container_classname="my_class") }
   
   ##### Style only
   ${ display_template(my_template2, scrollable=False, classname="my_color") }

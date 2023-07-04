@@ -1,5 +1,6 @@
 import re
 from .copy_button import *
+from base64 import b64encode
 
 
 def display_template(
@@ -9,8 +10,7 @@ def display_template(
     copy=False,
     classname="bg-light",
     container_classname=None,
-    class_name=None,
-    container_id_tag=None
+    class_name=None  # depricated
 ) -> str:
     # 1. Initialize
     if scrollable:
@@ -31,8 +31,8 @@ def display_template(
     if container_classname:
       container_classname_plus += f" { container_classname }"
 
-    the_id = re.sub(r"[^A-Za-z0-9]", "", template.instanceName)
-    actual_container_id_tag = container_id_tag or f"{ the_id }_container"
+    container_id = b64encode(str(template.instanceName).encode()).decode().replace('=', '')
+    contents_id = f"{ container_id }_contents"
     
     subject_html = ''
     if not template.subject == "":
@@ -50,12 +50,12 @@ def display_template(
 
         # 2.1 If collapsible, add collapsible elements to the output
         if collapse:
-            return f'<div id="{actual_container_id_tag}" class="{container_classname_plus}"><a class="collapsed" data-bs-toggle="collapse" href="#{the_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span><span class="subject">{template.subject_as_html(trim=True)}</span></a><div class="collapse" id="{the_id}">{text}</div></div>'
+            return f'<div id="{container_id}" class="{container_classname_plus}"><a class="collapsed" data-bs-toggle="collapse" href="#{contents_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span><span class="subject">{template.subject_as_html(trim=True)}</span></a><div class="collapse" id="{contents_id}">{text}</div></div>'
 
         # 2.2 If not collapsible, simply return output from copy_button_html()
         else:
             return f"""
-<div id="{actual_container_id_tag}" class="{container_classname_plus}">
+<div id="{container_id}" class="{container_classname_plus}">
 {subject_html}
 {text}
 </div>
@@ -64,7 +64,7 @@ def display_template(
     # 3. If not copiable, generate the whole output
     else:
         if not collapse:
-            return f'<div id="{actual_container_id_tag}" class="{container_classname_plus} {scroll_class} card card-body {class_name} pb-1" id="{the_id}">{subject_html}<div>{template.content_as_html()}</div></div>'
+            return f'<div id="{container_id}" class="{container_classname_plus} {scroll_class} card card-body {class_name} pb-1" id="{contents_id}">{subject_html}<div>{template.content_as_html()}</div></div>'
 
         else:
-            return f'<div id="{actual_container_id_tag}" class="{container_classname_plus}"><a class="collapsed" data-bs-toggle="collapse" href="#{the_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span><span class="subject">{template.subject_as_html(trim=True)}</span></a><div class="collapse" id="{the_id}"><div class="{scroll_class} card card-body {class_name} pb-1">{template.content_as_html()}</div></div></div>'
+            return f'<div id="{container_id}" class="{container_classname_plus}"><a class="collapsed" data-bs-toggle="collapse" href="#{contents_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span><span class="subject">{template.subject_as_html(trim=True)}</span></a><div class="collapse" id="{contents_id}"><div class="{scroll_class} card card-body {class_name} pb-1">{template.content_as_html()}</div></div></div>'
