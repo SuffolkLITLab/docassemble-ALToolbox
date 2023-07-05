@@ -19,7 +19,7 @@ comment: |
   script: |
     <script type="text/javascript">
         $(document).ready(function() {
-            $("#${ base64.b64encode("input_name") }").multiselect({enableCaseInsensitiveFiltering: true, inheritClass: true});
+            $("#${ base64.b64encode("input_name".encode()) }").multiselect({enableCaseInsensitiveFiltering: true, inheritClass: true});
         });
     </script>
     
