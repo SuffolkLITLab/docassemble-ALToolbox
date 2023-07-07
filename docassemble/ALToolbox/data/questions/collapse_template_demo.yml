@@ -42,7 +42,7 @@ subquestion: |
   
   Don't you have a favorite fruit?
   
-  ${ collapse_template(favorite_explanation, container_classname="favorites_container") }
+  ${ collapse_template(favorite_explanation) }
   
   You must have a favorite.
 fields:
