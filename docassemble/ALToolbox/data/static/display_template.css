@@ -1,22 +1,31 @@
-.scrollable-panel{
-  height:200px;
+.al_display_template.scrollable-panel,
+.al_display_template.not-scrollable,
+.al_display_template .scrollable-panel,
+.al_display_template .not-scrollable {
+  margin-bottom: 0.5rem;
+}
+
+.al_display_template.scrollable-panel,
+.al_display_template .scrollable-panel {
+  max-height:200px;
   overflow-y:scroll;
   width:100%;
 }
+
 /* For expansion of the copy_button_html() function*/
-textarea {
+.al_display_template textarea {
   width: 100%;
   /*The following rule takes effect only with the inline onmouseover event generated in 
   display_template() for a specific scenario */  
   overflow: hidden;
 }
+
+/* These should really start with `.al_display_template `, as they're in the display_template.css file, but I'm afraid I'll break things elsewhere. */
 .al_copy_block {
   display: block;  
   margin-top: 0.5rem;
 }
+
 .al_copy_button span {
   display: inline-block;
-}
-.scrollable-panel, .not-scrollable {
-  margin-bottom: 0.5rem;
 }
