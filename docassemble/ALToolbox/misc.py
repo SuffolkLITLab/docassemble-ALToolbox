@@ -163,7 +163,7 @@ def number_to_letter(n: Optional[int]) -> str:
 def collapse_template(
     template,
     classname=None,
-    closed_icon="caret-right", 
+    closed_icon="caret-right",
     open_icon="caret-down",
 ):
     """
@@ -176,16 +176,18 @@ def collapse_template(
     """
     if not template.subject_as_html(trim=True) and not template.content_as_html():
         return ""
-      
+
     if classname is None:
         classname = " bg-light"
     else:
         classname = " " + classname.strip()
     container_classnames = "al_collapse_template"
-    
-    container_id = b64encode(str(template.instanceName).encode()).decode().replace('=', '')
-    contents_id = f'{ container_id }_contents'
-    
+
+    container_id = (
+        b64encode(str(template.instanceName).encode()).decode().replace("=", "")
+    )
+    contents_id = f"{ container_id }_contents"
+
     return f"""\
 <div id="{ container_id }" class="{ container_classnames }">
 <a class="collapsed al_toggle" data-bs-toggle="collapse" href="#{ contents_id }" role="button" aria-expanded="false" aria-controls="{ contents_id }"><span class="toggle-icon pdcaretopen">{ fa_icon(open_icon) }</span><span class="toggle-icon pdcaretclosed">{ fa_icon(closed_icon) }</span>
