@@ -9,7 +9,7 @@ def display_template(
     collapse=False,
     copy=False,
     classname="bg-light",
-    class_name=None  # depricated
+    class_name=None,  # depricated
 ) -> str:
     # 1. Initialize
     if scrollable:
@@ -20,20 +20,22 @@ def display_template(
         adjust_height = (
             f"onmouseover=\"this.style.height = (this.scrollHeight) + 'px';\""
         )
-        
+
     # Introducing `classname` to try to align with `collapse_template`
     if not class_name:
-      class_name = classname
+        class_name = classname
     class_name = class_name.strip()
-    
+
     container_classname = "al_display_template"
 
-    container_id = b64encode(str(template.instanceName).encode()).decode().replace('=', '')
+    container_id = (
+        b64encode(str(template.instanceName).encode()).decode().replace("=", "")
+    )
     contents_id = f"{ container_id }_contents"
-    
-    subject_html = ''
+
+    subject_html = ""
     if not template.subject == "":
-      subject_html = f'<div class="panel-heading"><h3 class="subject">{template.subject_as_html(trim=True)}</h3></div>'
+        subject_html = f'<div class="panel-heading"><h3 class="subject">{template.subject_as_html(trim=True)}</h3></div>'
 
     # 2. If copiable, call copy_button_html() to generate the template content along with a copy button
     if copy:
