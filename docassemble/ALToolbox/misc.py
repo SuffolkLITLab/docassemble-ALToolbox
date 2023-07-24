@@ -1,5 +1,6 @@
 from typing import Optional, Union
 
+from base64 import b64encode
 from decimal import Decimal
 import docassemble.base.functions
 from docassemble.base.util import (
@@ -175,14 +176,26 @@ def collapse_template(
     """
     if not template.subject_as_html(trim=True) and not template.content_as_html():
         return ""
+
     if classname is None:
         classname = " bg-light"
     else:
         classname = " " + classname.strip()
-    the_id = re.sub(r"[^A-Za-z0-9]", "", template.instanceName)
+    container_classnames = "al_collapse_template"
+
+    container_id = (
+        b64encode(str(template.instanceName).encode()).decode().replace("=", "")
+    )
+    contents_id = f"{ container_id }_contents"
+
     return f"""\
-<a class="collapsed" data-bs-toggle="collapse" href="#{ the_id }" role="button" aria-expanded="false" aria-controls="{ the_id }"><span class="pdcaretopen">{ fa_icon(open_icon) }</span><span class="pdcaretclosed">{ fa_icon(closed_icon) }</span> { template.subject_as_html(trim=True) }</a>
-<div class="collapse" id="{ the_id }"><div class="card card-body pb-1{ classname }">{ template.content_as_html() }</div></div>\
+<div id="{ container_id }" class="{ container_classnames }">
+<a class="collapsed al_toggle" data-bs-toggle="collapse" href="#{ contents_id }" role="button" aria-expanded="false" aria-controls="{ contents_id }"><span class="toggle-icon pdcaretopen">{ fa_icon(open_icon) }</span><span class="toggle-icon pdcaretclosed">{ fa_icon(closed_icon) }</span>
+<span class="subject">{ template.subject_as_html(trim=True) }</span></a>
+<div class="collapse" id="{ contents_id }">
+<div class="card card-body pb-1{ classname }">{ template.content_as_html() }</div>
+</div>
+</div>\
 """
 
 

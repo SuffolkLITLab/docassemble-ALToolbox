@@ -1,19 +1,31 @@
-a span.pdcaretopen {
-    display: inline;
+/* TODO: Abstract styles that are shared by both collapse and display templates */
+
+.al_collapse_template,
+.al_display_template {
+  padding-bottom: 1rem;
 }
 
-a span.pdcaretclosed {
-    display: none;
-}
-
-a.collapsed .pdcaretopen {
-    display: none;
-}
-
-a.collapsed .pdcaretclosed {
-    display: inline;
-}
-
-.collapse {
+.al_collapse_template .collapse,
+.al_display_template .collapse {
     margin-bottom: 1rem;
+}
+
+.al_collapse_template a span.pdcaretopen,
+.al_display_template a span.pdcaretopen {
+    display: inline;
+}
+
+.al_collapse_template a span.pdcaretclosed,
+.al_display_template a span.pdcaretclosed {
+    display: none;
+}
+
+.al_collapse_template a.collapsed .pdcaretopen,
+.al_display_template a.collapsed .pdcaretopen {
+    display: none;
+}
+
+.al_collapse_template a.collapsed .pdcaretclosed,
+.al_display_template a.collapsed .pdcaretclosed {
+    display: inline;
 }
