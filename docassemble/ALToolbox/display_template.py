@@ -9,7 +9,7 @@ def display_template(
     collapse=False,
     copy=False,
     classname="bg-light",
-    class_name=None,  # depricated
+    class_name=None,  # deprecated
 ) -> str:
     # 1. Initialize
     if scrollable:
