@@ -8,13 +8,13 @@ exclude = '''(?x)(
   )'''
 
 # per-module options:
-[[tool.mypy.overrides]]
-module= "docassemble.webapp.*"
-ignore_missing_imports = true
+#[[tool.mypy.overrides]]
+#module= "docassemble.webapp.*"
+#ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = "docassemble.base.*"
-ignore_missing_imports = true
+#[[tool.mypy.overrides]]
+#module = "docassemble.base.*"
+#ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "pycountry"

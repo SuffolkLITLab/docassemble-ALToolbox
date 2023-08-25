@@ -10,9 +10,6 @@ from docassemble.base.util import (
     comma_list,
     get_locale,
     word,
-    log,
-    object_name_convert,
-    value,
 )
 from decimal import Decimal
 import re
