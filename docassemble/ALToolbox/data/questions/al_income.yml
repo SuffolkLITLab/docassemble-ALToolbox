@@ -323,8 +323,11 @@ fields:
       times_per_year_list
     datatype: integer
   - How many hours are worked during that time?: x.hours_per_period
-    input type: number
+    datatype: number
     show if: x.is_hourly
+    validation messages:
+      number: |
+        Enter a number, like 40. If you don't know, enter your best guess.
 ---
 id: itemized job period
 generic object: Individual
@@ -344,8 +347,11 @@ fields:
       times_per_year_list
     datatype: integer
   - How many hours does ${ x } work during that time?: x.jobs[i].hours_per_period
-    input type: number
+    datatype: number
     show if: x.jobs[i].is_hourly
+    validation messages:
+      number: |
+        Enter a number, like 40. If you don't know, enter your best guess.
 ---
 id: itemized job period
 question: |
@@ -364,9 +370,11 @@ fields:
       times_per_year_list
     datatype: integer
   - How many hours do you work during that time?: users[0].jobs[i].hours_per_period
-    input type: number
+    datatype: number
     show if: users[0].jobs[i].is_hourly
-
+    validation messages:
+      number: |
+        Enter a number, like 40. If you don't know, enter your best guess.
 ---
 #id: other itemized job income name
 generic object: ALItemizedJob
