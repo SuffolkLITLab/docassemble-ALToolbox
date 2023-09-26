@@ -1029,12 +1029,17 @@ class ALItemizedJob(DAObject):
             frequency_to_use = self.times_per_year
 
         # NOTE: fixes a bug that was present < 0.8.2
-        try :
-          hours_per_period = Decimal(self.hours_per_period)
+        try:
+            hours_per_period = Decimal(self.hours_per_period)
         except:
-          log(word("Your hours per period need to be just a single number, without words"), "danger")
-          delattr(self, "hours_per_period")
-          self.hours_per_period # Will cause another exception
+            log(
+                word(
+                    "Your hours per period need to be just a single number, without words"
+                ),
+                "danger",
+            )
+            delattr(self, "hours_per_period")
+            self.hours_per_period  # Will cause another exception
 
         # Both the job and the item itself need to be hourly to be
         # calculated as hourly
