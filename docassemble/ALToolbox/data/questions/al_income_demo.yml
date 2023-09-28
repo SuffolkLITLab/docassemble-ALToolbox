@@ -34,7 +34,7 @@ objects:
   - al_value_list: ALSimpleValueList.using(
       complete_attribute='complete',
       ask_number=True)
-  - al_expense_list: ALExpenseList.using(auto_gather=False, complete_attribute="exists")
+  - al_expense_list: ALExpenseList.using(auto_gather=False)
 ---
 id: interview order
 mandatory: True

@@ -544,6 +544,8 @@ fields:
     default: 12
     code: |
       times_per_year_for_expenses
+validation code: |
+  x[i].display_name = expense_terms.get(x[i].source, x[i].source)
 ---
 generic object: ALExpenseList
 need:
