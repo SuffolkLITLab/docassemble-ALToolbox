@@ -941,6 +941,7 @@ class ALItemizedJob(DAObject):
     - Overtime at a second hourly rate
     - Tips earned during that time period
     - A fixed salary earned for that pay period
+    - Income and deductions from a seasonal job
     - Union Dues
     - Insurance
     - Taxes
@@ -960,6 +961,8 @@ class ALItemizedJob(DAObject):
         user earns on an hourly basis, rather than for the full time period
     .hours_per_period {int} (Optional) If the job is hourly, how many hours the
         user works per period.
+    .is_seasonal {bool} (Optional) Whether the job's income changes drastically
+        during different times of year.
     .employer {Individual} (Optional) Individual assumed to have a name and,
         optionally, an address and phone.
     .source {str} (Optional) The category of this item, like "public service".
@@ -985,8 +988,6 @@ class ALItemizedJob(DAObject):
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
-        # if not hasattr(self, "source") or self.source is None:
-        #    self.source = "job"
         if not hasattr(self, "employer"):
             if hasattr(self, "employer_type"):
                 self.initializeAttribute("employer", self.employer_type)
@@ -1043,7 +1044,7 @@ class ALItemizedJob(DAObject):
 
         # Both the job and the item itself need to be hourly to be
         # calculated as hourly
-        is_hourly = self.is_hourly and hasattr(item, "is_hourly") and item.is_hourly
+        is_hourly = hasattr(self, "is_hourly") and self.is_hourly and hasattr(item, "is_hourly") and item.is_hourly
         value = item.total()
 
         # Use the appropriate calculation
