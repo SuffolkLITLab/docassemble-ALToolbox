@@ -4,6 +4,66 @@ metadata:
 include:
   - al_income.yml
 ---
+mandatory: True
+code: |
+  class ALSeasonalItemizedJob(ALItemizedJobList):
+      """
+      Attributes:
+      .to_add {ALItemizedValueDict} Dict of ALItemizedValues that would be added
+          to a job's net total, like wages and tips.
+      .to_subtract {ALItemizedValueDict} Dict of ALItemizedValues that would be
+          subtracted from a net total, like union dues or insurance premiums.
+      .times_per_year {float} A denominator of a year, like 12 for monthly, that
+          represents how frequently the income is earned
+      .employer {Individual} (Optional) Individual assumed to have a name and,
+          optionally, an address and phone.
+      .source {str} (Optional) The category of this item, like "public service".
+      """
+      def init(self, *pargs, **kwargs):
+          super().init(*pargs, **kwargs)
+          self.ask_number = True
+          self.target_number = 12
+          month_names = [
+              "january", "february", "march", "april", "may", "june",
+              "july", "august", "september", "october", "november"
+          ]
+          for index, month_name in enumerate(month_names):
+              month = self.initializeObject(index, ALJob)
+              month.source = month_name
+              month.is_hourly = False
+              month.times_per_year = 1
+              
+          if not hasattr(self, "employer"):
+              if hasattr(self, "employer_type"):
+                  self.initializeAttribute("employer", self.employer_type)
+              else:
+                  self.initializeAttribute("employer", Individual)
+
+      def employer_name_address_phone(self) -> str:
+          """
+          Returns concatenation of employer name and, if they exist, employer
+          address and phone number.
+          """
+          info_list = []
+          has_address = (
+              hasattr(self.employer.address, "address") and self.employer.address.address
+          )
+          has_number = (
+              hasattr(self.employer, "phone_number") and self.employer.phone_number
+          )
+          # Create a list so we can take advantage of `comma_list` instead
+          # of doing further fiddly list manipulation
+          if has_address:
+              info_list.append(self.employer.address.on_one_line())
+          if has_number:
+              info_list.append(self.employer.phone_number)
+          # If either exist, add a colon and the appropriate strings
+          if has_address or has_number:
+              return (
+                  f"{ self.employer.name.full(middle='full') }: {comma_list( info_list )}"
+              )
+          return self.employer.name.full(middle="full")
+---
 comment: |
   translation options:
     - map dict/lookup from key to lang word. See https://github.com/nonprofittechy/docassemble-HousingCodeChecklist/blob/0cbfe02b29bbec66b8a2b925b36b3c67bb300e84/docassemble/HousingCodeChecklist/data/questions/language.yml#L41

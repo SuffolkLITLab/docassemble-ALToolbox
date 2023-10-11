@@ -36,8 +36,8 @@ __all__ = [
     "ALVehicleList",
     "ALSimpleValue",
     "ALSimpleValueList",
-    "ALItemizedValue",
-    "ALItemizedValueDict",
+    "ALItemizedValue",  # Rationale for exporting this?
+    "ALItemizedValueDict",  # Rationale for exporting this?
     "ALItemizedJob",
     "ALItemizedJobList",
 ]
@@ -926,7 +926,7 @@ class ALItemizedValueDict(DAOrderedDict):
             to_stringify.append((key, "{:.2f}".format(self[key].value)))
         pretty = json.dumps(to_stringify, indent=2)
         return pretty
-
+      
 
 class ALItemizedJob(DAObject):
     """
@@ -959,14 +959,18 @@ class ALItemizedJob(DAObject):
         represents how frequently the income is earned
     .is_hourly {bool} (Optional) Whether the value represents a figure that the
         user earns on an hourly basis, rather than for the full time period
-    .hours_per_period {int} (Optional) If the job is hourly, how many hours the
-        user works per period.
+    .hours_per_period {float | Decimal} (Optional) If the job is hourly, how
+        many hours the user works per period.
     .is_seasonal {bool} (Optional) Whether the job's income changes drastically
         during different times of year.
     .employer {Individual} (Optional) Individual assumed to have a name and,
         optionally, an address and phone.
     .source {str} (Optional) The category of this item, like "public service".
-        Defaults to "job".
+    .months {ALItemizedJobMonthList} Automatically exist, but they won't be used
+        unless the `is_seasonal` property is set to True. Then the give monthly
+        values will be added into the total of the job. You can still use the job
+        as a regular job so that a job can be seasonal, but still accept a single
+        value for the whole year.
 
     WARNING: Individual items in `.to_add` and `.to_subtract` should not be used
         directly. They should only be accessed through the filtering methods of
@@ -999,6 +1003,11 @@ class ALItemizedJob(DAObject):
         # Money being taken out
         if not hasattr(self, "to_subtract"):
             self.initializeAttribute("to_subtract", ALItemizedValueDict)
+        
+        # Every non-month job will have .months, though not all jobs will use them
+        add_months = kwargs.get('add_months', True)
+        if add_months:
+            self.initializeAttribute("months", ALItemizedJobMonthList)
 
     def _item_value_per_times_per_year(
         self, item: ALItemizedValue, times_per_year: float = 1
@@ -1029,19 +1038,6 @@ class ALItemizedJob(DAObject):
         else:
             frequency_to_use = self.times_per_year
 
-        # NOTE: fixes a bug that was present < 0.8.2
-        try:
-            hours_per_period = Decimal(self.hours_per_period)
-        except:
-            log(
-                word(
-                    "Your hours per period need to be just a single number, without words"
-                ),
-                "danger",
-            )
-            delattr(self, "hours_per_period")
-            self.hours_per_period  # Will cause another exception
-
         # Both the job and the item itself need to be hourly to be
         # calculated as hourly
         is_hourly = hasattr(self, "is_hourly") and self.is_hourly and hasattr(item, "is_hourly") and item.is_hourly
@@ -1049,6 +1045,21 @@ class ALItemizedJob(DAObject):
 
         # Use the appropriate calculation
         if is_hourly:
+            # NOTE: fixes a bug that was present < 0.8.2
+            # What's the bug? What's the issue #? How to test for it?
+            try:
+                hours_per_period = Decimal(self.hours_per_period)
+            except:
+                if not self.hours_per_period.isdigit():
+                    # Shouldn't this input just be a datatype number to make sure?
+                    log(word(
+                        "Your hours per period need to be just a single number, without words"
+                    ), "danger",)
+                else:
+                    log(word("Your hours per period may be wrong"), "danger",)
+                delattr(self, "hours_per_period")
+                self.hours_per_period  # Will cause another exception
+            
             return (
                 value * Decimal(hours_per_period) * Decimal(frequency_to_use)
             ) / Decimal(times_per_year)
@@ -1096,6 +1107,10 @@ class ALItemizedJob(DAObject):
                 total += self._item_value_per_times_per_year(
                     value, times_per_year=times_per_year
                 )
+        if hasattr(self, 'is_seasonal') and self.is_seasonal:
+            total += self.months.gross_total(
+                times_per_year=times_per_year, source=source, exclude_source=exclude_source
+            )
         return total
 
     def deduction_total(
@@ -1318,3 +1333,37 @@ class ALItemizedJobList(DAList):
         ) - self.deduction_total(
             times_per_year=times_per_year, source=source, exclude_source=exclude_source
         )
+
+      
+class ALItemizedJobMonth(ALItemizedJob):
+    """
+    """
+    def init(self, *pargs, **kwargs):
+        kwargs['add_months'] = kwargs.get('add_months', False)
+        kwargs['is_hourly'] = kwargs.get('is_hourly', False)
+        kwargs['times_per_year'] = kwargs.get('times_per_year', 1)
+        super().init(*pargs, **kwargs)
+        
+        self.to_add.there_are_any = True
+        self.to_subtract.there_are_any = True
+
+      
+class ALItemizedJobMonthList(ALItemizedJobList):
+    """
+    """
+    def init(self, *pargs, **kwargs):
+        kwargs['source'] = kwargs.get('source', "months")
+        kwargs['object_type'] = kwargs.get('object_type', ALItemizedJobMonth)
+        kwargs['ask_number'] = kwargs.get('ask_number', True)
+        kwargs['target_number'] = kwargs.get('target_number', 12)
+        
+        kwargs['add_months'] = kwargs.get('add_months', False)
+        super().init(*pargs, **kwargs)
+        
+        month_names = [
+            "january", "february", "march", "april", "may", "june",
+            "july", "august", "september", "october", "november"
+        ]
+        for month_name in month_names:
+            month = self.appendObject(source=month_name)
+        
