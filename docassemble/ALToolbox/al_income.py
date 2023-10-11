@@ -926,7 +926,7 @@ class ALItemizedValueDict(DAOrderedDict):
             to_stringify.append((key, "{:.2f}".format(self[key].value)))
         pretty = json.dumps(to_stringify, indent=2)
         return pretty
-      
+
 
 class ALItemizedJob(DAObject):
     """
@@ -1003,9 +1003,9 @@ class ALItemizedJob(DAObject):
         # Money being taken out
         if not hasattr(self, "to_subtract"):
             self.initializeAttribute("to_subtract", ALItemizedValueDict)
-        
+
         # Every non-month job will have .months, though not all jobs will use them
-        add_months = kwargs.get('add_months', True)
+        add_months = kwargs.get("add_months", True)
         if add_months:
             self.initializeAttribute("months", ALItemizedJobMonthList)
 
@@ -1040,7 +1040,12 @@ class ALItemizedJob(DAObject):
 
         # Both the job and the item itself need to be hourly to be
         # calculated as hourly
-        is_hourly = hasattr(self, "is_hourly") and self.is_hourly and hasattr(item, "is_hourly") and item.is_hourly
+        is_hourly = (
+            hasattr(self, "is_hourly")
+            and self.is_hourly
+            and hasattr(item, "is_hourly")
+            and item.is_hourly
+        )
         value = item.total()
 
         # Use the appropriate calculation
@@ -1052,14 +1057,20 @@ class ALItemizedJob(DAObject):
             except:
                 if not self.hours_per_period.isdigit():
                     # Shouldn't this input just be a datatype number to make sure?
-                    log(word(
-                        "Your hours per period need to be just a single number, without words"
-                    ), "danger",)
+                    log(
+                        word(
+                            "Your hours per period need to be just a single number, without words"
+                        ),
+                        "danger",
+                    )
                 else:
-                    log(word("Your hours per period may be wrong"), "danger",)
+                    log(
+                        word("Your hours per period may be wrong"),
+                        "danger",
+                    )
                 delattr(self, "hours_per_period")
                 self.hours_per_period  # Will cause another exception
-            
+
             return (
                 value * Decimal(hours_per_period) * Decimal(frequency_to_use)
             ) / Decimal(times_per_year)
@@ -1107,9 +1118,11 @@ class ALItemizedJob(DAObject):
                 total += self._item_value_per_times_per_year(
                     value, times_per_year=times_per_year
                 )
-        if hasattr(self, 'is_seasonal') and self.is_seasonal:
+        if hasattr(self, "is_seasonal") and self.is_seasonal:
             total += self.months.gross_total(
-                times_per_year=times_per_year, source=source, exclude_source=exclude_source
+                times_per_year=times_per_year,
+                source=source,
+                exclude_source=exclude_source,
             )
         return total
 
@@ -1334,36 +1347,44 @@ class ALItemizedJobList(DAList):
             times_per_year=times_per_year, source=source, exclude_source=exclude_source
         )
 
-      
+
 class ALItemizedJobMonth(ALItemizedJob):
-    """
-    """
+    """ """
+
     def init(self, *pargs, **kwargs):
-        kwargs['add_months'] = kwargs.get('add_months', False)
-        kwargs['is_hourly'] = kwargs.get('is_hourly', False)
-        kwargs['times_per_year'] = kwargs.get('times_per_year', 1)
+        kwargs["add_months"] = kwargs.get("add_months", False)
+        kwargs["is_hourly"] = kwargs.get("is_hourly", False)
+        kwargs["times_per_year"] = kwargs.get("times_per_year", 1)
         super().init(*pargs, **kwargs)
-        
+
         self.to_add.there_are_any = True
         self.to_subtract.there_are_any = True
 
-      
+
 class ALItemizedJobMonthList(ALItemizedJobList):
-    """
-    """
+    """ """
+
     def init(self, *pargs, **kwargs):
-        kwargs['source'] = kwargs.get('source', "months")
-        kwargs['object_type'] = kwargs.get('object_type', ALItemizedJobMonth)
-        kwargs['ask_number'] = kwargs.get('ask_number', True)
-        kwargs['target_number'] = kwargs.get('target_number', 12)
-        
-        kwargs['add_months'] = kwargs.get('add_months', False)
+        kwargs["source"] = kwargs.get("source", "months")
+        kwargs["object_type"] = kwargs.get("object_type", ALItemizedJobMonth)
+        kwargs["ask_number"] = kwargs.get("ask_number", True)
+        kwargs["target_number"] = kwargs.get("target_number", 12)
+
+        kwargs["add_months"] = kwargs.get("add_months", False)
         super().init(*pargs, **kwargs)
-        
+
         month_names = [
-            "january", "february", "march", "april", "may", "june",
-            "july", "august", "september", "october", "november"
+            "january",
+            "february",
+            "march",
+            "april",
+            "may",
+            "june",
+            "july",
+            "august",
+            "september",
+            "october",
+            "november",
         ]
         for month_name in month_names:
             month = self.appendObject(source=month_name)
-        
