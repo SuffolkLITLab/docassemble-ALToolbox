@@ -705,6 +705,12 @@ class ALVehicle(ALAsset):
         """
         Returns a string of the format year/make/model of the vehicle. Triggers
         gathering those attributes.
+
+        Args:
+            separator {str} (Optional) The separator between the year, make and model.
+        
+        Returns:
+            A string of the format year/make/model of the vehicle.
         """
         return separator.join(map(str, [self.year, self.make, self.model]))
 
