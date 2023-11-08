@@ -678,22 +678,23 @@ class ALAssetList(ALIncomeList):
 
 
 class ALVehicle(ALAsset):
-    """
-    An ALAsset with special attributes that help representing a vehicle.
+    """Represents a vehicle as a specialized type of ALAsset.
 
-    Vehicles have a .year_make_model() method which facilitates
-    listing vehicles on many financial statement forms.
+    This subclass of ALAsset adds specific attributes relevant to vehicles,
+    such as year, make, and model, and includes methods for representing
+    these attributes in a standardized format, as often required on financial
+    statement forms.
 
     Attributes:
-    .year {str} The model year of the vehicle, like 2022
-    .make {str} The make of the vehicle, like "Honda"
-    .model {str} The model of the vehicle, like "Accord"
-    .market_value {float | Decimal} Market value of an asset.
-    .balance {float | Decimal} Balance of an asset.
-    .value {float | Decimal} (Optional) Income earned by the vehicle (typically 0)
-    .times_per_year {float} Time frequency over which the `value` is earned
-    .owner {str} Full name of the asset owner as a single string.
-    .source {str} (Optional) The "source" of the asset. Defaults to "vehicle".
+        year (str): The model year of the vehicle, e.g., '2022'.
+        make (str): The make of the vehicle, e.g., 'Honda'.
+        model (str): The model of the vehicle, e.g., 'Accord'.
+        market_value (float or Decimal): Market value of the vehicle.
+        balance (float or Decimal): Balance of the loan on the vehicle.
+        value (float or Decimal, optional): Income earned by the vehicle, typically 0.
+        times_per_year (int): The frequency over which the `value` is earned annually.
+        owner (str): Full name of the vehicle owner.
+        source (str, optional): The source of the asset, defaults to 'vehicle'.
     """
 
     def init(self, *pargs, **kwargs):
