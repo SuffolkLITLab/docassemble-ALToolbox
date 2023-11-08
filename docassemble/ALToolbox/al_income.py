@@ -706,7 +706,7 @@ class ALVehicle(ALAsset):
         Returns a string of the format year/make/model of the vehicle. Triggers
         gathering those attributes.
         """
-        return separator.join([self.year, self.make, self.model])
+        return separator.join(map(str, [self.year, self.make, self.model]))
 
 
 class ALVehicleList(ALAssetList):
