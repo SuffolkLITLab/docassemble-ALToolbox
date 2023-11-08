@@ -701,13 +701,13 @@ class ALVehicle(ALAsset):
         if not hasattr(self, "source"):
             self.source = "vehicle"
 
-    def year_make_model(self, separator="/") -> str:
+    def year_make_model(self, separator: str = "/") -> str:
         """
         Returns a string of the format year/make/model of the vehicle. Triggers
         gathering those attributes.
         """
         return separator.join([self.year, self.make, self.model])
-    
+
 
 class ALVehicleList(ALAssetList):
     """List of ALVehicles. Extends ALAssetList."""
