@@ -23,11 +23,6 @@ fields:
     datatype: al_international_phone
   - Phone number 2 with `hint` attribute: phone_number_2
     datatype: al_international_phone
-    hint: "hint number"
-    required: false
-  - Phone with `hint` of " ": phone_number_3
-    datatype: al_international_phone
-    hint: " "
     required: false
 ---
 mandatory: True
@@ -39,7 +34,6 @@ subquestion: |
   **Your numbers were:**[BR]
   1. ${ phone_number_1 }[BR]
   2. ${ phone_number_2 }[BR]
-  3. ${ phone_number_3 }[BR]
   
   ### More Resources
   1. The javascript library we're using is [intl-tel-input](https://github.com/jackocnr/intl-tel-input)
