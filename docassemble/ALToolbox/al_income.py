@@ -709,7 +709,7 @@ class ALVehicle(ALAsset):
 
         Args:
             separator {str} (Optional) The separator between the year, make and model.
-        
+
         Returns:
             A string of the format year/make/model of the vehicle.
         """
