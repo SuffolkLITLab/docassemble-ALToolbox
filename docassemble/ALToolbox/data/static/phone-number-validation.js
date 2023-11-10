@@ -38,7 +38,8 @@ $(document).on('daPageLoad', function(){
       // Once the user puts in the phone number of another country, though,
       // it will remember that country
       initialCountry: 'us',
-      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.15/js/utils.min.js"
+      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.15/js/utils.min.js",
+      autoPlaceholder: "off",
     });
     
     // If the user already entered a number and comes back to the page,
