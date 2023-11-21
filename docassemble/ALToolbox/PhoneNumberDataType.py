@@ -1,6 +1,8 @@
 import re
 from docassemble.base.util import CustomDataType, DAValidationError
 
+__all__ = ["PhoneNumber"]
+
 
 class PhoneNumber(CustomDataType):
     name = "al_international_phone"
