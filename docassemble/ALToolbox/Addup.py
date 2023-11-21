@@ -1,6 +1,8 @@
 # Add up numeric field values from a DAList object.
 from docassemble.base.util import DAValidationError, word
 
+__all__ = ["Addup"]
+
 
 class Addup:
     def __init__(self, listName, varName):

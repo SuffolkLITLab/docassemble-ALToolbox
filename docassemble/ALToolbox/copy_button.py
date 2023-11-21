@@ -1,5 +1,7 @@
 from docassemble.base.functions import word
 
+__all__ = ["copy_button_html"]
+
 
 # See GitHub issue https://github.com/SuffolkLITLab/docassemble-ALToolbox/issues/16
 def copy_button_html(

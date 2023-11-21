@@ -2,6 +2,8 @@ import re
 from .copy_button import *
 from base64 import b64encode
 
+__all__ = ["display_template"]
+
 
 def display_template(
     template,

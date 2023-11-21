@@ -10,6 +10,8 @@ from docassemble.base.util import (
 from typing import Optional
 import re
 
+__all__ = ["ThreePartsDate", "BirthDate"]
+
 js_text = """\
 // This is an adaptation of Jonathan Pyle's datereplace.js
 

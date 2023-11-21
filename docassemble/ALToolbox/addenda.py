@@ -1,3 +1,6 @@
+__all__ = ["myTable", "myTextList", "safe_json2"]
+
+
 # This function creates a Table list to be used in an addendum file. Currently it handles 'Thing' and 'Inidvidual' object type of DAList (special name attribute).
 class myTable:
     def __init__(self, tblData, tblTitle, tblHeader):
