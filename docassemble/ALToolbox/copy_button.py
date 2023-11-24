@@ -35,7 +35,7 @@ def copy_button_html(
 
     # Add textarea tag if copy_template_block is True, along with docassemble template block class names
     if copy_template_block:
-        button_str += f'<textarea readonly class="card card-body {style_class} bg-light pb-1 al_copy_value {scroll_class}" {adjust_height}>{ text_to_copy }"</textarea>\n'
+        button_str += f'<textarea readonly class="card card-body {style_class} bg-light pb-1 al_copy_value {scroll_class}" {adjust_height}>{ text_to_copy }</textarea>\n'
 
     # Add input tag if copy_template_block is False
     else:
