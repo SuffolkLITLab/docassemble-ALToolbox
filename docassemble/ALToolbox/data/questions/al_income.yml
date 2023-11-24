@@ -177,9 +177,11 @@ code: |
   x.complete = True
 ---
 generic object: ALItemizedJob
+depends on:
+  - x.has_inconsistent_income
 code: |
   # Still to be fleshed out
-  if hasattr(x, 'has_inconsistent_income'):
+  if hasattr(x, 'ask_seasonal') and x.ask_seasonal:
     x.intervals.there_are_any = x.has_inconsistent_income
     x.times_per_year = 1
     x.to_add.there_are_any = False
