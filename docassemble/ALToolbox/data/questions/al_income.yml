@@ -173,16 +173,31 @@ code: |
   x.is_self_employed
   # NOTE: if `is_self_employed`, you need to set this yourself
   x.employer.name.first
-  x.times_per_year
-  x.to_add.complete_attribute = 'complete'
-  x.to_subtract.complete_attribute = 'complete'
-  if x.is_part_time:
-    x.to_add["part time"].is_hourly = x.is_hourly
-  else:
-    x.to_add["full time"].is_hourly = x.is_hourly
-  x.to_add.gather()
-  x.to_subtract.gather()
+  x.get_income
   x.complete = True
+---
+generic object: ALItemizedJob
+code: |
+  # Still to be fleshed out
+  if hasattr(x, 'has_inconsistent_income'):
+    x.intervals.there_are_any = x.has_inconsistent_income
+    x.times_per_year = 1
+    x.to_add.there_are_any = False
+    x.to_add.gathered = True
+    x.to_subtract.there_are_any = False
+    x.to_subtract.gathered = True
+    x.intervals.gather()
+  else:
+    x.times_per_year
+    x.to_add.complete_attribute = 'complete'
+    x.to_subtract.complete_attribute = 'complete'
+    if x.is_part_time:
+      x.to_add["part time"].is_hourly = x.is_hourly
+    else:
+      x.to_add["full time"].is_hourly = x.is_hourly
+    x.to_add.gather()
+    x.to_subtract.gather()
+  x.get_income = True
 ---
 generic object: ALIncome
 code: |
@@ -266,6 +281,14 @@ code: |
     x.employer.name.last = ""
     x.employer.phone = ""
     x.employer.address.address = ""
+---
+id: itemized job pay intervals
+generic object: ALItemizedJob
+question: |
+    How would you describe your pay as a ${ x.source }
+fields:
+  - Does your pay change a lot? For example, is it different in different months or seasons?: x.has_inconsistent_income
+    datatype: yesnoradio
 ---
 id: itemized job line items
 generic object: ALItemizedJob

@@ -961,13 +961,11 @@ class ALItemizedJob(DAObject):
         user earns on an hourly basis, rather than for the full time period
     .hours_per_period {float | Decimal} (Optional) If the job is hourly, how
         many hours the user works per period.
-    .is_seasonal {bool} (Optional) Whether the job's income changes drastically
-        during different times of year.
     .employer {Individual} (Optional) Individual assumed to have a name and,
         optionally, an address and phone.
     .source {str} (Optional) The category of this item, like "public service".
     .intervals {ALItemizedIntervalList} Automatically exist, but they won't be used
-        unless the `is_seasonal` property is set to True. Then the give monthly
+        unless the `has_inconsistent_income` property is set to True. Then the give monthly
         values will be added into the total of the job. You can still use the job
         as a regular job so that a job can be seasonal, but still accept a single
         value for the whole year.
@@ -1107,7 +1105,7 @@ class ALItemizedJob(DAObject):
                 total += self._item_value_per_times_per_year(
                     value, times_per_year=times_per_year
                 )
-        if hasattr(self, 'is_seasonal') and self.is_seasonal:
+        if hasattr(self, 'has_inconsistent_income') and self.has_inconsistent_income:
             total += self.intervals.gross_total(
                 times_per_year=times_per_year, source=source, exclude_source=exclude_source
             )
@@ -1142,7 +1140,7 @@ class ALItemizedJob(DAObject):
                 total += self._item_value_per_times_per_year(
                     value, times_per_year=times_per_year
                 )
-        if hasattr(self, 'intervals'):
+        if hasattr(self, 'has_inconsistent_income') and self.has_inconsistent_income:
             total += self.intervals.deduction_total(
                 times_per_year=times_per_year, source=source, exclude_source=exclude_source
             )
