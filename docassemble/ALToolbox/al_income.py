@@ -966,7 +966,7 @@ class ALItemizedJob(DAObject):
     .employer {Individual} (Optional) Individual assumed to have a name and,
         optionally, an address and phone.
     .source {str} (Optional) The category of this item, like "public service".
-    .months {ALItemizedJobMonthList} Automatically exist, but they won't be used
+    .intervals {ALItemizedIntervalList} Automatically exist, but they won't be used
         unless the `is_seasonal` property is set to True. Then the give monthly
         values will be added into the total of the job. You can still use the job
         as a regular job so that a job can be seasonal, but still accept a single
@@ -1004,10 +1004,10 @@ class ALItemizedJob(DAObject):
         if not hasattr(self, "to_subtract"):
             self.initializeAttribute("to_subtract", ALItemizedValueDict)
         
-        # Every non-month job will have .months, though not all jobs will use them
-        add_months = kwargs.get('add_months', True)
-        if add_months:
-            self.initializeAttribute("months", ALItemizedJobMonthList)
+        # Every non-month job will have .intervals, though not all jobs will use them
+        add_intervals = kwargs.get('add_intervals', True)
+        if add_intervals:
+            self.initializeAttribute("intervals", ALItemizedIntervalList)
 
     def _item_value_per_times_per_year(
         self, item: ALItemizedValue, times_per_year: float = 1
@@ -1108,7 +1108,7 @@ class ALItemizedJob(DAObject):
                     value, times_per_year=times_per_year
                 )
         if hasattr(self, 'is_seasonal') and self.is_seasonal:
-            total += self.months.gross_total(
+            total += self.intervals.gross_total(
                 times_per_year=times_per_year, source=source, exclude_source=exclude_source
             )
         return total
@@ -1142,6 +1142,10 @@ class ALItemizedJob(DAObject):
                 total += self._item_value_per_times_per_year(
                     value, times_per_year=times_per_year
                 )
+        if hasattr(self, 'intervals'):
+            total += self.intervals.deduction_total(
+                times_per_year=times_per_year, source=source, exclude_source=exclude_source
+            )
         return total
 
     def net_total(
@@ -1212,7 +1216,6 @@ class ALItemizedJobList(DAList):
     Represents a list of ALItemizedJobs that can have both payments and money
         out. This is a less common way of reporting income.
     """
-
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         if not hasattr(self, "source") or self.source is None:
@@ -1335,35 +1338,28 @@ class ALItemizedJobList(DAList):
         )
 
       
-class ALItemizedJobMonth(ALItemizedJob):
+class ALItemizedInterval(ALItemizedJob):
     """
     """
     def init(self, *pargs, **kwargs):
-        kwargs['add_months'] = kwargs.get('add_months', False)
+        # TODO: Do we need to allow intervals to be hourly?
         kwargs['is_hourly'] = kwargs.get('is_hourly', False)
+        # Each interval happens just once per year. E.g. "january" happens once per year.
         kwargs['times_per_year'] = kwargs.get('times_per_year', 1)
+
+        # Don't add intervals to an object that already has intervals
+        kwargs['add_intervals'] = kwargs.get('add_intervals', False)
         super().init(*pargs, **kwargs)
         
         self.to_add.there_are_any = True
         self.to_subtract.there_are_any = True
 
       
-class ALItemizedJobMonthList(ALItemizedJobList):
+class ALItemizedIntervalList(ALItemizedJobList):
     """
     """
     def init(self, *pargs, **kwargs):
-        kwargs['source'] = kwargs.get('source', "months")
-        kwargs['object_type'] = kwargs.get('object_type', ALItemizedJobMonth)
-        kwargs['ask_number'] = kwargs.get('ask_number', True)
-        kwargs['target_number'] = kwargs.get('target_number', 12)
-        
-        kwargs['add_months'] = kwargs.get('add_months', False)
+        kwargs['source'] = kwargs.get('source', "Pay stubs")
+        kwargs['object_type'] = kwargs.get('object_type', ALItemizedInterval)
         super().init(*pargs, **kwargs)
-        
-        month_names = [
-            "january", "february", "march", "april", "may", "june",
-            "july", "august", "september", "october", "november"
-        ]
-        for month_name in month_names:
-            month = self.appendObject(source=month_name)
         
