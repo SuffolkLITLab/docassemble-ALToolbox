@@ -1035,19 +1035,6 @@ class ALItemizedJob(DAObject):
         else:
             frequency_to_use = self.times_per_year
 
-        # NOTE: fixes a bug that was present < 0.8.2
-        try:
-            hours_per_period = Decimal(self.hours_per_period)
-        except:
-            log(
-                word(
-                    "Your hours per period need to be just a single number, without words"
-                ),
-                "danger",
-            )
-            delattr(self, "hours_per_period")
-            self.hours_per_period  # Will cause another exception
-
         # Both the job and the item itself need to be hourly to be
         # calculated as hourly
         is_hourly = self.is_hourly and hasattr(item, "is_hourly") and item.is_hourly
@@ -1055,6 +1042,19 @@ class ALItemizedJob(DAObject):
 
         # Use the appropriate calculation
         if is_hourly:
+            # NOTE: fixes a bug that was present < 0.8.2
+            try:
+                hours_per_period = Decimal(self.hours_per_period)
+            except:
+                log(
+                    word(
+                        "Your hours per period need to be just a single number, without words"
+                    ),
+                    "danger",
+                )
+                delattr(self, "hours_per_period")
+                self.hours_per_period  # Will cause another exception
+
             return (
                 value * Decimal(hours_per_period) * Decimal(frequency_to_use)
             ) / Decimal(times_per_year)
