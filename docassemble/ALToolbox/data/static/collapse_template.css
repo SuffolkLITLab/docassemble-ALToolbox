@@ -29,3 +29,12 @@
 .al_display_template a.collapsed .pdcaretclosed {
     display: inline;
 }
+
+/* An upstream fix for Bootstrap's lack of a dark/light mode neutral style.
+   See https://github.com/jhpyle/docassemble/pull/718 */
+[data-bs-theme=dark] .al_collapse_template .bg-light,
+[data-bs-theme=dark] .al_display_template .bg-light,
+[data-bs-theme=dark] .al_display_template.bg-light {
+  --bs-bg-opacity: 1;
+  background-color: rgba(var(--bs-dark-rgb), var(--bs-bg-opacity)) !important;
+}
