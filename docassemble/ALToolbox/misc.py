@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 
 from base64 import b64encode
 from decimal import Decimal
@@ -11,6 +11,7 @@ from docassemble.base.util import (
     action_button_html,
     Address,
     word,
+    user_has_privilege,
 )
 import re
 
@@ -29,6 +30,7 @@ __all__ = [
     "add_records",
     "output_checkbox",
     "nice_county_name",
+    "button_array",
 ]
 
 
@@ -341,3 +343,33 @@ def nice_county_name(address: Address) -> str:
         return address.county[: -len(" County")]
     else:
         return address.county
+
+
+def button_array(buttons:List[Dict[str, Union[str, List[str]]]], custom_container_class = "", custom_link_class="") -> str:
+    """Create a grid of da-buttons from a dictionary of links and icons
+
+    This mimics the look and feel of Docassemble's `buttons` field type, but
+    doesn't have the limits of that particular input method. This is meant to appear
+    on any page of an interview in the `subquestion` area.
+
+    Optionally, you can limit access to paricular buttons by specifying a privilege or a list
+    of privileges.
+    
+    Args:
+        button_list: a dictionary of dictionaries with the following keys:
+            - `name`: the text to display on the button
+            - `image`: the name of a fontawesome icon to display on the button
+            - `url`: the name of the page to link to
+            - `privilege`: optional, the name of a Docassemble privilege that the user must have to see the button. Can be a list or a single string.
+    """
+    buttons = [button for button in buttons if user_has_privilege(button.get("privilege")) or not button.get("privilege") ]
+
+    # create the grid of buttons
+    output = f"""<div class="da-button-set da-field-buttons {custom_container_class}">"""
+    for button in buttons:
+        output += f"""
+        <a class="btn btn-da btn-light btn-da btn-da-custom {custom_link_class}" href="{button.get("link")}">
+            {fa_icon(button.get("icon", "globe")) } {button.get("label", button.get("link"))}
+        </a>"""
+    output += "</div>"
+    return output
