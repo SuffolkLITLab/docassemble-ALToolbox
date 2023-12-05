@@ -335,6 +335,7 @@ def nice_county_name(address: Address) -> str:
     else:
         return address.county
 
+
 class ButtonDict(TypedDict):
     name: str
     image: str
@@ -365,7 +366,7 @@ def button_array(
 
         custom_container_class: optional, a string of additional CSS classes to add to the container div
         custom_link_class: optional, a string of additional CSS classes to add to each link
-    
+
     Returns:
         HTML for a grid of buttons
     """
