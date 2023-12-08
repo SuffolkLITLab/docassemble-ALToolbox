@@ -1,7 +1,7 @@
 import re
 import unittest
 from unittest.mock import patch
-from .misc import button_array, ButtonDict
+from .misc import button_array, ButtonDict, safe_get_config
 import xml.etree.ElementTree as ET
 
 
@@ -34,6 +34,47 @@ class TestButtonArray(unittest.TestCase):
             ButtonDict(name="Button 2", image="image2", url="url2"),
         ]
         self.assertNotIn("Button 1", button_array(buttons))
+
+
+EMPTY_INTERVIEW_LIST = {
+  "enable answer sets": True,
+  "interview list": {}
+}
+NONE_INTERVIEW_LIST = {
+  "enable answer sets": True,
+  "interview list": None
+}
+OKAY_INTERVIEW_LIST = {
+  "enable answer sets": True,
+  "interview list": {
+    "logo title row 1": "Test"
+  }
+}
+
+class TestSafeGetConfig(unittest.TestCase):
+    @patch("docassemble.ALToolbox.misc.get_config", return_value=None)
+    def test_safe_get_config_with_no_assembly_line(self, mock_config):
+        self.assertEqual(safe_get_config("assembly line", "interview list"), None)
+
+    @patch("docassemble.ALToolbox.misc.get_config", return_value={})
+    def test_safe_get_config_with_empty_assembly_line(self, mock_config):
+        self.assertEqual(safe_get_config("assembly line", "interview list"), None)
+
+    @patch("docassemble.ALToolbox.misc.get_config", return_value=EMPTY_INTERVIEW_LIST)
+    def test_safe_get_config_with_interview_list(self, mock_config):
+        self.assertEqual(safe_get_config("assembly line", "interview list"), {})
+
+    @patch("docassemble.ALToolbox.misc.get_config", return_value=NONE_INTERVIEW_LIST)
+    def test_safe_get_config_with_none_interview_list(self, mock_config):
+        self.assertEqual(safe_get_config("assembly line", "interview list"), None)
+
+    @patch("docassemble.ALToolbox.misc.get_config", return_value=OKAY_INTERVIEW_LIST)
+    def test_safe_get_config_with_okay_interview_list(self, mock_config):
+        self.assertEqual(safe_get_config("assembly line", "interview list", "logo title row 1"), "Test")
+
+    @patch("docassemble.ALToolbox.misc.get_config", return_value=OKAY_INTERVIEW_LIST)
+    def test_safe_get_config_with_bad_user_params(self, mock_config):
+        self.assertEqual(safe_get_config("assembly line", "interview list", 1), None)
 
 
 if __name__ == "__main__":

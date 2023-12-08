@@ -4,3 +4,9 @@ docassemble.ALToolbox.egg-info/**
 .history/
 
 .venv
+.env
+.envrc
+
+# ALKiln stuff
+cucumber-report.txt
+runtime_config.json

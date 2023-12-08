@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, TypedDict, Union
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from base64 import b64encode
 from decimal import Decimal
@@ -7,11 +7,13 @@ from docassemble.base.util import (
     defined,
     value,
     showifdef,
+    get_config,
     space_to_underscore,
     action_button_html,
     Address,
     word,
     user_has_privilege,
+    log
 )
 import re
 
@@ -31,6 +33,7 @@ __all__ = [
     "output_checkbox",
     "nice_county_name",
     "button_array",
+    "safe_get_config",
 ]
 
 
@@ -387,3 +390,24 @@ def button_array(
         </a>"""
     output += "</div>"
     return output
+
+def safe_get_config(config_key:str, *further_keys) -> Optional[Any]:
+    """Gets nested configurations safely
+    
+    You won't throw an exception, you will just get None.
+    """
+    did_log_error = False
+    to_return = get_config(config_key)
+    for further_key in further_keys:
+        try:
+            if to_return:
+                to_return = to_return[further_key]
+            else:
+                to_return = None
+        except (AttributeError, KeyError) as ex:
+            if not did_log_error:
+                log(f"Got an error trying to get '{config_key}' {further_keys} from the config: {ex}")
+                did_log_error = True
+            # Will happen if there's a list unexpectedly, or a map without a value.
+            to_return = None
+    return to_return
