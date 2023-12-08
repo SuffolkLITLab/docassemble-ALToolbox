@@ -1,5 +1,6 @@
 import unittest
 
+import locale
 from decimal import Decimal
 from .al_income import (
     ALIncome,
@@ -114,6 +115,31 @@ class test_correct_outputs(unittest.TestCase):
             Decimal("15.84"), asset_list.total(exclude_source=["checking"])
         )
 
+    def test_asset_list_with_arabic(self):
+        # arabic locales have 3 frac_digits
+        existing_locale = locale.getlocale()
+        locale.setlocale(locale.LC_ALL, "ar_AE.UTF-8")
+        home = ALAsset(market_value=1234567.89, source="home")
+        savings = ALAsset(
+            balance=12.34, value=0.12, times_per_year=12, source="savings"
+        )
+        investing = ALAsset(
+            balance=23.45, value=1.2, times_per_year=12, source="stocks"
+        )
+        checking = ALAsset(
+            balance=34.56, value=0.01, times_per_year=12, source="checking"
+        )
+        asset_list = ALAssetList(elements=[home, savings, investing, checking])
+        self.assertEqual(Decimal("1234567.890"), asset_list.market_value(source="home"))
+        self.assertEqual(
+            Decimal("35.790"), asset_list.balance(source=["savings", "stocks"])
+        )
+        self.assertEqual(
+            Decimal("15.840"), asset_list.total(exclude_source=["checking"])
+        )
+        locale.setlocale(locale.LC_ALL, existing_locale)
+
+
     def test_vehicle(self):
         # TODO
         pass
@@ -176,4 +202,6 @@ class test_correct_outputs(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    # By default we test with US locale.
+    locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
     unittest.main()
