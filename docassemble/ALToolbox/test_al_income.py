@@ -139,7 +139,6 @@ class test_correct_outputs(unittest.TestCase):
         )
         locale.setlocale(locale.LC_ALL, existing_locale)
 
-
     def test_vehicle(self):
         # TODO
         pass
