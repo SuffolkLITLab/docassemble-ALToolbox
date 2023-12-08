@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Dict, List, Optional, TypedDict, Union
 
 from base64 import b64encode
 from decimal import Decimal
@@ -11,6 +11,7 @@ from docassemble.base.util import (
     action_button_html,
     Address,
     word,
+    user_has_privilege,
 )
 import re
 
@@ -29,6 +30,7 @@ __all__ = [
     "add_records",
     "output_checkbox",
     "nice_county_name",
+    "button_array",
 ]
 
 
@@ -69,6 +71,7 @@ def fa_icon(
     color_css: Optional[str] = None,
     size: Optional[str] = "sm",
     fa_class: str = "fa-solid",
+    aria_hidden: bool = True,
 ) -> str:
     """Display a fontawesome icon inline.
 
@@ -77,16 +80,17 @@ def fa_icon(
     you more control over the icon that is inserted.
 
     Args:
-      icon: a string representing a fontawesome icon. The icon needs to be in the
-        [free library](https://fontawesome.com/search?o=r&m=free).
-      color: can be any [Bootstrap color variable](https://getbootstrapc.mo/docs/4.0/utilities/colors).
-        For example: `primary`, `secondary`, `warning`
-      color_css: allows you to use a CSS code to represent the color, e.g., `blue`, or `#fff` for black
-      size: used to control the [fontawesome size](https://fontawesome.com/v6.0/docs/web/style/size)
-        (without the `fa-` prefix). Valid values include `2xs`, `xs`, the default of `sm`,
-        `md`, `lg`, `xl`, `2x1`, and the python `None`, which defaults to `md`.
-      fa_class: let's you specify the fontawesome class, needed for any icon that isn't
-        the default class of `fa-solid`, like `fa-brands`, or `fa-regular` and `fa-light`.
+        icon: a string representing a fontawesome icon. The icon needs to be in the
+            [free library](https://fontawesome.com/search?o=r&m=free).
+        color: can be any [Bootstrap color variable](https://getbootstrapc.mo/docs/4.0/utilities/colors).
+            For example: `primary`, `secondary`, `warning`
+        color_css: allows you to use a CSS code to represent the color, e.g., `blue`, or `#fff` for black
+        size: used to control the [fontawesome size](https://fontawesome.com/v6.0/docs/web/style/size)
+            (without the `fa-` prefix). Valid values include `2xs`, `xs`, the default of `sm`,
+            `md`, `lg`, `xl`, `2x1`, and the python `None`, which defaults to `md`.
+        fa_class: let's you specify the fontawesome class, needed for any icon that isn't
+            the default class of `fa-solid`, like `fa-brands`, or `fa-regular` and `fa-light`.
+        aria_hidden: if True, adds `aria-hidden="true"` to the icon, which is the default
 
     Returns:
       HTML for a font-awesome icon of the specified size and color.
@@ -98,24 +102,13 @@ def fa_icon(
     if not size and not color and not color_css:
         return ":" + icon + ":"  # Default to letting Docassemble handle it
     if color_css:
-        return (
-            f'<i class="{fa_class} fa-'
-            + icon
-            + size_str
-            + '" style="color:'
-            + color_css
-            + ';"></i>'
-        )
+        return f'<i class="{fa_class} fa-{icon}{size_str} style="color:{color_css};" aria-hidden="{str(aria_hidden).lower()}"></i>'
     if color:
         return (
-            f'<i class="{fa_class} fa-'
-            + icon
-            + size_str
-            + '" style="color:var(--'
-            + color
-            + ');"></i>'
+            f'<i class="{fa_class} fa-{icon}{size_str}" '
+            + f'style="color:var(--{color});" aria-hidden="{str(aria_hidden).lower()}"></i>'
         )
-    return f'<i class="{fa_class} fa-{icon}{size_str}"></i>'
+    return f'<i class="{fa_class} fa-{icon}{size_str}" aria-hidden="{str(aria_hidden).lower()}"></i>'
 
 
 def space(var_name: str, prefix=" ", suffix="") -> str:
@@ -341,3 +334,56 @@ def nice_county_name(address: Address) -> str:
         return address.county[: -len(" County")]
     else:
         return address.county
+
+
+class ButtonDict(TypedDict):
+    name: str
+    image: str
+    url: str
+    privilege: Union[str, List[str]]
+
+
+def button_array(
+    buttons: List[ButtonDict],
+    custom_container_class="",
+    custom_link_class="",
+) -> str:
+    """Create a grid of da-buttons from a dictionary of links and icons
+
+    This uses the same CSS classes to mimic the look and feel of Docassemble's `buttons` field type, but
+    doesn't have the limits of that particular input method. This is meant to appear
+    on any page of an interview in the `subquestion` area.
+
+    Optionally, you can limit access to paricular buttons by specifying a privilege or a list
+    of privileges.
+
+    Args:
+        button_list: a dictionary of ButtonDicts (or plain dictionaries) with the following keys:
+            - `name`: the text to display on the button
+            - `image`: the name of a fontawesome icon to display on the button
+            - `url`: the name of the page to link to
+            - `privilege`: optional, the name of a Docassemble privilege that the user must have to see the button. Can be a list or a single string.
+
+        custom_container_class: optional, a string of additional CSS classes to add to the container div
+        custom_link_class: optional, a string of additional CSS classes to add to each link
+
+    Returns:
+        HTML for a grid of buttons
+    """
+    buttons = [
+        button
+        for button in buttons
+        if user_has_privilege(button.get("privilege")) or not button.get("privilege")
+    ]
+
+    # create the grid of buttons
+    output = (
+        f"""<div class="da-button-set da-field-buttons {custom_container_class}">"""
+    )
+    for button in buttons:
+        output += f"""
+        <a class="btn btn-da btn-light btn-da btn-da-custom {custom_link_class}" href="{button.get("url")}">
+            {fa_icon(button.get("image", "globe")) } {button.get("name", button.get("url"))}
+        </a>"""
+    output += "</div>"
+    return output
