@@ -383,7 +383,7 @@ def button_array(
     for button in buttons:
         output += f"""
         <a class="btn btn-da btn-light btn-da btn-da-custom {custom_link_class}" href="{button.get("url")}">
-            {fa_icon(button.get("image", "globe")) } {button.get("name", button.get("url"))}
+            <span>{fa_icon(button.get("image", "globe")) }</span> {button.get("name", button.get("url"))}
         </a>"""
     output += "</div>"
     return output
