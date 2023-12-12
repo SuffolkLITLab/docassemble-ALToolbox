@@ -130,16 +130,16 @@ function create_date_part({{type, date_id}}) {{
   * @returns undefined
   */
   var $col = $('<div class="col col-3 col-' + type + '">');
-  var id = date_id + '_' + type;
-  // '_ignore' prevents the field from being submitted, avoiding a da error
-  let name =  '_ignore_' + id;
+  var id = '_ignore_' + date_id + '_' + type;
+  // '_ignore' in the name prevents the field from being submitted, avoiding a da error
+  let name = id;
   
   // For python formatting, need to have {{day}} and {{year}}
   let $label = '';
   if (type === 'day') {{
-    $label = $('<label for="' + name + '">{day}</label>');
+    $label = $('<label for="' + id + '">{day}</label>');
   }} else {{
-    $label = $('<label for="' + name + '">{year}</label>');
+    $label = $('<label for="' + id + '">{year}</label>');
   }}
   $col.append($label);
   
@@ -175,11 +175,11 @@ function create_month(date_id) {{
   */
   var $col = $('<div class="col col-month">');
   
-  let id = date_id + '_month';
-  // '_ignore' prevents the field from being submitted, avoiding a da error
-  let name =  '_ignore_' + id;
+  var id = '_ignore_' + date_id + '_month';
+  // '_ignore' in the name prevents the field from being submitted, avoiding a da error
+  let name =  id;
   
-  let $label = $('<label for="' + name + '">{month}</label>');
+  var $label = $('<label for="' + id + '">{month}</label>');
   $col.append($label);
   
   // aria-describedby is ok to have, even when the date-part error is
