@@ -164,6 +164,7 @@ question: |
 buttons:
   - Restart: restart
 subquestion: |
+  [Edit your answers](${ url_action('review_interview') })
   
   % if to_run['ALItemizedJob']:
   ## Single ALItemizedJob: ${ itemized_job.source }
@@ -387,6 +388,32 @@ subquestion: |
   ---
 
   % endif
+---
+id: review screen
+event: review_interview
+question: Review
+review:
+  - Edit: itemized_job_list.revisit
+    button: |
+      ${ itemized_job_list }
+  - Edit: al_income_list.revisit
+    button: |
+      ${ al_income_list }
+  - Edit: al_job_list.revisit
+    button: |
+      ${ al_job_list }
+  - Edit: al_asset_list.revisit
+    button: |
+      ${ al_asset_list }
+  - Edit: al_vehicle_list.revisit
+    button: |
+      ${ al_vehicle_list }
+  - Edit: al_value_list.revisit
+    button: |
+      ${ al_value_list }
+  - Edit: al_expense_list.revisit
+    button: |
+      ${ al_expense_list }
 ---
 # OUTPUT TEMPLATES
 ---
