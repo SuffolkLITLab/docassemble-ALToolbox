@@ -51,7 +51,7 @@ def display_template(
 
         # 2.1 If collapsible, add collapsible elements to the output
         if collapse:
-            return f'<div id="{container_id}" class="{container_classname}"><a class="collapsed" data-bs-toggle="collapse" href="#{contents_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span><span class="subject">{template.subject_as_html(trim=True)}</span></a><div class="collapse" id="{contents_id}">{contents}</div></div>'
+            return f'<div id="{container_id}" class="{container_classname}"><a class="collapsed al_toggle" data-bs-toggle="collapse" href="#{contents_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span><span class="subject">{template.subject_as_html(trim=True)}</span></a><div class="collapse" id="{contents_id}">{contents}</div></div>'
 
         # 2.2 If not collapsible, simply return output from copy_button_html()
         else:
@@ -65,7 +65,7 @@ def display_template(
     # 3. If not copiable, generate the whole output
     else:
         if collapse:
-            return f'<div id="{container_id}" class="{container_classname}"><a class="collapsed" data-bs-toggle="collapse" href="#{contents_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span><span class="subject">{template.subject_as_html(trim=True)}</span></a><div class="collapse" id="{contents_id}"><div class="{scroll_class} card card-body {class_name} pb-1">{template.content_as_html()}</div></div></div>'
+            return f'<div id="{container_id}" class="{container_classname}"><a class="collapsed al_toggle" data-bs-toggle="collapse" href="#{contents_id}" role="button" aria-expanded="false" aria-controls="collapseExample"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span><span class="subject">{template.subject_as_html(trim=True)}</span></a><div class="collapse" id="{contents_id}"><div class="{scroll_class} card card-body {class_name} pb-1">{template.content_as_html()}</div></div></div>'
 
         else:
             return f'<div id="{container_id}" class="{container_classname} {scroll_class} card card-body {class_name} pb-1" id="{contents_id}">{subject_html}<div>{template.content_as_html()}</div></div>'

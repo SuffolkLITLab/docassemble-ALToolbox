@@ -26,7 +26,7 @@ subquestion: |
       - The default is to display the template with a scroll bar. This is helpful if your markdown template content is long.
       - If your markdown template has a subject line, it will be displayed automatically. The subject line is not required for this feature.
   1. **collapse** (default=False) 
-      - Change it to True to collapse/show youre template in order to save screen space. Template subject line is required.
+      - Change it to True to collapse/show you're template in order to save screen space. Template subject line is required.
       - This feature is similar to the **collapse_template()** function. It is combined into this function so that your can mix it with the other features. You can still call that function independently. See [collapse template demo](${interview_url(i=user_info().package + ":collapse_template_demo.yml")}).
   1. **copy** (default=False) 
       - It adds a copy button under the template for users to copy/share the template content.
@@ -55,7 +55,7 @@ subquestion: |
 id: collapse and scrollable examples
 continue button field: collapse_n_scrollable_examples
 question: |  
-  Collase and scrollable examples
+  Collapse and scrollable examples
 subquestion: |
   ##### Collapse only with a style
   ${ display_template(my_template1, scrollable=False, collapse=True, classname="my_color") }
