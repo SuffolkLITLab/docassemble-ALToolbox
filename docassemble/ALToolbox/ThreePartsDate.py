@@ -179,7 +179,7 @@ function create_month(date_id) {{
   // '_ignore' in the name prevents the field from being submitted, avoiding a da error
   let name =  id;
   
-  var $label = $('<label for="' + id + '">{month}</label>');
+  let $label = $('<label for="' + id + '">{month}</label>');
   $col.append($label);
   
   // aria-describedby is ok to have, even when the date-part error is
