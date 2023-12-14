@@ -151,7 +151,7 @@ table: x.table
 rows: x
 columns:
   - Type: |
-      str(row_index).replace("_", " ").lower()
+      str(row_index).replace("_", " ").lower().capitalize()
   - Amount: |
       '$0' if hasattr(row_item, 'exists') and not row_item.exists else currency(row_item.value)
 edit:
