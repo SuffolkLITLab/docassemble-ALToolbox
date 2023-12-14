@@ -5,6 +5,13 @@
   padding-bottom: 1rem;
 }
 
+.al_collapse_template a.al_toggle,
+.al_display_template a.al_toggle {
+  color: #3b842c; /* Same as daterm in Assembly Line */
+  text-decoration: dashed;
+  text-decoration-line: underline;
+}
+
 .al_collapse_template .collapse,
 .al_display_template .collapse {
     margin-bottom: 1rem;
