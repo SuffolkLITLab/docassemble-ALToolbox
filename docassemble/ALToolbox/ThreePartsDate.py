@@ -175,7 +175,7 @@ function create_month(date_id) {{
   */
   var $col = $('<div class="col col-month">');
   
-  var id = '_ignore_' + date_id + '_month';
+  let id = '_ignore_' + date_id + '_month';
   // '_ignore' in the name prevents the field from being submitted, avoiding a da error
   let name =  id;
   
