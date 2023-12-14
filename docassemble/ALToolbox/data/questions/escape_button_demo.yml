@@ -12,13 +12,15 @@ subquestion: |
   If you would like to combine the "Escape" button with a custom link in the
   top navigation bar, you can do so by adding mandatory block like this:
 
-  ```
+  <pre>
+  <code>
   ---
   mandatory: True
   variable name: al_navigation_items["my_link"]
   data: |
-    <li class="nav-item"><a class="btn" href="https://google.com">My link</a></li>
-  ```
+    &lt;div class="nav-item"&gt;&lt;a class="btn" href="https://google.com"&gt;My link&lt;/a&gt;&lt;/div&gt;
+  </code>
+  </pre>
 
   And making sure that it runs on a line before you `include` the `escape_button.yml` file.
 

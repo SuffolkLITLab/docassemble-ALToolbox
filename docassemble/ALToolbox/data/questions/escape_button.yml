@@ -8,7 +8,7 @@ objects:
 mandatory: True
 variable name: al_navigation_items["escape_button"]
 data: |
-  <li class="nav-item al_escape_nav"><a class="btn btn-danger al_escape" href="https://google.com">Escape</a></li>
+  <div class="nav-item al_escape_nav"><a class="btn btn-danger al_escape" href="https://google.com">Escape</a></div>
 ---
 default screen parts:
   navigation bar html: |
