@@ -8,7 +8,7 @@ from docassemble.base.util import get_config
 __all__ = ["chat_completion"]
 
 if os.getenv("OPENAI_API_KEY"):
-    client:Optional[OpenAI] = OpenAI()
+    client: Optional[OpenAI] = OpenAI()
 else:
     client = None
 
@@ -85,7 +85,7 @@ def chat_completion(
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message},
         ],
-        response_format={"type": "json_object"} if json_mode else None, # type: ignore
+        response_format={"type": "json_object"} if json_mode else None,  # type: ignore
         temperature=temperature,
         max_tokens=max_output_tokens,
         top_p=1,
