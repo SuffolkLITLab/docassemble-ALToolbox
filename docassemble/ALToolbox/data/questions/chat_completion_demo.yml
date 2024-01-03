@@ -1,0 +1,65 @@
+---
+modules:
+  - .llms # docassemble.ALToolbox.llms
+---
+id: interview order
+mandatory: True
+code: |
+  system_message
+  process_input
+  show_results
+---
+id: ask_for_input
+question: |
+  Enter an instruction and text to transform
+subquestion: |
+  This screen lets you experiment with the OpenAI API. It works
+  like the OpenAI playground.
+
+  Enter a system instruction and text to transform.
+
+  For example, you could enter a system instruction of:
+  
+  ```
+  Rewrite the input to 
+  a 6th grade reading level
+  ``` 
+  
+  and text of 
+
+  ```
+  In accordance with the stipulations set forth in Section 4, Subsection 3.2 of the Company's Operational Handbook, it is incumbent upon all employees to meticulously submit their individualized timekeeping records for the preceding month no later than the fifth business day of the ensuing month. Failure to comply with this mandate may result in a sequential series of remedial actions as outlined in the Employee Disciplinary Policy, commencing with a formal written reprimand and potentially culminating in termination of employment, contingent upon the recurrent nature of the non-compliance and the discretion of the departmental supervisor in consultation with the Human Resources Department, pursuant to company policy and applicable labor laws.
+  ```
+
+  It may help to include an instruction like "reply only with the changed text" in your system
+  instruction to avoid extraneous information in the response.
+fields:
+  - System instructions: system_message
+    datatype: area
+  - Text to transform: user_message
+    datatype: area
+  - Creativity (temperature): temperature
+    datatype: range
+    min: 0
+    max: 1
+    default: 0.5
+    step: 0.05
+    help: |
+      The higher the temperature, the more creative the response. The lower the temperature, the more predictable the response.
+---
+code: |
+  results = chat_completion(
+    system_message,
+    user_message,
+    temperature=temperature,
+    # The following are optional parameters shown for demonstration purposes
+    model="gpt-3.5-turbo",
+    json_mode=False,
+  )
+  process_input = True
+---
+event: show_results
+question: |
+  Here are your results
+subquestion: |
+  ${ single_to_double_newlines(results) }
