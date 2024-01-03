@@ -8,9 +8,10 @@ from docassemble.base.util import get_config
 __all__ = ["chat_completion"]
 
 if os.getenv("OPENAI_API_KEY"):
-    client = OpenAI()
+    client:Optional[OpenAI] = OpenAI()
 else:
     client = None
+
 
 def chat_completion(
     system_message: str,
@@ -18,7 +19,7 @@ def chat_completion(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0.5,
-    json_mode = False,
+    json_mode=False,
     model: str = "gpt-3.5-turbo",
 ) -> Union[List[Any], Dict[str, Any], str]:
     """A light wrapper on the OpenAI chat endpoint.
@@ -48,8 +49,8 @@ def chat_completion(
             if client:
                 openai_client = client
             else:
-                if get_config("open ai",{}).get("key"):
-                    openai_client = OpenAI(api_key=get_config("open ai",{}).get("key"))
+                if get_config("open ai", {}).get("key"):
+                    openai_client = OpenAI(api_key=get_config("open ai", {}).get("key"))
                 else:
                     raise Exception(
                         "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment."
@@ -60,12 +61,12 @@ def chat_completion(
     encoding = tiktoken.encoding_for_model(model)
     token_count = len(encoding.encode(system_message + user_message))
 
-    if model.startswith("gpt-4-"): # E.g., "gpt-4-1106-preview"
+    if model.startswith("gpt-4-"):  # E.g., "gpt-4-1106-preview"
         max_input_tokens = 128000
         max_output_tokens = 4096
     else:
         max_input_tokens = 4096
-        max_output_tokens = 4096 - token_count - 100 # small safety margin
+        max_output_tokens = 4096 - token_count - 100  # small safety margin
 
     if token_count > max_input_tokens:
         raise Exception(
@@ -84,7 +85,7 @@ def chat_completion(
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message},
         ],
-        response_format={"type": "json_object"} if json_mode else None,
+        response_format={"type": "json_object"} if json_mode else None, # type: ignore
         temperature=temperature,
         max_tokens=max_output_tokens,
         top_p=1,
