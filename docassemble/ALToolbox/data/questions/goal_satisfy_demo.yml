@@ -37,6 +37,14 @@ fields:
 ---
 question: |
   Review your draft
+subquestion: |
+  % if len(student_reflections):
+  We have taken your initial draft and combined it with your
+  responses to the questions below. Please review the revised draft
+  and make any changes to put it in your own words.
+
+  ${ collapse_template(student_reflections.show_current_progress) }
+  % endif
 fields:
   - Final draft: final_draft
     datatype: area
@@ -47,6 +55,8 @@ event: final_response
 question: |
   Your response
 subquestion: |
+  % if len(student_reflections):
   ${ collapse_template(student_reflections.show_current_progress) }
 
+  % endif
   > ${ final_draft }
