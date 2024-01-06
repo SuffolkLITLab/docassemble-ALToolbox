@@ -3,7 +3,7 @@ include:
   - goal_satisfy.yml
 ---
 objects:
-  - student_reflections: GoalSatisfactionList.using(goals=reflection_goals)
+  - student_reflections: GoalSatisfactionList.using(goals=reflection_goals, initial_question = "Identify at least one key argument from the readings. Explain why you agree or disagree with the argument. Support your position with specific supporting details.")
 ---
 variable name: reflection_goals
 data:

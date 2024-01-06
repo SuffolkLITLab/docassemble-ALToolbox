@@ -108,8 +108,8 @@ always_reserved_names = set(
 
 
 def chat_completion(
-    system_message: str,
-    user_message: str,
+    system_message: Optional[str] = None,
+    user_message: Optional[str] = None,
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0.5,
@@ -137,6 +137,16 @@ def chat_completion(
     Returns:
         A string with the response from the API endpoint or JSON data if json_mode is True
     """
+    if not messages and not system_message:
+        raise Exception(
+            "You must provide either a system message and user message or a list of messages to use this function."
+        )
+    
+    if not messages:
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message},
+        ]
     if openai_api:
         openai_client = OpenAI(api_key=openai_api)
     else:
@@ -154,10 +164,7 @@ def chat_completion(
     encoding = tiktoken.encoding_for_model(model)
 
     encoding = tiktoken.encoding_for_model(model)
-    if messages:
-        token_count = len(encoding.encode(str(messages)))
-    else:
-        token_count = len(encoding.encode(system_message + user_message))
+    token_count = len(encoding.encode(str(messages)))
 
     if model.startswith("gpt-4-"):  # E.g., "gpt-4-1106-preview"
         max_input_tokens = 128000
@@ -177,17 +184,16 @@ def chat_completion(
         )
 
     moderation_response = openai_client.moderations.create(
-        input=system_message + user_message
+        input=str(messages)
     )
     if moderation_response.results[0].flagged:
         raise Exception(f"OpenAI moderation error: { moderation_response.results[0] }")
 
+    log(f"Calling OpenAI chat endpoint, messages are { str(messages)[:] }")
+
     response = openai_client.chat.completions.create(
         model=model,
-        messages=[
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message},
-        ],
+        messages=messages,
         response_format={"type": "json_object"} if json_mode else None,  # type: ignore
         temperature=temperature,
         max_tokens=max_output_tokens,
@@ -204,8 +210,10 @@ def chat_completion(
 
     if json_mode:
         assert isinstance(response.choices[0].message.content, str)
+        log(f"JSON response is { response.choices[0].message.content }")
         return json.loads(response.choices[0].message.content)
     else:
+        log(f"Response is { response.choices[0].message.content }")
         return response.choices[0].message.content
 
 
@@ -332,7 +340,6 @@ def classify_text(
 
 
 def synthesize_user_responses(
-    initial_draft: str,
     messages: List[Dict[str, str]],
     custom_instructions: Optional[str] = "",
     openai_client: Optional[OpenAI] = None,
@@ -352,34 +359,29 @@ def synthesize_user_responses(
         temperature (float): The temperature to use for GPT. Defaults to 0.
         model (str): The model to use for the GPT API
     """
-    system_message = f"""You are a helpful editor. You are helping a user write a response to an open-ended question.
+    system_message = f"""You are a helpful editor engaging in a conversation with the user. You are helping a user write a response to an open-ended question.
     You will see the user's initial draft, followed by a series of questions and answers that clarified additional content to include
-    in the response. Synthesize the user's responses into a single, coherent response while matching the user's tone and without adding
-    additional facts.
+    in the response.
+
+    After engaging in a series of back and forth questions and answers, as soon as you are able to,
+    add an additional reply that synthesizes and rephrases the user's response, using
+    the same tone and style as the user. Your reply should be phrased in the form of a response to the
+    original question that was posed to the user. It should include as much of the first reply by
+    the user as possible. Do not direct your reply to the user. Direct it to the hypothetical person
+    who posed the first question to the user.
 
     {custom_instructions}
     """
 
-    user_message = f"""
-    Initial draft response from the user: 
-    ```
-    {initial_draft}
-
-    Follow-up conversation thread:
-    ```
-    {repr(messages)}
-    ```
-    """
-
     return chat_completion(
-        system_message=system_message,
-        user_message=user_message,
+        messages = [
+            {"role": "system", "content": system_message},
+        ] + messages,
         model=model,
         openai_client=openai_client,
         openai_api=openai_api,
         temperature=temperature,
         json_mode=False,
-        messages=messages,
     )
 
 
@@ -421,7 +423,7 @@ class Goal(DAObject):
     """
 
     def response_satisfies_me_or_follow_up(
-        self, response: str, openai_client: Optional[OpenAI] = None
+        self, messages: Union[str, List[Dict[str,str]]], openai_client: Optional[OpenAI] = None, model="gpt-3.5-turbo"
     ) -> bool:
         """Returns True if the response satisfies the goal, False otherwise.
 
@@ -431,17 +433,21 @@ class Goal(DAObject):
         Returns:
             True if the response satisfies the goal, False otherwise
         """
-        system_message = f"""The user's message represents an answer to this 
-        question: "{ self.description }". If the answer satisfies the goal,
-        return the exact text "satisfied" with no other text. Otherwise, 
-        return the text of a follow-up question that gets closer to the goal."""
-        user_message = f"""```
-        { response }
-        ```"""
+        system_message = f"""You are a good conversationalist who is helping to improve and get relevant and thoughtful information from a person. 
+        Read the entire exchange with the user, in light of this goal: 
+        ```{ self.description }```
+
+        Your only response should be:
+        * The exact text "satisfied" if the conversation thread as a whole meets the goal
+        * The text of a follow-up question that gets closer to the goal if another question is needed
+        """
+
         return chat_completion(
-            system_message=system_message,
-            user_message=user_message,
+            messages=[
+                {"role": "system", "content": system_message},
+            ] + messages,
             openai_client=openai_client,
+            model=model,
         )
 
     def get_next_question(
@@ -452,9 +458,9 @@ class Goal(DAObject):
     ) -> str:
         """Returns the text of the next question to ask the user."""
 
-        system_instructions = f"""You are helping the user to satisfy this goal with their response: "{ self.description }". Ask a brief appropriate follow-up question that directs the user toward the goal."""
+        system_instructions = f"""You are helping the user to satisfy this goal with their response: "{ self.description }". Ask a brief appropriate follow-up question that directs the user toward the goal. If they have already provided a partial response, explain why and how they should expand on it."""
 
-        messages = [{"system": system_instructions}]
+        messages = [{"role": "system", "content": system_instructions}]
         return chat_completion(
             messages=messages + thread_so_far,
             openai_client=openai_client,
@@ -492,9 +498,12 @@ class GoalQuestion(DAObject):
         question (str): The question to ask the user
         response (str): The user's response to the question
     """
-
-    pass
-
+    @property
+    def complete(self):
+        self.goal
+        self.question
+        self.response
+        return True
 
 class GoalSatisfactionList(DAList):
     """A class to help ask the user questions until all goals are satisfied.
@@ -520,19 +529,15 @@ class GoalSatisfactionList(DAList):
         goals (List[Goal]): The goals in the list, provided as a dictionary
         goal_list (GoalList): The list of Goals
         question_limit (int): The maximum number of follow-up questions to ask the user
+        question_per_goal_limit (int): The maximum number of follow-up questions to ask the user per goal
         initial_draft (str): The initial draft of the user's response
+        initial_question (str): The original question posed in the interview
     """
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.object_type = GoalQuestion
-        self.complete_attribute = [
-            "goal",
-            "question",
-            "response",
-        ]
-        if not hasattr(self, "there_are_any"):
-            self.there_are_any = True
+        self.complete_attribute = "complete"
 
         if not hasattr(self, "question_limit"):
             self.question_limit = 10
@@ -559,24 +564,34 @@ class GoalSatisfactionList(DAList):
                             name=f"goal_{idx}", description=goal, satisfied=False
                         ),
                     )
+            del self.goals
             self.goal_dict.gathered = True
 
         if not hasattr(self, "model"):
             self.model = "gpt-3.5-turbo-1106"
 
-    def mark_satisfied_goals(self, user_response: str) -> None:
+        if not hasattr(self, "question_per_goal_limit"):
+            self.question_per_goal_limit = 3
+
+    #def count_attempts(self, goal: Goal) -> int:
+    #    """Returns the number of times the user has attempted to satisfy the given goal."""
+    #    log("Counting attempts")
+    #    return len([e for e in self.elements if e.goal == goal])
+
+    def mark_satisfied_goals(self) -> None:
         """Marks goals as satisfied if the user's response satisfies the goal.
         This should be used as soon as the user gives their initial reply.
-
-        Args:
-            user_response (str): The user's response to the question
 
         Returns:
             None
         """
         extracted_fields = match_goals_from_text(
-            user_response,
-            self.goal_dict,
+            self.initial_draft,
+            f"""The original question was: 
+                ```{self.initial_question}```
+                and the specific goals were: 
+                ```{self.goal_dict}```
+            """,
             model=self.model,
         )
         for field in extracted_fields:
@@ -589,11 +604,11 @@ class GoalSatisfactionList(DAList):
             return False
         return len(self.elements) < self.question_limit
 
-    @property
-    def there_is_another(self):
+    def need_more_questions(self):
         """Returns True if there is at least one unsatisfied goal, False otherwise.
 
-        Also has the side effect of checking the user's most recent response to see if it satisfies the goal.
+        Also has the side effect of checking the user's most recent response to see if it satisfies the goal
+        and updating the next question to be asked.
         """
         goal = self._get_next_unsatisfied_goal()
         if not goal:
@@ -604,10 +619,14 @@ class GoalSatisfactionList(DAList):
             model=self.model,
         )
 
-        if status.trim().lower() == "satisfied":
+        log(f"Checking if {goal} was satisfied by thread { self._get_related_thread(goal) }. Status is { status }")
+        if status.strip().lower() == "satisfied":
             goal.satisfied = True
-            return self.there_is_another
+            log(f"Goal { goal } was satisfied by the user's follow-up response")
+            return self.need_more_questions()
         else:
+            log(f"Goal { goal } was not satisfied by the user's follow-up response")
+            log(f"Setting the next question to { status }.")
             self.next_question = status
 
         return self.keep_going()
@@ -616,18 +635,25 @@ class GoalSatisfactionList(DAList):
         """Returns True if all goals are satisfied, False otherwise."""
         return self.goal_dict.satisfied()
 
-    def _get_next_unsatisfied_goal(self):
-        """Returns the next unsatisfied goal, starting with the goal of the most recently asked question if there is one."""
-        if len(self.elements) and hasattr(self.elements[-1], "goal"):
-            # Make sure the goal isn't already satisfied (But I don't think we can reach this branch)
-            if not (
-                hasattr(self.elements[-1].goal, "satisfied")
-                and self.elements[-1].goal.satisfied
-            ):
-                return self.elements[-1].goal
-        return next(
-            (goal for goal in self.goal_dict.values() if not goal.satisfied), None
+    def _get_next_unsatisfied_goal(self) -> Optional[Goal]:
+        """Returns the next unsatisfied goal."""
+        next_goal = next(
+            (g for g in self.goal_dict.values() if not g.satisfied), None
         )
+        log(f"Next unsatisfied candidate goal is { next_goal }")
+
+        #if next_goal and (self.count_attempts(next_goal) >= self.question_per_goal_limit):
+        #    # Move on after 3 tries
+        #    log(f"Moving on from { next_goal } after { self.question_per_goal_limit } tries")
+        #    next_goal.satisfied = True
+        #    new_goal = self._get_next_unsatisfied_goal()
+        #    if new_goal:
+        #        # update the question to reflect the new goal
+        #        self.next_question = new_goal.get_next_question(self._get_related_thread(new_goal), model=self.model)
+        #    return new_goal
+        #
+        #log(f"Next goal is { next_goal }")
+        return next_goal
 
     def get_next_goal_and_question(self):
         """Returns the next unsatisfied goal, along with a follow-up question to ask the user, if relevant.
@@ -639,15 +665,22 @@ class GoalSatisfactionList(DAList):
         goal = self._get_next_unsatisfied_goal()
         
         if not goal:
+            log("No more unsatisfied goals")
             return None, None
         else:
             # This should have been set by the last call to there_is_another
+            # unless we're just starting out with the first question
             if not (hasattr(self, "next_question") and self.next_question):
+                log("No question was set by call to there_is_another, getting one now")
                 self.next_question = goal.get_next_question(
                     self._get_related_thread(goal),
                     model=self.model,
                 )
-            return goal, self.next_question
+            else:
+                log(f"Using next question { self.next_question } which was previously set")
+            temp_question = self.next_question
+            del self.next_question
+            return goal, temp_question
 
     def _get_related_thread(self, goal: Goal) -> List[Dict[str, str]]:
         """Returns a list of messages (with corresponding role) related to the given goal.
@@ -660,11 +693,14 @@ class GoalSatisfactionList(DAList):
         Returns:
             A list of messages (with corresponding role) related to the given goal.
         """
-        messages = [{"role": "user", "content": self.initial_draft}]
+        messages = [
+            {"role": "system", "content": self.initial_question},
+            {"role": "user", "content": self.initial_draft}
+        ]
         for element in self.elements:
             # TODO: see how this performs. It could save some tokens to skip the ones that aren't related to the current goal.
-            if element.goal != goal:
-                continue
+            #if element.goal != goal:
+            #    continue
             messages.append({"role": "system", "content": element.question})
             messages.append({"role": "user", "content": element.response})
 
@@ -672,13 +708,15 @@ class GoalSatisfactionList(DAList):
 
     def synthesize_draft_response(self):
         """Returns a draft response that synthesizes the user's responses to the questions."""
-        messages = []
+        messages = [
+            {"role": "system", "content": self.initial_question},
+            {"role": "user", "content": self.initial_draft}
+        ]
         for question in self.elements:
             messages.append({"role": "system", "content": question.question})
             messages.append({"role": "user", "content": question.response})
         return synthesize_user_responses(
             custom_instructions="",
-            initial_draft=self.initial_draft,
             messages=messages,
             model=self.model,
         )
