@@ -141,9 +141,11 @@ def chat_completion(
         raise Exception(
             "You must provide either a system message and user message or a list of messages to use this function."
         )
-    
+
     if not messages:
-        messages=[
+        assert isinstance(system_message, str)
+        assert isinstance(user_message, str)
+        messages = [
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message},
         ]
@@ -183,9 +185,7 @@ def chat_completion(
             f"Input to OpenAI is too long ({ token_count } tokens). Maximum is {max_input_tokens} tokens."
         )
 
-    moderation_response = openai_client.moderations.create(
-        input=str(messages)
-    )
+    moderation_response = openai_client.moderations.create(input=str(messages))
     if moderation_response.results[0].flagged:
         raise Exception(f"OpenAI moderation error: { moderation_response.results[0] }")
 
@@ -244,7 +244,7 @@ def extract_fields_from_text(
     If a field cannot be defined from the notes, omit it from the JSON response.
     """
 
-    return chat_completion(
+    result = chat_completion(
         system_message=system_message,
         user_message=text,
         model=model,
@@ -253,11 +253,14 @@ def extract_fields_from_text(
         temperature=temperature,
         json_mode=True,
     )
+    assert isinstance(result, dict)
+    return result
 
 
 def match_goals_from_text(
-    text: str,
-    goals: List[str],
+    question: str,
+    user_response: str,
+    goals: Dict[str, str],
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
@@ -273,7 +276,13 @@ def match_goals_from_text(
         A dictionary of fields extracted from the text
     """
     system_message = f"""
-    The user message represents an answer to an open-ended question, as well as follow-up questions and answers. Review the answer to determine if it meets the
+    The user message represents an answer to the following question:
+
+    ```
+    { question }
+    ```
+    
+    Review the answer to determine if it meets the
     following goals:
     
     ```
@@ -290,16 +299,17 @@ def match_goals_from_text(
 
     If there are no satisfied goals, return an empty dictionary.
     """
-
-    return chat_completion(
+    results = chat_completion(
         system_message=system_message,
-        user_message=text,
+        user_message=user_response,
         model=model,
         openai_client=openai_client,
         openai_api=openai_api,
         temperature=temperature,
         json_mode=True,
     )
+    assert isinstance(results, dict)
+    return results
 
 
 def classify_text(
@@ -328,7 +338,7 @@ def classify_text(
 
     If the text cannot be classified, respond with "{ default_response }".
     """
-    return chat_completion(
+    results = chat_completion(
         system_message=system_prompt,
         user_message=text,
         model=model,
@@ -337,6 +347,8 @@ def classify_text(
         temperature=temperature,
         json_mode=False,
     )
+    assert isinstance(results, str)
+    return results
 
 
 def synthesize_user_responses(
@@ -363,26 +375,32 @@ def synthesize_user_responses(
     You will see the user's initial draft, followed by a series of questions and answers that clarified additional content to include
     in the response.
 
-    After engaging in a series of back and forth questions and answers, as soon as you are able to,
-    add an additional reply that synthesizes and rephrases the user's response, using
-    the same tone and style as the user. Your reply should be phrased in the form of a response to the
-    original question that was posed to the user. It should include as much of the first reply by
-    the user as possible. Do not direct your reply to the user. Direct it to the hypothetical person
-    who posed the first question to the user.
-
     {custom_instructions}
     """
 
-    return chat_completion(
-        messages = [
+    ending_message = """
+    Now that you have helped the user add more details, synthesize the response into a single coherent answer
+    to the first question. It will rephrase and incorporate the follow-up questions if needed to add context 
+    and clarity to the final response. You will write a reply in the user's voice. It will use the same pronouns,
+    such as "I" and as many of the user's words as possible. It will be addressed to a third party
+    reading the conversation and in the voice and style of the user.
+    """
+    results = chat_completion(
+        messages=[
             {"role": "system", "content": system_message},
-        ] + messages,
+        ]
+        + messages
+        + [
+            {"role": "system", "content": ending_message},
+        ],
         model=model,
         openai_client=openai_client,
         openai_api=openai_api,
         temperature=temperature,
         json_mode=False,
     )
+    assert isinstance(results, str)
+    return results
 
 
 def define_fields_from_dict(
@@ -423,9 +441,13 @@ class Goal(DAObject):
     """
 
     def response_satisfies_me_or_follow_up(
-        self, messages: Union[str, List[Dict[str,str]]], openai_client: Optional[OpenAI] = None, model="gpt-3.5-turbo"
-    ) -> bool:
-        """Returns True if the response satisfies the goal, False otherwise.
+        self,
+        messages: List[Dict[str, str]],
+        openai_client: Optional[OpenAI] = None,
+        model="gpt-3.5-turbo",
+    ) -> str:
+        """Returns the text of the next question to ask the user or the string "satisfied"
+        if the user's response satisfies the goal.
 
         Args:
             response (str): The response to check
@@ -442,13 +464,16 @@ class Goal(DAObject):
         * The text of a follow-up question that gets closer to the goal if another question is needed
         """
 
-        return chat_completion(
+        results = chat_completion(
             messages=[
                 {"role": "system", "content": system_message},
-            ] + messages,
+            ]
+            + messages,
             openai_client=openai_client,
             model=model,
         )
+        assert isinstance(results, str)
+        return results
 
     def get_next_question(
         self,
@@ -461,12 +486,14 @@ class Goal(DAObject):
         system_instructions = f"""You are helping the user to satisfy this goal with their response: "{ self.description }". Ask a brief appropriate follow-up question that directs the user toward the goal. If they have already provided a partial response, explain why and how they should expand on it."""
 
         messages = [{"role": "system", "content": system_instructions}]
-        return chat_completion(
+        results = chat_completion(
             messages=messages + thread_so_far,
             openai_client=openai_client,
             temperature=0.5,
             model=model,
         )
+        assert isinstance(results, str)
+        return results
 
     def __str__(self):
         return f'"{ self.name }": "{ self.description }"'
@@ -498,12 +525,14 @@ class GoalQuestion(DAObject):
         question (str): The question to ask the user
         response (str): The user's response to the question
     """
+
     @property
     def complete(self):
         self.goal
         self.question
         self.response
         return True
+
 
 class GoalSatisfactionList(DAList):
     """A class to help ask the user questions until all goals are satisfied.
@@ -541,7 +570,7 @@ class GoalSatisfactionList(DAList):
 
         if not hasattr(self, "question_limit"):
             self.question_limit = 10
-   
+
         if not hasattr(self, "goal_dict"):
             self.initializeAttribute("goal_dict", GoalDict)
 
@@ -573,7 +602,7 @@ class GoalSatisfactionList(DAList):
         if not hasattr(self, "question_per_goal_limit"):
             self.question_per_goal_limit = 3
 
-    #def count_attempts(self, goal: Goal) -> int:
+    # def count_attempts(self, goal: Goal) -> int:
     #    """Returns the number of times the user has attempted to satisfy the given goal."""
     #    log("Counting attempts")
     #    return len([e for e in self.elements if e.goal == goal])
@@ -586,12 +615,9 @@ class GoalSatisfactionList(DAList):
             None
         """
         extracted_fields = match_goals_from_text(
+            self.initial_question,
             self.initial_draft,
-            f"""The original question was: 
-                ```{self.initial_question}```
-                and the specific goals were: 
-                ```{self.goal_dict}```
-            """,
+            self.goal_dict,
             model=self.model,
         )
         for field in extracted_fields:
@@ -613,13 +639,15 @@ class GoalSatisfactionList(DAList):
         goal = self._get_next_unsatisfied_goal()
         if not goal:
             return False
-        
+
         status = goal.response_satisfies_me_or_follow_up(
             messages=self._get_related_thread(goal),
             model=self.model,
         )
 
-        log(f"Checking if {goal} was satisfied by thread { self._get_related_thread(goal) }. Status is { status }")
+        log(
+            f"Checking if {goal} was satisfied by thread { self._get_related_thread(goal) }. Status is { status }"
+        )
         if status.strip().lower() == "satisfied":
             goal.satisfied = True
             log(f"Goal { goal } was satisfied by the user's follow-up response")
@@ -637,12 +665,10 @@ class GoalSatisfactionList(DAList):
 
     def _get_next_unsatisfied_goal(self) -> Optional[Goal]:
         """Returns the next unsatisfied goal."""
-        next_goal = next(
-            (g for g in self.goal_dict.values() if not g.satisfied), None
-        )
+        next_goal = next((g for g in self.goal_dict.values() if not g.satisfied), None)
         log(f"Next unsatisfied candidate goal is { next_goal }")
 
-        #if next_goal and (self.count_attempts(next_goal) >= self.question_per_goal_limit):
+        # if next_goal and (self.count_attempts(next_goal) >= self.question_per_goal_limit):
         #    # Move on after 3 tries
         #    log(f"Moving on from { next_goal } after { self.question_per_goal_limit } tries")
         #    next_goal.satisfied = True
@@ -652,7 +678,7 @@ class GoalSatisfactionList(DAList):
         #        self.next_question = new_goal.get_next_question(self._get_related_thread(new_goal), model=self.model)
         #    return new_goal
         #
-        #log(f"Next goal is { next_goal }")
+        # log(f"Next goal is { next_goal }")
         return next_goal
 
     def get_next_goal_and_question(self):
@@ -663,7 +689,7 @@ class GoalSatisfactionList(DAList):
             If the user's response to the last question satisfied the goal, returns (None, None).
         """
         goal = self._get_next_unsatisfied_goal()
-        
+
         if not goal:
             log("No more unsatisfied goals")
             return None, None
@@ -677,7 +703,9 @@ class GoalSatisfactionList(DAList):
                     model=self.model,
                 )
             else:
-                log(f"Using next question { self.next_question } which was previously set")
+                log(
+                    f"Using next question { self.next_question } which was previously set"
+                )
             temp_question = self.next_question
             del self.next_question
             return goal, temp_question
@@ -694,14 +722,14 @@ class GoalSatisfactionList(DAList):
             A list of messages (with corresponding role) related to the given goal.
         """
         messages = [
-            {"role": "system", "content": self.initial_question},
-            {"role": "user", "content": self.initial_draft}
+            {"role": "assistant", "content": self.initial_question},
+            {"role": "user", "content": self.initial_draft},
         ]
         for element in self.elements:
             # TODO: see how this performs. It could save some tokens to skip the ones that aren't related to the current goal.
-            #if element.goal != goal:
+            # if element.goal != goal:
             #    continue
-            messages.append({"role": "system", "content": element.question})
+            messages.append({"role": "assistant", "content": element.question})
             messages.append({"role": "user", "content": element.response})
 
         return messages
@@ -709,11 +737,11 @@ class GoalSatisfactionList(DAList):
     def synthesize_draft_response(self):
         """Returns a draft response that synthesizes the user's responses to the questions."""
         messages = [
-            {"role": "system", "content": self.initial_question},
-            {"role": "user", "content": self.initial_draft}
+            {"role": "assistant", "content": self.initial_question},
+            {"role": "user", "content": self.initial_draft},
         ]
         for question in self.elements:
-            messages.append({"role": "system", "content": question.question})
+            messages.append({"role": "assistant", "content": question.question})
             messages.append({"role": "user", "content": question.response})
         return synthesize_user_responses(
             custom_instructions="",
