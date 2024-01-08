@@ -459,9 +459,9 @@ class Goal(DAObject):
         Read the entire exchange with the user, in light of this goal: 
         ```{ self.description }```
 
-        Your only response should be:
-        * The exact text "satisfied" if the conversation thread as a whole meets the goal
-        * The text of a follow-up question that gets closer to the goal if another question is needed
+        Respond with the exact text "satisfied" (and no other text) if the goal is satisfied. If the goal is not satisfied, 
+        respond with a brief follow-up question that directs the user toward the goal. If they have already provided a partial 
+        response, explain why and how they should expand on it.
         """
 
         results = chat_completion(
