@@ -1,0 +1,62 @@
+---
+include:
+  - goal_satisfy.yml
+---
+objects:
+  - student_reflections: GoalSatisfactionList.using(goals=reflection_goals, initial_question = "Identify at least one key argument from the readings. Explain why you agree or disagree with the argument. Support your position with specific supporting details.")
+---
+variable name: reflection_goals
+data:
+  - Describe what the issue is
+  - Take a position on the issue  
+  - Support your position with specific supporting details
+  - Use correct grammar and punctuation
+---
+mandatory: True
+code: |
+  student_reflections.initial_draft
+  student_reflections.gather()
+  final_draft
+  final_response
+---
+code: |
+  if len(student_reflections):
+    final_draft_default = student_reflections.synthesize_draft_response()
+  else:
+    final_draft_default = student_reflections.initial_draft
+---
+question: |
+  Reflect on the readings for today
+subquestion: |
+  Identify at least one key argument from the readings. Explain
+  why you agree or disagree with the argument. Support your
+  position with specific supporting details.
+fields:
+  - Your response: student_reflections.initial_draft
+    datatype: area
+---
+question: |
+  Review your draft
+subquestion: |
+  % if len(student_reflections):
+  We have taken your initial draft and combined it with your
+  responses to the questions below. Please review the revised draft
+  and make any changes to put it in your own words.
+
+  ${ collapse_template(student_reflections.show_current_progress) }
+  % endif
+fields:
+  - Final draft: final_draft
+    datatype: area
+    default: |
+      ${ final_draft_default }
+---
+event: final_response
+question: |
+  Your response
+subquestion: |
+  % if len(student_reflections):
+  ${ collapse_template(student_reflections.show_current_progress) }
+
+  % endif
+  > ${ final_draft }

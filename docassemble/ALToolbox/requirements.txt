@@ -4,3 +4,5 @@ holidays>=0.13
 pandas>=1.4.2
 pandas-stubs
 mypy
+openai>=1.0
+tiktoken

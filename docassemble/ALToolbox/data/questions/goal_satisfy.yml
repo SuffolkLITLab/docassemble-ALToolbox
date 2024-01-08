@@ -1,0 +1,45 @@
+---
+modules:
+  - .llms
+  - .misc
+---
+include:
+  - display_template.yml
+---
+generic object: GoalSatisfactionList
+code: |
+  response = x.get_next_goal_and_question()
+  x[i].goal = response[0]
+  x[i].question = response[1]
+  del response
+---
+generic object: GoalSatisfactionList
+question: |
+  ${ x[i].question }
+subquestion: |
+  ${ collapse_template(x.show_current_progress) }
+fields:
+  - ${ x[i].question }: x[i].response
+    datatype: area
+---
+generic object: GoalSatisfactionList
+code: |
+  x.mark_satisfied_goals()
+  
+  x.there_are_any = x.need_more_questions()
+---
+generic object: GoalSatisfactionList
+code: |
+  x.there_is_another = x.need_more_questions()
+---
+generic object: GoalSatisfactionList
+template: x.show_current_progress
+subject: |
+  Your questions and answers so far
+content: |
+  Your initial draft:
+  > ${ x.initial_draft }
+
+  % for question in x.complete_elements():
+  * ${ question.question }: ${ question.response }
+  % endfor
