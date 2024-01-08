@@ -1,0 +1,107 @@
+---
+modules:
+  - .llms
+---
+mandatory: True
+code: |
+  intro
+  try_defining_fields
+  ending_screen
+---
+code: |
+  answers = extract_fields_from_text(
+    initial_answer,
+    field_list = [
+      'name',
+      'age',
+      'favorite_color',
+      'favorite_food',
+      'favorite_animal',
+      'favorite_movie'
+    ],
+  )
+  define_fields_from_dict(answers)
+  try_defining_fields = True
+---
+continue button field: intro
+question: |
+  Tell us why you are here
+subquestion: |
+  This is a demonstration of the `extract_fields_from_text` function.
+
+  We will look through your response and try to define some fields in advance.
+
+  If the fields can be defined, we'll ask some follow-up questions.
+
+  We'll try to define the following fields:
+
+  * Your name
+  * Your age
+  * Your favorite color
+  * Your favorite food
+  * Your favorite animal
+  * Your favorite movie
+
+  We'll also ask you to tell us a little bit about yourself.
+fields:
+  - Go ahead and give us a long narrative response: initial_answer
+    datatype: area
+---
+question: |
+  How old are you?
+fields:
+  - Your age: age
+    datatype: integer
+---
+question: |
+  What is your name?
+fields:
+  - Your name: name
+---
+question: |
+  What is your favorite color?
+fields:
+  - Your favorite color: favorite_color
+---
+question: |
+  What is your favorite food?
+fields:
+  - Your favorite food: favorite_food
+---
+question: |
+  What is your favorite animal?
+fields:
+  - Your favorite animal: favorite_animal
+---
+question: |
+  What is your favorite movie?
+fields:
+  - Your favorite movie: favorite_movie
+---
+question: |
+  Tell us a little bit about yourself
+fields:
+  - Your response: final_answer
+    datatype: area
+---
+event: ending_screen
+question: |
+  Here is what we learned about you
+subquestion: |
+  Your name is ${ name }.
+
+  You are ${ age } years old.
+
+  Your favorite color is ${ favorite_color }.
+
+  Your favorite food is ${ favorite_food }.
+
+  Your favorite animal is ${ favorite_animal }.
+
+  Your favorite movie is ${ favorite_movie }.
+
+  You told us the following about yourself:
+
+  ${ final_answer }
+
+  Thanks for participating!
