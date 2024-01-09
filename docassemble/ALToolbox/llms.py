@@ -27,9 +27,11 @@ __all__ = [
 
 if os.getenv("OPENAI_API_KEY"):
     client: Optional[OpenAI] = OpenAI()
-else:
+elif get_config("open ai"):
     api_key = get_config("open ai", {}).get("key")
     client = OpenAI(api_key=api_key)
+else:
+    client = None
 
 always_reserved_names = set(
     docassemble.base.util.__all__
