@@ -10,7 +10,7 @@ from docassemble.base.util import (
 from typing import Optional
 import re
 
-__all__ = ["Test2ThreePartsDate", "Test2BirthDate"]
+__all__ = ["ThreePartsDate", "BirthDate"]
 
 js_text = """\
 // This is an adaptation of Jonathan Pyle's datereplace.js
@@ -49,7 +49,7 @@ js_text = """\
 try {{
 
 $(document).on('daPageLoad', function(){{
-  $('input[type="Test2ThreePartsDate"]').each(function(){{
+  $('input[type="ThreePartsDate"]').each(function(){{
     let $al_date = replace_date(this);
     set_up_validation($al_date);
   }});  // ends for each date datatype
@@ -900,9 +900,9 @@ def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Option
         return word(default_msg).format(item)
 
 
-class Test2ThreePartsDate(CustomDataType):
-    name = "Test2ThreePartsDate"
-    input_type = "Test2ThreePartsDate"
+class ThreePartsDate(CustomDataType):
+    name = "ThreePartsDate"
+    input_type = "ThreePartsDate"
     javascript = js_text.format(month=word("Month"), day=word("Day"), year=word("Year"))
     jq_message = word("Answer with a valid date")
     is_object = True
@@ -951,12 +951,12 @@ class Test2ThreePartsDate(CustomDataType):
             return item.format("MM/dd/yyyy")
 
 
-class Test2BirthDate(Test2ThreePartsDate):
-    name = "Test2BirthDate"
-    input_type = "Test2BirthDate"
+class BirthDate(ThreePartsDate):
+    name = "BirthDate"
+    input_type = "BirthDate"
     javascript = js_text.format(
         month=word("Month"), day=word("Day"), year=word("Year")
-    ).replace("Test2ThreePartsDate", "Test2BirthDate")
+    ).replace("ThreePartsDate", "BirthDate")
     jq_message = word("Answer with a valid date of birth")
     is_object = True
     # Unable to get messages for plain `min`/`max` attributes
