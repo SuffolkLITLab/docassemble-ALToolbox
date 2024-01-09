@@ -508,8 +508,8 @@ $.validator.addMethod('alMin', function(value, field, params) {{
   // TODO: Catch invalid `data-alMin` attr values? Useful for devs.
   // Otherwise very hard for devs to track down. Log in console?
   // Non-MVP. Make an issue.
-  // Replace '-' in case it's an ISO date format, as we recommend. JS doesn't
-  // play nicely with that.
+  // Replace '-' in case it's an ISO date format, (our recommended format).
+  // JS doesn't play nicely with ISO format.
   var min_date = new Date(get_$original_date(field).attr('data-alMin').replace(/-/g, '/'));
   
   // Avoid usinig `params`, which could be in many different formats.
@@ -538,13 +538,9 @@ $.validator.addMethod('alMax', function(value, field, params) {{
   }}
 
   // TODO: Catch invalid alMax attr values for devs? Log in console? Make post MVP issue
-  let max_attr = get_$original_date(field).attr('data-alMax').replace(/-/g, '/');
-  let max_date;
-  let date_test = new Date(max_attr);
-  if ( isNaN(date_test) && is_birthdate(field)) {{
-    max_date = new Date(Date.now());
-  }} else {{
-    max_date = new Date(max_attr);
+  let max_date = new Date(get_$original_date(field).attr('data-alMax').replace(/-/g, '/'));
+  if ( isNaN(max_date) && is_birthdate(field)) {{
+    max_date = new Date();
   }}
   
   // Avoid usinig `params`, which could be in many different formats.
