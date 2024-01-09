@@ -20,6 +20,7 @@ js_text = """\
 * - Rule names must avoid dashes and underscores because of plugin and da limitations.
 * - Avoid a min date default for birthdays. Too hard to predict developer needs, like great-grandmother's birthday. Document that developers need to set a min value if they want one.
 * - Cannot use regular `min`/`max` attributes. We can get that the rules exist, but we can't get their messages.
+* - Notes on js date inconsistencies: https://dygraphs.com/date-formats.html
 * 
 * TODO: (post MVP)
 * - Get the 'Month'/'Day'/'Year' word values as mako_parameters too so they can be translated. Same as we do within the message functions.
@@ -303,17 +304,6 @@ function update_original_date($al_date) {{
   
   let val_date = US_date;
   
-  // // TODO: If all fields are filled in, we can use the user's locale
-  // // settings to create the date Should we avoid this? US person only
-  // // visiting the UK, not living there? Regardless, right now its not
-  // // possible to work out the complexity of storing and validating
-  // // dates of multiple formats. Note that `Date` will fill in the
-  // // blanks for any empty string.
-  // if (data.month !== '' && data.day !== '' && data.year !== '') {{
-  //   // ISO date
-  //   val_date = new Date(iso_date).toLocaleDateString(undefined, {{ day: '2-digit', month: '2-digit', year: 'numeric' }})
-  // }}
-  
   get_$original_date($al_date).val(val_date);
 }};  // Ends update_original_date()
   
@@ -445,9 +435,10 @@ function add_rules(field) {{
   * 
   * @returns undefined
   */
+  // The order they are called in is complex to control. One possibility:
+  // https://stackoverflow.com/a/5682617
   let rules = {{
     alMin: get_$original_date(field).attr('data-alMin') || false,
-    // TODO: try:
     alMax: is_birthdate(field) || get_$original_date(field).attr('data-alMax'),
     _alInvalidDay: true,  // e.g. 1/54/2000 is invalid. TODO: Should devs be able to disable this?
     _alInvalidYear: true,  // e.g. 200 or 012. TODO: Should devs be able to disable this?
@@ -514,25 +505,27 @@ $.validator.addMethod('alMin', function(value, field, params) {{
     return true;
   }}
   
-  // Avoid usinig `params`, which could be in many different formats.
-  // Just get date data from the actual fields
-  var data = get_date_data(field);
   // TODO: Catch invalid `data-alMin` attr values? Useful for devs.
   // Otherwise very hard for devs to track down. Log in console?
   // Non-MVP. Make an issue.
-  var date_min = new Date( get_$original_date(field).attr('data-alMin') );
-  var date_val = new Date(data.year + '-' + data.month + '-' + data.day);
+  // Replace '-' in case it's an ISO date format, (our recommended format).
+  // JS doesn't play nicely with ISO format.
+  var min_date = new Date(get_$original_date(field).attr('data-alMin').replace(/-/g, '/'));
   
-  return date_val >= date_min;
+  // Avoid usinig `params`, which could be in many different formats.
+  // Just get date data from the actual fields
+  var data = get_date_data(field);
+  var date_input = new Date(data.year + '/' + data.month + '/' + data.day);
+  
+  return date_input >= min_date;
   
 }}, function alMinMessage (validity, field) {{
   /** Returns the string of the invalidation message. */
-  let min_date = get_$original_date(field).attr('data-alMin');
-  let locale_long_date = new Date(min_date).toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }})
+  let min_date = new Date(get_$original_date(field).attr('data-alMin').replace(/-/g, '/'));
+  let locale_long_date = min_date.toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }});
   return (
     get_$original_date(field).attr('data-alMinMessage')
     || get_$original_date(field).attr('data-alDefaultMessage')
-    // || `The date needs to be on or after ${{ get_$original_date(field).attr('data-alMin') }}.`
     || `The date needs to be on or after ${{ locale_long_date }}.`
   );
 }});  // ends validate 'alMin'
@@ -544,27 +537,24 @@ $.validator.addMethod('alMax', function(value, field, params) {{
     return true;
   }}
 
+  // TODO: Catch invalid alMax attr values for devs? Log in console? Make post MVP issue
+  let max_date = new Date(get_$original_date(field).attr('data-alMax').replace(/-/g, '/'));
+  if ( isNaN(max_date) && is_birthdate(field)) {{
+    max_date = new Date();
+  }}
+  
   // Avoid usinig `params`, which could be in many different formats.
   // Just get date data from the actual fields
   var data = get_date_data(field);
-
-  // TODO: Catch invalid alMax attr values for devs? Log in console? Make post MVP issue
-  var max_attr = get_$original_date(field).attr('data-alMax');
-  var date_max = new Date(max_attr);
-  if ( isNaN(date_max) && is_birthdate(field)) {{
-    date_max = new Date(Date.now());
-  }}
+  var date_input = new Date(data.year + '/' + data.month + '/' + data.day);
   
-  var date_val = new Date(data.year + '-' + data.month + '-' + data.day);
-  
-  return date_val <= date_max;
+  return date_input <= max_date;
   
 }}, function alMaxMessage (validity, field) {{
   /** Returns the string of the invalidation message. */
-  
-  let max_date = get_$original_date(field).attr('data-alMax');
-  let locale_long_date = new Date(max_date).toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }})
-  var default_MaxMessage = `The date needs to be on or before ${{ locale_long_date }}.`;
+  let max_date = new Date(get_$original_date(field).attr('data-alMax').replace(/-/g, '/'));
+  let locale_long_datetime = max_date.toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }})
+  let default_MaxMessage = `The date needs to be on or before ${{ locale_long_datetime }}.`;
   // Birthdays have a different default max message
   if (!get_$original_date(field).attr('data-alMax') && is_birthdate(field)) {{
     default_MaxMessage = 'A <strong>birthdate</strong> must be in the past.';
@@ -617,7 +607,7 @@ $.validator.addMethod('_alInvalidDay', function(value, field, params) {{
   
   // Otherwise we can give the full default message
   let input_year = get_$al_date(field).find('.year').val();
-  let converted_year = (new Date(`1/1/${{input_year}}`)).getFullYear();
+  let converted_year = (new Date(input_year, 1, 1)).getFullYear();
   let input_month = get_$al_date(field).find('.month option:selected').text();
   
   return `${{input_month}} ${{converted_year}} doesn't have ${{input_date}} days.`;
@@ -704,19 +694,17 @@ function date_is_ready_for_min_max(element) {{
   if (data.year == '' || data.month == '' || data.day === '') {{
     return false;
   }}
-  // Not sure how we'd get here, but don't evaluate min/max if the date is
-  // invalid in some other way. Maybe negative numbers?
-  var date_val = new Date(data.year + '-' + data.month + '-' + data.day);
+  // If the date is invalid in another way, we shouldn't have been able to
+  // get in here, but just in case.
+  let date_val = new Date(data.year + '/' + data.month + '/' + data.day);
   if (isNaN(date_val)) {{
     return false;
   }}
   
-  // Don't need to avoid an invalid day situation. Seems to work
-  // without that check in here.
+  // Invalid day is taken care of other ways. Don't worry about it here.
   
   return true;
 }};  // Ends date_is_not_ready_for_min_max()
-  
 
 function has_valid_day(element) {{
   /** Given a date part element, returns true if:
