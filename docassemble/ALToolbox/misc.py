@@ -15,10 +15,6 @@ from docassemble.base.util import (
 )
 import re
 
-from docassemble.webapp.files import SavedFile
-from docassemble.webapp.backend import directory_for
-import os
-
 __all__ = [
     "shortenMe",
     "thousands",
@@ -35,8 +31,8 @@ __all__ = [
     "output_checkbox",
     "nice_county_name",
     "button_array",
-
 ]
+
 
 class shortenMe:
     def __init__(self, originalURL):
@@ -391,16 +387,3 @@ def button_array(
         </a>"""
     output += "</div>"
     return output
-
-
-def get_files(user_id, section='playground', project='default'):
-  area = SavedFile(user_id, fix=True, section=section)
-  the_directory = directory_for(area, project)
-  files = [
-      os.path.join(the_directory,f) 
-      for f in os.listdir(the_directory) if os.path.isfile(os.path.join(the_directory, f))]
-  return files
-
-def get_list_of_projects(user_id):
-    playground = SavedFile(user_id, fix=False, section='playground')
-    return playground.list_of_dirs()
