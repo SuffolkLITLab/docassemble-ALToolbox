@@ -598,7 +598,7 @@ class ALAsset(ALIncome):
             return Decimal(0)
         else:
             return super(ALAsset, self).total(times_per_year=times_per_year)
-    
+
     def equity(self, loan_attribute="balance") -> Decimal:
         """Returns the total equity in the asset (e.g., market value minus balance)"""
         if getattr(self, loan_attribute, None) is None:
@@ -656,7 +656,7 @@ class ALAssetList(ALIncomeList):
             ):
                 result += _currency_float_to_decimal(asset.balance)
         return result
-    
+
     def equity(
         self,
         source: Optional[SourceType] = None,
