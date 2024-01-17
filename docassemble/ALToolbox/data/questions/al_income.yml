@@ -859,7 +859,7 @@ fields:
     required: False
 validation code: |
   if not x.has_income:
-    x.times_per_year = 0
+    x.times_per_year = 1
     x.value = 0
 ---
 # UNIQUE FOR ALAssetList
