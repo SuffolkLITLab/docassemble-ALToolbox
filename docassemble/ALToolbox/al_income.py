@@ -598,6 +598,12 @@ class ALAsset(ALIncome):
             return Decimal(0)
         else:
             return super(ALAsset, self).total(times_per_year=times_per_year)
+    
+    def equity(self, loan_attribute="balance") -> Decimal:
+        """Returns the total equity in the asset (e.g., market value minus balance)"""
+        if getattr(self, loan_attribute, None) is None:
+            return Decimal(self.market_value)
+        return Decimal(self.market_value) - Decimal(getattr(self, loan_attribute))
 
 
 class ALAssetList(ALIncomeList):
@@ -649,6 +655,25 @@ class ALAssetList(ALIncomeList):
                 satisfies_sources(asset.source)
             ):
                 result += _currency_float_to_decimal(asset.balance)
+        return result
+    
+    def equity(
+        self,
+        source: Optional[SourceType] = None,
+        exclude_source: Optional[SourceType] = None,
+        loan_attribute: str = "balance",
+    ) -> Decimal:
+        """
+        Returns the total equity in the assets (e.g., market value minus balance)
+        """
+        self._trigger_gather()
+        result = Decimal(0)
+        satisfies_sources = _source_to_callable(source, exclude_source)
+        for asset in self.elements:
+            if (source is None and exclude_source is None) or (
+                satisfies_sources(asset.source)
+            ):
+                result += asset.equity(loan_attribute=loan_attribute)
         return result
 
     def owners(
