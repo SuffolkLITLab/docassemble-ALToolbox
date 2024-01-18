@@ -588,11 +588,15 @@ class ALAsset(ALIncome):
 
     def total(self, times_per_year: float = 1) -> Decimal:
         """
-        Returns the .value attribute divided by the times per year you want to
-        calculate. The value defaults to 0.
+        Returns the .value attribute divided by the times per year you want to calculate. The value defaults to 0.
 
-        `times_per_year` is some denominator of a year. E.g, to express a weekly
-        period, use 52. The default is 1 (a year).
+        `times_per_year` is some denominator of a year. E.g, to express a weekly period, use 52. The default is 1 (a year).
+
+        Args:
+            times_per_year (float, optional): The number of times per year to calculate. Defaults to 1.
+
+        Returns:
+            Decimal: The .value attribute divided by the times per year.
         """
         if not hasattr(self, "value") or self.value == "":
             return Decimal(0)
@@ -600,7 +604,15 @@ class ALAsset(ALIncome):
             return super(ALAsset, self).total(times_per_year=times_per_year)
 
     def equity(self, loan_attribute="balance") -> Decimal:
-        """Returns the total equity in the asset (e.g., market value minus balance)"""
+        """
+        Returns the total equity in the asset (e.g., market value minus balance).
+
+        Args:
+            loan_attribute (str, optional): The attribute of the asset to use as the loan value. Defaults to "balance".
+
+        Returns:
+            Decimal: The total equity in the asset.
+        """
         if getattr(self, loan_attribute, None) is None:
             return Decimal(self.market_value)
         return Decimal(self.market_value) - Decimal(getattr(self, loan_attribute))
@@ -611,6 +623,20 @@ class ALAssetList(ALIncomeList):
     A list of ALAssets. The `total()` of the list will be the total income
     earned, which may not be what you want for a list of assets. To get the
     total value of all assets, use the `market_value()` method.
+
+    Attributes:
+        market_value (float | Decimal): Market value of the asset.
+        balance (float | Decimal): Current balance of the account, e.g., like
+            the balance in a checking account, but could also represent a loan
+            amount.
+        value (float | Decimal, optional): Represents the income the asset earns
+            for a given `times_per_year`, such as interest earned in a checking
+            account. If not defined, the income will be set to 0, to simplify
+            representing the many common assets that do not earn any income.
+        times_per_year (float, optional): Number of times per year the asset
+            earns the income listed in the `value` attribute.
+        owner (str, optional): Full name of the asset owner as a single string.
+        source (str, optional): The "source" of the asset, like "vase".
     """
 
     def init(self, *pargs, **kwargs):
@@ -623,8 +649,18 @@ class ALAssetList(ALIncomeList):
         exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
-        Returns the total `.market_value` of assets in the list. You can filter
-        the assets by `source`. `source` can be a string or a list.
+        Returns the total `.market_value` of assets in the list.
+
+        You can filter the assets by `source`. `source` can be a string or a list.
+
+        Args:
+            source (Optional[SourceType]): The source of the assets to include in the calculation.
+                If None, all sources are included. Can be a string or a list.
+            exclude_source (Optional[SourceType]): The source of the assets to exclude from the calculation.
+                If None, no sources are excluded.
+
+        Returns:
+            Decimal: The total market value of the assets.
         """
         result = Decimal(0)
         satisfies_sources = _source_to_callable(source, exclude_source)
@@ -641,11 +677,18 @@ class ALAssetList(ALIncomeList):
         exclude_source: Optional[SourceType] = None,
     ) -> Decimal:
         """
-        Returns the total `.balance` of assets in the list,
-        which typically corresponds to the available funds
-        in a financial account.
+        Returns the total `.balance` of assets in the list, which typically corresponds to the available funds in a financial account.
 
         You can filter the assets by `source`. `source` can be a string or a list.
+
+        Args:
+            source (Optional[SourceType]): The source of the assets to include in the calculation.
+                If None, all sources are included. Can be a string or a list.
+            exclude_source (Optional[SourceType]): The source of the assets to exclude from the calculation.
+                If None, no sources are excluded.
+
+        Returns:
+            Decimal: The total balance of the assets.
         """
         self._trigger_gather()
         result = Decimal(0)
@@ -664,7 +707,18 @@ class ALAssetList(ALIncomeList):
         loan_attribute: str = "balance",
     ) -> Decimal:
         """
-        Returns the total equity in the assets (e.g., market value minus balance)
+        Calculates and returns the total equity in the assets.
+
+        This method triggers the gathering of assets, then iterates over each asset. If a source or exclude_source is not
+        specified, or if the asset's source satisfies the source criteria, the equity of the asset is added to the total.
+
+        Args:
+            source (Optional[SourceType]): The source of the assets to include in the calculation. If None, all sources are included.
+            exclude_source (Optional[SourceType]): The source of the assets to exclude from the calculation. If None, no sources are excluded.
+            loan_attribute (str, optional): The attribute of the asset to use as the loan value. Defaults to "balance".
+
+        Returns:
+            Decimal: The total equity in the assets.
         """
         self._trigger_gather()
         result = Decimal(0)
@@ -682,8 +736,18 @@ class ALAssetList(ALIncomeList):
         exclude_source: Optional[SourceType] = None,
     ) -> Set[str]:
         """
-        Returns a set of the unique owners of the assets.  You can filter the
-        assets by `source`. `source` can be a string or a list.
+        Returns a set of the unique owners of the assets.
+
+        You can filter the assets by `source`. `source` can be a string or a list.
+
+        Args:
+            source (Optional[SourceType]): The source of the assets to include in the calculation.
+                If None, all sources are included. Can be a string or a list.
+            exclude_source (Optional[SourceType]): The source of the assets to exclude from the calculation.
+                If None, no sources are excluded.
+
+        Returns:
+            Set[str]: A set of the unique owners of the assets.
         """
         owners = set()
         if source is None and exclude_source is None:
