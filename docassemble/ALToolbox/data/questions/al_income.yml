@@ -846,15 +846,21 @@ fields:
       asset_terms_ordered
     exclude: |
       ['vehicle']
-  - How often do you get this income?: x.times_per_year
+  - Does this asset earn any income (like rent or interest)?: x.has_income
+    datatype: yesnoradio
+  - How often do you get the income?: x.times_per_year
     input type: radio
     code: |
       times_per_year_list
     datatype: integer
-  - Interest or other income from the asset: x.value
+  - Amount of income: x.value
     datatype: currency
   - Who owns this?: x.owner
     required: False
+validation code: |
+  if not x.has_income:
+    x.times_per_year = 1
+    x.value = 0
 ---
 # UNIQUE FOR ALAssetList
 ---
