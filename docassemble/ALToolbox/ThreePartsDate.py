@@ -513,9 +513,9 @@ $.validator.addMethod('alMin', function(value, field, params) {{
   let min_attr = get_$original_date(field).attr('data-alMin') || "";
   let min_date = new Date(min_attr.replace(/-/g, '/'));
   if (isNaN(min_attr)) {{
-    if (min_attr !== "") {
-      console.log(`The alMin attribute (${ min_attr }) isn't a valid date!`);
-    }
+    if (min_attr !== "") {{
+      console.log(`The alMin attribute (${{ min_attr }}) isn't a valid date!`);
+    }}
     // Validation should always succeed if no or bad minimum given
     return true;
   }}
@@ -549,9 +549,9 @@ $.validator.addMethod('alMax', function(value, field, params) {{
   let max_attr = get_$original_date(field).attr('data-alMax') || "";
   let max_date = new Date(max_attr);
   if (isNaN(max_attr)) {{
-    if (max_attr !== "") {
-      console.log(`The alMax attribute (${ max_attr }) isn't a valid date!`);
-    }
+    if (max_attr !== "") {{
+      console.log(`The alMax attribute (${{ max_attr }}) isn't a valid date!`);
+    }}
     if (!is_birthdate(field)) {{
       // Validation should always succeed if no or bad max given on normal dates
       return true;
