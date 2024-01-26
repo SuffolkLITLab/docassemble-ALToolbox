@@ -195,11 +195,6 @@ code: |
   x.to_add[i].value
   x.to_add[i].complete = True
 ---
-generic object: ALItemizedJob
-code: |
-  x.to_subtract[i].value
-  x.to_subtract[i].complete = True
----
 id: itemized job name
 generic object: ALItemizedJob
 question: |
