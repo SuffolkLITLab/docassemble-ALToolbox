@@ -528,7 +528,8 @@ $.validator.addMethod('alMin', function(value, field, params) {{
   return date_input >= min_date;
   
 }}, function alMinMessage (validity, field) {{
-  /** Returns the string of the invalidation message. */
+  /** Returns the string of the invalidation message, or blank string for
+   * safety and consistency with alMaxMessage. */
   let min_attr = get_$original_date(field).attr('data-alMin') || "";
   let min_date = new Date(min_attr.replace(/-/g, '/'));
   let locale_long_date = min_date.toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }});
