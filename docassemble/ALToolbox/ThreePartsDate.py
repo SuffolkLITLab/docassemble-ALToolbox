@@ -510,14 +510,17 @@ $.validator.addMethod('alMin', function(value, field, params) {{
   // Non-MVP. Make an issue.
   // Replace '-' in case it's an ISO date format, (our recommended format).
   // JS doesn't play nicely with ISO format.
-  var min_attr = get_$original_date(field).attr('data-alMin');
-  if (!min_attr) {{
-    // Validation should always succeed if no minimum given
+  let min_attr = get_$original_date(field).attr('data-alMin') || "";
+  let min_date = new Date(min_attr.replace(/-/g, '/'));
+  if (isNaN(min_date)) {{
+    if (min_attr !== "") {{
+      console.log(`The alMin attribute (${{ min_attr }}) isn't a valid date!`);
+    }}
+    // Validation should always succeed if no or bad minimum given
     return true;
   }}
-  var min_date = new Date(min_attr.replace(/-/g, '/'));
   
-  // Avoid usinig `params`, which could be in many different formats.
+  // Avoid using `params`, which could be in many different formats.
   // Just get date data from the actual fields
   var data = get_date_data(field);
   var date_input = new Date(data.year + '/' + data.month + '/' + data.day);
@@ -525,8 +528,10 @@ $.validator.addMethod('alMin', function(value, field, params) {{
   return date_input >= min_date;
   
 }}, function alMinMessage (validity, field) {{
-  /** Returns the string of the invalidation message. */
-  let min_date = new Date(get_$original_date(field).attr('data-alMin').replace(/-/g, '/'));
+  /** Returns the string of the invalidation message, or blank string for
+   * safety and consistency with alMaxMessage. */
+  let min_attr = get_$original_date(field).attr('data-alMin') || "";
+  let min_date = new Date(min_attr.replace(/-/g, '/'));
   let locale_long_date = min_date.toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }});
   return (
     get_$original_date(field).attr('data-alMinMessage')
@@ -543,17 +548,22 @@ $.validator.addMethod('alMax', function(value, field, params) {{
   }}
 
   // TODO: Catch invalid alMax attr values for devs? Log in console? Make post MVP issue
-  let max_attr = get_$original_date(field).attr('data-alMax');
-  if (!max_attr) {{
-    // Validation should always succeed if no minimum given
-    return true;
-  }}
+  let max_attr = get_$original_date(field).attr('data-alMax') || "";
   let max_date = new Date(max_attr.replace(/-/g, '/'));
-  if ( isNaN(max_date) && is_birthdate(field)) {{
-    max_date = new Date();
+  if (isNaN(max_date)) {{
+    if (max_attr !== "") {{
+      console.log(`The alMax attribute (${{ max_attr }}) isn't a valid date!`);
+    }}
+    if (!is_birthdate(field)) {{
+      // Validation should always succeed if no or bad max given on normal dates
+      return true;
+    }} else {{
+      // if birthdate and no or bad max given, assume today is the max date
+      max_date = new Date();
+    }}
   }}
   
-  // Avoid usinig `params`, which could be in many different formats.
+  // Avoid using `params`, which could be in many different formats.
   // Just get date data from the actual fields
   var data = get_date_data(field);
   var date_input = new Date(data.year + '/' + data.month + '/' + data.day);
@@ -562,11 +572,12 @@ $.validator.addMethod('alMax', function(value, field, params) {{
   
 }}, function alMaxMessage (validity, field) {{
   /** Returns the string of the invalidation message. */
-  let max_date = new Date(get_$original_date(field).attr('data-alMax').replace(/-/g, '/'));
+  let max_attr = get_$original_date(field).attr('data-alMax') || "";
+  let max_date = new Date(max_attr.replace(/-/g, '/'));
   let locale_long_datetime = max_date.toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }})
   let default_MaxMessage = `The date needs to be on or before ${{ locale_long_datetime }}.`;
   // Birthdays have a different default max message
-  if (!get_$original_date(field).attr('data-alMax') && is_birthdate(field)) {{
+  if (is_birthdate(field) && isNaN(max_date)) {{
     default_MaxMessage = 'A <strong>birthdate</strong> must be in the past.';
   }}
   
