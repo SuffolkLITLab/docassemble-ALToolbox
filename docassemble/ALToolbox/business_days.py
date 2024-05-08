@@ -36,11 +36,14 @@ def standard_holidays(
     add_holidays should be a dictionary from dates ("12-15") to the name of the holiday.
 
     Returns a dictionary like-object that you can treat like:
+
+    ```
     {
         "2021-01-01": "New Year's Day",
         ...
         "2021-12-25": "Christmas Day",
     }
+    ```
 
     In place of a string, the object that is returned can also be treated as though
     the keys are datetime.date objects.

@@ -118,6 +118,7 @@ def chat_completion(
     json_mode=False,
     model: str = "gpt-3.5-turbo",
     messages: Optional[List[Dict[str, str]]] = None,
+    skip_moderation: bool = False,
 ) -> Union[List[Any], Dict[str, Any], str]:
     """A light wrapper on the OpenAI chat endpoint.
 
@@ -126,15 +127,18 @@ def chat_completion(
     It is also possible to specify an alternative model, and we support GPT-4-turbo's JSON
     mode.
 
-    As of today (1/2/2024) JSON mode requires the model to be set to "gpt-4-1106-preview" or "gpt-3.5-turbo-1106"
+    As of May 2024, json mode is available with both GPT-4-turbo and GPT-3.5-turbo (and no longer requires the 1106-preview versions)
 
     Args:
         system_message (str): The role the chat engine should play
         user_message (str): The message (data) from the user
         openai_client (Optional[OpenAI]): An OpenAI client object, optional. If omitted, will fall back to creating a new OpenAI client with the API key provided as an environment variable
         openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
-        temperature (float): The temperature to use for the GPT-4-turbo API
-        json_mode (bool): Whether to use JSON mode for the GPT-4-turbo API
+        temperature (float): The temperature to use for the GPT API
+        json_mode (bool): Whether to use JSON mode for the GPT API. Requires the word `json` in the system message, but will add if you omit it.
+        model (str): The model to use for the GPT API
+        messages (Optional[List[Dict[str, str]]]): A list of messages to send to the chat engine. If provided, system_message and user_message will be ignored.
+        skip_moderation (bool): Whether to skip the OpenAI moderation step, which may save seconds but risks banning your account. Only enable when you have full control over the inputs.
 
     Returns:
         A string with the response from the API endpoint or JSON data if json_mode is True
@@ -143,6 +147,25 @@ def chat_completion(
         raise Exception(
             "You must provide either a system message and user message or a list of messages to use this function."
         )
+
+    if (
+        isinstance(system_message, str)
+        and system_message
+        and json_mode
+        and not "json" in system_message.lower()
+    ):
+        log(
+            f"Warning: { system_message } does not contain the word 'json' but json_mode is set to True. Adding 'json' silently"
+        )
+        system_message = f"{ system_message }\n\nRespond only with a JSON object"
+    elif messages:
+        if not any("json" in message["content"].lower() for message in messages):
+            log(
+                f"Warning: None of the messages contain the word 'json' but json_mode is set to True. Adding 'json' silently"
+            )
+            messages.append(
+                {"role": "system", "content": "Respond only with a JSON object"}
+            )
 
     if not messages:
         assert isinstance(system_message, str)
@@ -162,7 +185,7 @@ def chat_completion(
                     openai_client = OpenAI(api_key=get_config("open ai", {}).get("key"))
                 else:
                     raise Exception(
-                        "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment."
+                        "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment or Docassemble configuration. Try adding a new section in your global config that looks like this:\n\nopen ai:\n    key: sk-..."
                     )
 
     encoding = tiktoken.encoding_for_model(model)
@@ -170,12 +193,10 @@ def chat_completion(
     encoding = tiktoken.encoding_for_model(model)
     token_count = len(encoding.encode(str(messages)))
 
-    if model.startswith("gpt-4-"):  # E.g., "gpt-4-1106-preview"
+    if model.startswith("gpt-4-"):  # E.g., "gpt-4-turbo"
         max_input_tokens = 128000
         max_output_tokens = 4096
-    elif (
-        model == "gpt-3.5-turbo-1106"
-    ):  # TODO: when gpt-3.5-turbo-0613 is deprecated we can expand our check
+    elif model.startswith("gpt-3.5-turbo"):
         max_input_tokens = 16385
         max_output_tokens = 4096
     else:
@@ -187,11 +208,12 @@ def chat_completion(
             f"Input to OpenAI is too long ({ token_count } tokens). Maximum is {max_input_tokens} tokens."
         )
 
-    moderation_response = openai_client.moderations.create(input=str(messages))
-    if moderation_response.results[0].flagged:
-        raise Exception(f"OpenAI moderation error: { moderation_response.results[0] }")
-
-    log(f"Calling OpenAI chat endpoint, messages are { str(messages)[:] }")
+    if not skip_moderation:
+        moderation_response = openai_client.moderations.create(input=str(messages))
+        if moderation_response.results[0].flagged:
+            raise Exception(
+                f"OpenAI moderation error: { moderation_response.results[0] }"
+            )
 
     response = openai_client.chat.completions.create(
         model=model,
@@ -212,10 +234,10 @@ def chat_completion(
 
     if json_mode:
         assert isinstance(response.choices[0].message.content, str)
-        log(f"JSON response is { response.choices[0].message.content }")
+        # log(f"JSON response is { response.choices[0].message.content }")
         return json.loads(response.choices[0].message.content)
     else:
-        log(f"Response is { response.choices[0].message.content }")
+        # log(f"Response is { response.choices[0].message.content }")
         return response.choices[0].message.content
 
 
@@ -647,16 +669,16 @@ class GoalSatisfactionList(DAList):
             model=self.model,
         )
 
-        log(
-            f"Checking if {goal} was satisfied by thread { self._get_related_thread(goal) }. Status is { status }"
-        )
+        # log(
+        #     f"Checking if {goal} was satisfied by thread { self._get_related_thread(goal) }. Status is { status }"
+        # )
         if status.strip().lower() == "satisfied":
             goal.satisfied = True
-            log(f"Goal { goal } was satisfied by the user's follow-up response")
+            # log(f"Goal { goal } was satisfied by the user's follow-up response")
             return self.need_more_questions()
         else:
-            log(f"Goal { goal } was not satisfied by the user's follow-up response")
-            log(f"Setting the next question to { status }.")
+            # log(f"Goal { goal } was not satisfied by the user's follow-up response")
+            # log(f"Setting the next question to { status }.")
             self.next_question = status
 
         return self.keep_going()
@@ -668,7 +690,7 @@ class GoalSatisfactionList(DAList):
     def _get_next_unsatisfied_goal(self) -> Optional[Goal]:
         """Returns the next unsatisfied goal."""
         next_goal = next((g for g in self.goal_dict.values() if not g.satisfied), None)
-        log(f"Next unsatisfied candidate goal is { next_goal }")
+        # log(f"Next unsatisfied candidate goal is { next_goal }")
 
         # if next_goal and (self.count_attempts(next_goal) >= self.question_per_goal_limit):
         #    # Move on after 3 tries
@@ -693,13 +715,13 @@ class GoalSatisfactionList(DAList):
         goal = self._get_next_unsatisfied_goal()
 
         if not goal:
-            log("No more unsatisfied goals")
+            # log("No more unsatisfied goals")
             return None, None
         else:
             # This should have been set by the last call to there_is_another
             # unless we're just starting out with the first question
             if not (hasattr(self, "next_question") and self.next_question):
-                log("No question was set by call to there_is_another, getting one now")
+                # log("No question was set by call to there_is_another, getting one now")
                 self.next_question = goal.get_next_question(
                     self._get_related_thread(goal),
                     model=self.model,
