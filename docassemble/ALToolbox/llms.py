@@ -290,7 +290,7 @@ def match_goals_from_text(
     temperature: float = 0,
     model="gpt-3.5-turbo-1106",
 ) -> Dict[str, Any]:
-    """Read's a user's message and determines whether it meets a set of goals, with the help of an LLM.
+    """Reads a user's message and determines whether it meets a set of goals, with the help of an LLM.
 
     Args:
         text (str): The text to extract goals from
@@ -772,3 +772,186 @@ class GoalSatisfactionList(DAList):
             messages=messages,
             model=self.model,
         )
+
+
+class IntakeQuestion(DAObject):
+    """A class to represent a question in an LLM-assisted intake questionnaire.
+
+    Attributes:
+        question (str): The question to ask the user
+        response (str): The user's response to the question
+    """
+
+    @property
+    def complete(self):
+        self.question
+        self.response
+        return True
+
+class IntakeQuestionList(DAList):
+    """
+    Class to help create an LLM-assisted intake questionnaire.
+
+    The LLM will be provided a free-form set of in/out criteria (like that
+    provided to a phone intake worker), an initial draft question from the user,
+    and then guide the user through a series of follow-up questions to gather only
+    enough information to determine if the user meets the criteria.
+
+    In/out criteria are often pretty short, so we do not make or support
+    embeddings at the moment.
+
+    Attributes:
+        criteria (Dict[str, str]): A dictionary of criteria to match, indexed by problem type
+        problem_type_descriptions (Dict[str, str]): A dictionary of descriptions of the problem types
+        problem_type (str): The type of problem to match. E.g., a unit/department inside the law firm
+        initial_problem_description (str): The initial description of the problem from the user
+        initial_question (str): The original question posed in the interview
+        question_limit (int): The maximum number of follow-up questions to ask the user. Defaults to 10.
+        model (str): The model to use for the GPT API. Defaults to gpt-3.5-turbo. gpt-4-turbo may perform better.
+        llm_role (str): The role the LLM should play. Allows you to customize the script the LLM uses to guide the user.
+            We have provided a default script that should work for most intake questionnaires.
+        llm_user_qualifies_prompt (str): The prompt to use to determine if the user qualifies. We have provided a default prompt.
+    """
+
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        self.object_type = IntakeQuestion
+        self.complete_attribute = "complete"
+
+        if not hasattr(self, "model"):
+            self.model = "gpt-3.5-turbo"
+        
+        if not hasattr(self, "question_limit"):
+            self.question_limit = 10
+
+        if not hasattr(self, "llm_role"):
+            self.llm_role = """
+            You are an expert intake worker at a law firm. You want to quickly help the client understand if
+            the problem they have is one that your firm can help with. You will ask a series of questions to
+            determine if the client meets the criteria for your services. You will only ask questions that are
+            necessary to determine if the client meets the criteria. If the client does not meet the criteria,
+            you will stop asking questions and let them know as soon as possible.
+            """
+        if not hasattr(self, "problem_type_descriptions"):
+            self.problem_type_descriptions = {
+                "housing": "problems with housing, such as getting housing or a housing subsidy, eviction or unsafe living conditions",
+                "family": "problems with family law, such as divorce, child custody, guardianship, name changes, or domestic violence",
+                "employment": "problems with employment law, such as discrimination, wrongful termination, or wage theft",
+                "immigration": "problems with immigration, such as getting asylum, temporary protected status, a visa, green card, or citizenship, or avoiding deportation",
+                "consumer": "problems with consumer law, such as debt collection, credit reporting, or identity theft",
+                "welfare": "problems with public benefits, such as getting food stamps or cash assistance",
+                "veterans": "problems with veterans benefits, such as getting disability benefits, appealing a denial, or getting help with housing",
+                "health": "problems with health care, such as getting health insurance, Medicaid, or Medicare, or dealing with medical debt",
+                "education": "problems with education, such as getting special education services, dealing with school discipline, or getting student loans",
+                "criminal": "problems with criminal law, such as getting a public defender, expunging a criminal record, or avoiding deportation",
+                "traffic": "problems with driving related rights, such as getting a ticket dismissed, avoiding points on your license, or avoiding a license suspension",
+                "torts": "problems with personal injury law, such as getting compensation for an injury, dealing with insurance companies, or suing someone for negligence",
+                "disaster": "problems with disaster recovery, such as getting FEMA assistance, dealing with insurance companies, or getting help with rebuilding",
+                "elder": "problems with elder law, such as getting help with guardianship, elder abuse, or long-term care",
+                "environmental": "problems with environmental law, such as getting help with pollution, land use, or environmental justice",
+                "business": "problems with business law, such as forming a business, dealing with contracts, or getting help with a business dispute",
+                "tax": "problems with tax law, such as getting help with tax debt, dealing with the IRS, or getting help with tax preparation",
+            }
+
+    def _classify_problem_type(self):
+        """Classifies the problem type based on the user's initial description."""
+        return classify_text(
+            self.initial_problem_description,
+            self.problem_type_descriptions,
+            model=self.model,
+        )
+
+    def keep_going(self):
+        """Returns True if the user needs to answer more questions, False otherwise."""
+        if not self._get_next_question():
+            return False        
+        return len(self.elements) < self.question_limit
+    
+    def need_more_questions(self):
+        """Returns True if the user needs to answer more questions, False otherwise.
+
+        Also has the side effect of checking the user's most recent response to see if it satisfies the criteria
+        and updating the next question to be asked.
+        """
+        status = self._get_next_question()
+        if not status:
+            return False
+        return self.keep_going()
+    
+    def _user_qualifies_on_current_thread(self):
+        """Returns a dictionary with the user's current qualification status"""
+        if not hasattr(self, "problem_type"):
+            self.problem_type = self._classify_problem_type()
+
+        criteria = self.criteria.get(self.problem_type, None)
+        if not criteria:
+            return False
+        
+        qualification_prompt = f"""
+        You are an expert intake worker at a law firm doing initial screening. Based on the qualification criteria,
+        assess whether the user meets at least the *minimum* criteria for the following problem type:
+        `{ self.problem_type }`.
+
+        Rely only on the information about in/out criteria that are provided.
+
+        You can have one of 3 possible responses:
+
+        1. The user qualifies (true)
+        2. The user does not qualify (false)
+        3. You need more information to determine if the user qualifies (null)
+
+        Use direct address. Provide a qualified answer in the narrative, without guaranteeing
+        the user will be accepted as a client. All narratives should use plain language at a 6th grade reading level, and
+        are written in the active voice.
+
+        Answer in the form of a JSON object like this:
+
+        Example:
+        {{"qualifies": null,
+        "narrative": "Is your eviction case scheduled for the judge to hear in the next 10 days?"}} # if more information is needed
+
+        Example:
+        {{"qualifies": true,
+         "narrative": "You probably qualify because you are facing eviction within the next 10 days."}}
+
+        Example:
+        {{"qualifies" false,
+        "narrative": "You probably do not qualify because your divorce does not involve children and you are not facing domestic violence."}}
+        """
+
+        criteria_prompt = f"The only criteria you will rely on in your answer are as follows: \n```{ criteria }\n```"
+
+        results = chat_completion(
+            messages = [
+                {"role": "system", "content": qualification_prompt},
+                {"role": "system", "content": criteria_prompt},
+            ] + self._get_thread(),
+            model=self.model,
+            json_mode=True,
+        )
+        
+    
+    def draft_summary(self):
+        """Returns a draft summary of the user's responses."""
+        return synthesize_user_responses(
+            custom_instructions="",
+            messages=self._get_thread(),
+            model=self.model,
+        )
+
+    def _get_next_question(self):
+        """Returns the next question to ask the user."""
+        if not hasattr(self, "problem_type"):
+            self.problem_type = self._classify_problem_type()
+
+        criteria = self.criteria.get(self.problem_type, None)
+        if not criteria:
+            return None
+
+        if not hasattr(self, "next_question"):
+            self.next_question = chat_completion(
+                system_message=self.llm_role,
+                user_message=self.initial_problem_description,
+                model=self.model,
+            )
+        return self.next_question
