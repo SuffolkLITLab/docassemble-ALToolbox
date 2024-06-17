@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 from fnmatch import fnmatchcase
 from distutils.util import convert_path
 
+
 standard_exclude = ('*.pyc', '*~', '.*', '*.bak', '*.swp*')
 standard_exclude_directories = ('.*', 'CVS', '_darcs', './build', './dist', 'EGG-INFO', '*.egg-info')
 
