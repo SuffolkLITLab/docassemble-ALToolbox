@@ -23,6 +23,7 @@ __all__ = [
     "synthesize_user_responses",
     "define_fields_from_dict",
     "GoalSatisfactionList",
+    "IntakeQuestionList",
 ]
 
 if os.getenv("OPENAI_API_KEY"):
@@ -807,19 +808,23 @@ class IntakeQuestionList(DAList):
         initial_problem_description (str): The initial description of the problem from the user
         initial_question (str): The original question posed in the interview
         question_limit (int): The maximum number of follow-up questions to ask the user. Defaults to 10.
-        model (str): The model to use for the GPT API. Defaults to gpt-3.5-turbo. gpt-4-turbo may perform better.
+        model (str): The model to use for the GPT API. Defaults to gpt-4-turbo. gpt-3.5 is not smart enough
         llm_role (str): The role the LLM should play. Allows you to customize the script the LLM uses to guide the user.
             We have provided a default script that should work for most intake questionnaires.
         llm_user_qualifies_prompt (str): The prompt to use to determine if the user qualifies. We have provided a default prompt.
+        out_of_questions (bool): Whether the user has run out of questions to answer
+        qualifies (bool): Whether the user qualifies based on the criteria
     """
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
         self.object_type = IntakeQuestion
         self.complete_attribute = "complete"
+        self.out_of_questions = False
+        self.qualifies = None
 
         if not hasattr(self, "model"):
-            self.model = "gpt-3.5-turbo"
+            self.model = "gpt-4-turbo"
         
         if not hasattr(self, "question_limit"):
             self.question_limit = 10
@@ -861,24 +866,34 @@ class IntakeQuestionList(DAList):
             model=self.model,
         )
 
-    def keep_going(self):
-        """Returns True if the user needs to answer more questions, False otherwise."""
-        if not self._get_next_question():
-            return False        
-        return len(self.elements) < self.question_limit
+    def _keep_going(self):
+        """Returns True if the user can and needs to answer more questions, False otherwise.
+
+        It respects the limit defined by self.question_limit.
+        
+        As a side effect, checks if the user has run out of questions to answer and updates the next question to be asked
+        to be a closing message instead of a follow-up.
+        """
+        self.out_of_questions = len(self.elements) >= self.question_limit
+        if self.out_of_questions:
+            self.next_question = self._ran_out_of_questions_message()
+            return False
+        return True
     
     def need_more_questions(self):
         """Returns True if the user needs to answer more questions, False otherwise.
 
         Also has the side effect of checking the user's most recent response to see if it satisfies the criteria
-        and updating the next question to be asked.
+        and updating both the next question to be asked and the current qualification status.
         """
-        status = self._get_next_question()
-        if not status:
+        status = self._current_qualification_status()
+        self.qualifies = status["qualifies"]
+        self.next_question = status["narrative"]
+        if not (status["qualifies"] is None):
             return False
-        return self.keep_going()
+        return self._keep_going()
     
-    def _user_qualifies_on_current_thread(self):
+    def _current_qualification_status(self):
         """Returns a dictionary with the user's current qualification status"""
         if not hasattr(self, "problem_type"):
             self.problem_type = self._classify_problem_type()
@@ -888,7 +903,7 @@ class IntakeQuestionList(DAList):
             return False
         
         qualification_prompt = f"""
-        You are an expert intake worker at a law firm doing initial screening. Based on the qualification criteria,
+        Based on the qualification criteria,
         assess whether the user meets at least the *minimum* criteria for the following problem type:
         `{ self.problem_type }`.
 
@@ -923,35 +938,47 @@ class IntakeQuestionList(DAList):
 
         results = chat_completion(
             messages = [
+                {"role": "system", "content": self.llm_role},
                 {"role": "system", "content": qualification_prompt},
                 {"role": "system", "content": criteria_prompt},
             ] + self._get_thread(),
             model=self.model,
             json_mode=True,
         )
-        
+
+        if isinstance(results, dict):
+            return results
+
+        raise Exception(f"Unexpected response from LLM: { results }")
+ 
+
+    def _get_thread(self):
+        """Returns a list of messages (with corresponding role) related to the given goal.
+        """
+        messages = [
+            {"role": "assistant", "content": self.initial_question},
+            {"role": "user", "content": self.initial_problem_description},
+        ]
+
+        for element in self.elements:
+            messages.append({"role": "assistant", "content": element.question})
+            messages.append({"role": "user", "content": element.response})
+
+        return messages
     
-    def draft_summary(self):
-        """Returns a draft summary of the user's responses."""
-        return synthesize_user_responses(
-            custom_instructions="",
-            messages=self._get_thread(),
+    def _ran_out_of_questions_message(self):
+        """Returns a message to display when the user has run out of questions to answer."""
+        summary_prompt = """
+        Explain to the user that you have asked all the questions you need to determine if they qualify for services
+        and you still do not have a response. Explain why the answer that they gave was still incomplete.
+        """
+        return chat_completion(
+            messages = [
+                {"role": "system", "content": self.llm_role},                
+            ] + self._get_thread() + 
+            [
+                {"role": "system", "content": summary_prompt},
+            ],
             model=self.model,
+            json_mode=False,
         )
-
-    def _get_next_question(self):
-        """Returns the next question to ask the user."""
-        if not hasattr(self, "problem_type"):
-            self.problem_type = self._classify_problem_type()
-
-        criteria = self.criteria.get(self.problem_type, None)
-        if not criteria:
-            return None
-
-        if not hasattr(self, "next_question"):
-            self.next_question = chat_completion(
-                system_message=self.llm_role,
-                user_message=self.initial_problem_description,
-                model=self.model,
-            )
-        return self.next_question
