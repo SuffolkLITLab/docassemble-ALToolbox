@@ -1,0 +1,53 @@
+---
+modules:
+  - .llms
+---
+generic object: IntakeQuestionList
+code: |
+  x.there_are_any = x.need_more_questions()
+---
+generic object: IntakeQuestionList
+code: |
+  x.there_is_another = x.need_more_questions()
+---
+generic object: IntakeQuestionList
+code: |
+  x[i].question = x.next_question
+---
+generic object: IntakeQuestionList
+question: |
+  ${ x[i].question }
+fields:
+  - ${ x[i].question }: x[i].response
+    datatype: area
+right: |
+  % if get_config("debug"):
+  ${ x.problem_type }
+  % endif
+---
+generic object: IntakeQuestionList
+code: |
+  x.initial_question = "What is the problem you are trying to solve?"
+---
+generic object: IntakeQuestionList
+question: |
+  What is the problem you are trying to solve?
+subquestion: |
+  Explain what you are looking help with. Do not include any personal information
+  such as your name, address, or phone number.  
+fields:
+  - I need help with: x.initial_problem_description
+    datatype: area
+---
+generic object: IntakeQuestionList
+continue button field: x.intake_results
+question: |
+  % if x.qualifies:
+  You may qualify for help
+  % elif x.qualifies is not None:
+  You probably do not qualify for help
+  % else:
+  We need more information to determine if you qualify for help
+  % endif
+subquestion: |
+  ${ x.next_question }

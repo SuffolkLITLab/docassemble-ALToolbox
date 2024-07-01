@@ -1,0 +1,56 @@
+---
+include:
+  - intake.yml # docassemble.ALToolbox:data/questions/intake.yml
+---
+objects:
+  - intake_screener: |
+      IntakeQuestionList.using(
+            criteria={
+              "housing": str(intake_criteria),
+            },
+            problem_type = "housing", # Hardcoding for this simple demo
+            model="gpt-4-turbo"
+          )
+---
+mandatory: True
+code: |
+  intake_screener.gather()
+  intake_screener.intake_results
+---
+# Example intake criteria
+template: intake_criteria
+content: |
+  PROTOCOLS FOR HOUSING INTAKES
+
+  Housing is focusing on eviction lawsuits. Thus, we ask workers to do intakes on court 
+  matters only. (There are a few exceptions listed below.)
+
+  Court Summons The court matters we will mostly take are cases with summons dates, 
+  (first court date, non-trial date). This includes subsidized housing and private 
+  landlord/tenant as usual.
+
+  Other Court Matters 
+  
+  We will also take default judgments, consent judgments, cases 
+  already set for trial, and sheriff evictions with the following limitations. 
+  Default Judgment: If caller contacts us within Ten (10) calendar days from the 
+  date of the default judgment, then please do the intake.
+
+  Cases Already set for Trial: If the caller contacts LSEM at least Ten (10) calendar 
+  days from the date of the trial, then it is OK to do the intake.
+
+  Sheriff Evictions Posted and Consent Judgments: Call and/or email me before
+  doing the intake. We will take these, but are limited based on the specific facts of 
+  the case, which I have to look at before agreeing to open a case.
+  
+  
+  Section 8
+  Please do an intake for a caller facing a proposed termination of Section 8, i.e. if the 
+  caller has received a proposed termination of Section 8 notice from their local housing authority.
+
+  Domestic Violence
+  If domestic violence is present, they should call for a full screening.
+
+  Other Housing Matters
+  For other Housing matters, please refer the caller to the Housing section of
+  our website.
