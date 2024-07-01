@@ -789,6 +789,7 @@ class IntakeQuestion(DAObject):
         self.response
         return True
 
+
 class IntakeQuestionList(DAList):
     """
     Class to help create an LLM-assisted intake questionnaire.
@@ -825,7 +826,7 @@ class IntakeQuestionList(DAList):
 
         if not hasattr(self, "model"):
             self.model = "gpt-4-turbo"
-        
+
         if not hasattr(self, "question_limit"):
             self.question_limit = 10
 
@@ -870,7 +871,7 @@ class IntakeQuestionList(DAList):
         """Returns True if the user can and needs to answer more questions, False otherwise.
 
         It respects the limit defined by self.question_limit.
-        
+
         As a side effect, checks if the user has run out of questions to answer and updates the next question to be asked
         to be a closing message instead of a follow-up.
         """
@@ -879,7 +880,7 @@ class IntakeQuestionList(DAList):
             self.next_question = self._ran_out_of_questions_message()
             return False
         return True
-    
+
     def need_more_questions(self):
         """Returns True if the user needs to answer more questions, False otherwise.
 
@@ -892,7 +893,7 @@ class IntakeQuestionList(DAList):
         if not (status["qualifies"] is None):
             return False
         return self._keep_going()
-    
+
     def _current_qualification_status(self):
         """Returns a dictionary with the user's current qualification status"""
         if not hasattr(self, "problem_type"):
@@ -901,7 +902,7 @@ class IntakeQuestionList(DAList):
         criteria = self.criteria.get(self.problem_type, None)
         if not criteria:
             return False
-        
+
         qualification_prompt = f"""
         Based on the qualification criteria,
         assess whether the user meets at least the *minimum* criteria for the following problem type:
@@ -937,11 +938,12 @@ class IntakeQuestionList(DAList):
         criteria_prompt = f"The only criteria you will rely on in your answer are as follows: \n```{ criteria }\n```"
 
         results = chat_completion(
-            messages = [
+            messages=[
                 {"role": "system", "content": self.llm_role},
                 {"role": "system", "content": qualification_prompt},
                 {"role": "system", "content": criteria_prompt},
-            ] + self._get_thread(),
+            ]
+            + self._get_thread(),
             model=self.model,
             json_mode=True,
         )
@@ -950,11 +952,9 @@ class IntakeQuestionList(DAList):
             return results
 
         raise Exception(f"Unexpected response from LLM: { results }")
- 
 
     def _get_thread(self):
-        """Returns a list of messages (with corresponding role) related to the given goal.
-        """
+        """Returns a list of messages (with corresponding role) related to the given goal."""
         messages = [
             {"role": "assistant", "content": self.initial_question},
             {"role": "user", "content": self.initial_problem_description},
@@ -965,7 +965,7 @@ class IntakeQuestionList(DAList):
             messages.append({"role": "user", "content": element.response})
 
         return messages
-    
+
     def _ran_out_of_questions_message(self):
         """Returns a message to display when the user has run out of questions to answer."""
         summary_prompt = """
@@ -973,10 +973,11 @@ class IntakeQuestionList(DAList):
         and you still do not have a response. Explain why the answer that they gave was still incomplete.
         """
         return chat_completion(
-            messages = [
-                {"role": "system", "content": self.llm_role},                
-            ] + self._get_thread() + 
-            [
+            messages=[
+                {"role": "system", "content": self.llm_role},
+            ]
+            + self._get_thread()
+            + [
                 {"role": "system", "content": summary_prompt},
             ],
             model=self.model,
