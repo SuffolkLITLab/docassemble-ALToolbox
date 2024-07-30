@@ -826,6 +826,9 @@ class IntakeQuestionList(DAList):
 
         if not hasattr(self, "model"):
             self.model = "gpt-4-turbo"
+        
+        if not hasattr(self, "temperature"):
+            self.temperature = 0.1
 
         if not hasattr(self, "question_limit"):
             self.question_limit = 10
@@ -905,9 +908,13 @@ class IntakeQuestionList(DAList):
 
         qualification_prompt = f"""
         Based on the qualification criteria,
-        assess whether the user meets at least the *minimum* criteria for the following problem type:
+        assess whether the user meets at least the *minimum* criteria to get a full intake for the following problem type:
         `{ self.problem_type }`.
 
+        Do not decide if getting legal help is wise or if the user can try other
+        steps first unless it is specifically mentioned in the
+        intake criteria. 
+        
         Rely only on the information about in/out criteria that are provided.
 
         You can have one of 3 possible responses:
@@ -924,18 +931,18 @@ class IntakeQuestionList(DAList):
 
         Example:
         {{"qualifies": null,
-        "narrative": "Is your eviction case scheduled for the judge to hear in the next 10 days?"}} # if more information is needed
+        "narrative": "Did you (follow-up question)?"}} # if more information is needed
 
         Example:
         {{"qualifies": true,
-         "narrative": "You probably qualify because you are facing eviction within the next 10 days."}}
+         "narrative": "You probably qualify because (reason)"}}
 
         Example:
         {{"qualifies" false,
-        "narrative": "You probably do not qualify because your divorce does not involve children and you are not facing domestic violence."}}
+        "narrative": "You probably do not qualify because (reason)"}}
         """
 
-        criteria_prompt = f"The only criteria you will rely on in your answer are as follows: \n```{ criteria }\n```"
+        criteria_prompt = f"The only criteria you will rely on in your answer are as follows: \n```{ criteria }\n```. Do not add any other requirements."
 
         results = chat_completion(
             messages=[
@@ -946,6 +953,7 @@ class IntakeQuestionList(DAList):
             + self._get_thread(),
             model=self.model,
             json_mode=True,
+            temperature=self.temperature,
         )
 
         if isinstance(results, dict):
@@ -982,4 +990,5 @@ class IntakeQuestionList(DAList):
             ],
             model=self.model,
             json_mode=False,
+            temperature=self.temperature,
         )
