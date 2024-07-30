@@ -1,7 +1,7 @@
 import re
 import unittest
 from unittest.mock import patch
-from .misc import button_array, ButtonDict
+from .misc import button_array, ButtonDict, true_values_with_other
 import xml.etree.ElementTree as ET
 
 
