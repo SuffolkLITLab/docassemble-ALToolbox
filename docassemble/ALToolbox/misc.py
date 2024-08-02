@@ -1,36 +1,41 @@
-from typing import Dict, List, Optional, TypedDict, Union
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from base64 import b64encode
 from decimal import Decimal
 import docassemble.base.functions
 from docassemble.base.util import (
-    defined,
-    value,
-    showifdef,
-    space_to_underscore,
     action_button_html,
     Address,
-    word,
+    DADict,
+    DAEmpty,
+    defined,
+    showifdef,
+    space_to_underscore,
     user_has_privilege,
+    value,
+    word,
 )
 import re
 
 __all__ = [
-    "shortenMe",
-    "thousands",
-    "tel",
-    "fa_icon",
-    "space",
-    "yes_no_unknown",
-    "number_to_letter",
-    "collapse_template",
-    "tabbed_templates_html",
-    "review_widget",
-    "sum_if_defined",
     "add_records",
-    "output_checkbox",
-    "nice_county_name",
     "button_array",
+    "collapse_template",
+    "fa_icon",
+    "nice_county_name",
+    "none_to_empty",
+    "number_to_letter",
+    "option_or_other",
+    "output_checkbox",
+    "review_widget",
+    "shortenMe",
+    "space",
+    "sum_if_defined",
+    "tabbed_templates_html",
+    "tel",
+    "thousands",
+    "true_values_with_other",
+    "yes_no_unknown",
 ]
 
 
@@ -387,3 +392,70 @@ def button_array(
         </a>"""
     output += "</div>"
     return output
+
+
+def none_to_empty(val: Any):
+    """If the value is None or "None", return a DAEmpty value. Otherwise return the value.
+
+    This is useful for filling in a template and to prevent the word None from appearing in the output. For example,
+    when handling a radio button that is not required and left unanswered.
+
+    A DAEmpty value appears as an empty string in the output. You can also safely transform it or use any method on it
+    without raising an error.
+
+    Args:
+        val: the value to check
+    Returns:
+        a DAEmpty if the value is None, otherwise the value
+    """
+    if val is None or val == "None":
+        return DAEmpty()
+    return val
+
+
+def option_or_other(
+    variable_name: str, other_variable_name: Optional[str] = None
+) -> str:
+    """If the variable is set to 'Other', return the value of the 'other' variable. Otherwise return the value of the variable.
+
+    This is useful for filling in a template and to prevent the word 'Other' from appearing in the output.
+
+    Args:
+        variable_name: the name of the variable to check
+        other_variable_name: the name of the variable to return if the value of the first variable is 'Other'
+    Returns:
+        the value of the variable if it is not 'Other', otherwise the value of the other variable
+    """
+    if not other_variable_name:
+        other_variable_name = variable_name + "_other"
+
+    if str(value(variable_name)).lower() == "other":
+        return value(other_variable_name)
+    return value(variable_name)
+
+
+def true_values_with_other(
+    variable_name: str, other_variable_name: Optional[str] = None
+) -> List[str]:
+    """Return a list of values that are True, with the value of the 'other' variable appended to the end of the list.
+
+    This is useful for filling in a template and to prevent the word 'Other' from appearing in the output.
+
+    Args:
+        variable: the dictionary of variables to check
+        other_variable_name: the name of the variable (as a string) to return if the value of the first variable is 'Other'
+    Returns:
+        a list of values that are True, with the value of the 'other' variable appended to the end of the list.
+    """
+    if not other_variable_name:
+        other_variable_name = variable_name + "_other"
+
+    true_values = value(variable_name).true_values()
+    if "other" in true_values:
+        true_values.remove("other")
+        true_values.append(value(other_variable_name))
+    if "Other" in true_values:
+        true_values.remove("Other")
+        true_values.append(value(other_variable_name))
+
+    return true_values
