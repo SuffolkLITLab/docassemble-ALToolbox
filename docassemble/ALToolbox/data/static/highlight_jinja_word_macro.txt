@@ -1,0 +1,38 @@
+' Add this Macro to your Word document, or your normal.dotm file, so you can use it in the future
+' https://support.microsoft.com/en-us/office/create-or-run-a-macro-c6b99036-905c-49a6-818a-dfb98b7c3c9c
+
+Sub JinjaHighlighter()
+    Dim oRange As Range
+    Dim oDoc As Document
+    Set oDoc = ActiveDocument
+
+    ' Search for text between {{ and }} and highlight yellow
+    Set oRange = oDoc.Content
+    With oRange.Find
+        .ClearFormatting
+        .Text = "\{\{*\}\}"
+        .MatchWildcards = True
+        .Wrap = wdFindStop
+        Do While .Execute
+            oRange.Start = oRange.Start + 2
+            oRange.End = oRange.End - 2
+            oRange.HighlightColorIndex = wdYellow
+            oRange.Collapse wdCollapseEnd
+        Loop
+    End With
+
+    ' Search for text between {% and %} and highlight turquoise
+    Set oRange = oDoc.Content
+    With oRange.Find
+        .ClearFormatting
+        .Text = "\{\%*\%\}"
+        .MatchWildcards = True
+        .Wrap = wdFindStop
+        Do While .Execute
+            oRange.Start = oRange.Start + 2
+            oRange.End = oRange.End - 2
+            oRange.HighlightColorIndex = wdTurquoise
+            oRange.Collapse wdCollapseEnd
+        Loop
+    End With
+End Sub
