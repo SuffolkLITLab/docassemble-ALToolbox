@@ -159,14 +159,17 @@ def chat_completion(
             f"Warning: { system_message } does not contain the word 'json' but json_mode is set to True. Adding 'json' silently"
         )
         system_message = f"{ system_message }\n\nRespond only with a JSON object"
-    elif messages:
-        if not any("json" in message["content"].lower() for message in messages):
-            log(
-                f"Warning: None of the messages contain the word 'json' but json_mode is set to True. Adding 'json' silently"
-            )
-            messages.append(
-                {"role": "system", "content": "Respond only with a JSON object"}
-            )
+    elif (
+        messages
+        and json_mode
+        and not any("json" in message["content"].lower() for message in messages)
+    ):
+        log(
+            f"Warning: None of the messages contain the word 'json' but json_mode is set to True. Adding 'json' silently"
+        )
+        messages.append(
+            {"role": "system", "content": "Respond only with a JSON object"}
+        )
 
     if not messages:
         assert isinstance(system_message, str)
@@ -770,6 +773,33 @@ class GoalSatisfactionList(DAList):
             messages.append({"role": "user", "content": question.response})
         return synthesize_user_responses(
             custom_instructions="",
+            messages=messages,
+            model=self.model,
+        )
+
+    def provide_feedback(self, feedback_prompt: str = ""):
+        """Returns feedback to the user based on the goals they satisfied."""
+        if not feedback_prompt:
+            feedback_prompt = """
+            You are a helpful instructor who is providing feedback to a student
+            based on their reflection and response to any questions you asked.
+
+            Review the student's response and provide feedback on how well they
+            addressed the goals you set out for them. If they met the goals but
+            could dig deeper, offer specific feedback on how they could do so
+            in their next reflection.
+            """
+        messages = [
+            {"role": "assistant", "content": self.initial_question},
+            {"role": "user", "content": self.initial_draft},
+        ]
+        for question in self.elements:
+            messages.append({"role": "assistant", "content": question.question})
+            messages.append({"role": "user", "content": question.response})
+
+        messages.append({"role": "assistant", "content": feedback_prompt})
+
+        return chat_completion(
             messages=messages,
             model=self.model,
         )
