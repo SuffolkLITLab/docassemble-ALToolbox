@@ -200,8 +200,11 @@ def chat_completion(
     if model.startswith("gpt-4-"):  # E.g., "gpt-4-turbo"
         max_input_tokens = 128000
         max_output_tokens = 4096
+    elif model.startswith("gpt-4o"):  # E.g., "gpt-4o or 4o-mini"
+        max_input_tokens = 128000
+        max_output_tokens = 16380
     elif model.startswith("gpt-3.5-turbo"):
-        max_input_tokens = 16385
+        max_input_tokens = 16380
         max_output_tokens = 4096
     else:
         max_input_tokens = 4096
@@ -385,7 +388,7 @@ def synthesize_user_responses(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model: str = "gpt-3.5-turbo-1106",
+    model: str = "gpt-3.5-turbo",
 ) -> str:
     """Given a first draft and a series of follow-up questions and answers, use an LLM to synthesize the user's responses
     into a single, coherent reply.
@@ -472,7 +475,10 @@ class Goal(DAObject):
         self,
         messages: List[Dict[str, str]],
         openai_client: Optional[OpenAI] = None,
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
+        system_message: Optional[str] = None,
+        llm_assumed_role: Optional[str] = "teacher",
+        user_assumed_role: Optional[str] = "student",
     ) -> str:
         """Returns the text of the next question to ask the user or the string "satisfied"
         if the user's response satisfies the goal.
@@ -483,14 +489,20 @@ class Goal(DAObject):
         Returns:
             True if the response satisfies the goal, False otherwise
         """
-        system_message = f"""You are a good conversationalist who is helping to improve and get relevant and thoughtful information from a person. 
-        Read the entire exchange with the user, in light of this goal: 
-        ```{ self.description }```
+        if not system_message:
+            system_message = f"""You are a {llm_assumed_role} who is helping to improve and get relevant and thoughtful information from a {user_assumed_role}.
+            You will be ready
+            to encourage the {user_assumed_role} to dig deeper if the answer is shallow and lacks detail,
+            but if the answer is complete you will not need to ask a follow-up.
 
-        Respond with the exact text "satisfied" (and no other text) if the goal is satisfied. If the goal is not satisfied, 
-        respond with a brief follow-up question that directs the user toward the goal. If they have already provided a partial 
-        response, explain why and how they should expand on it.
-        """
+            Read the entire exchange with the {user_assumed_role}, in light of this goal: 
+            ```{ self.description }```
+
+            Respond with the exact text "satisfied" (and no other text) if the goal is satisfied. If the goal is not satisfied, 
+            respond with a brief follow-up question that directs the {user_assumed_role} toward the goal. If they have already provided a partial 
+            response, encourage them to provide more information with an appropriate follow-up question. Your follow-up should be short, and 
+            organized as a narrative sentence.
+            """
 
         results = chat_completion(
             messages=[
@@ -507,7 +519,7 @@ class Goal(DAObject):
         self,
         thread_so_far: List[Dict[str, str]],
         openai_client: Optional[OpenAI] = None,
-        model="gpt-3.5",
+        model="gpt-4o-mini",
     ) -> str:
         """Returns the text of the next question to ask the user."""
 
@@ -625,7 +637,7 @@ class GoalSatisfactionList(DAList):
             self.goal_dict.gathered = True
 
         if not hasattr(self, "model"):
-            self.model = "gpt-3.5-turbo-1106"
+            self.model = "gpt-4o-mini"
 
         if not hasattr(self, "question_per_goal_limit"):
             self.question_per_goal_limit = 3
@@ -784,10 +796,11 @@ class GoalSatisfactionList(DAList):
             You are a helpful instructor who is providing feedback to a student
             based on their reflection and response to any questions you asked.
 
-            Review the student's response and provide feedback on how well they
-            addressed the goals you set out for them. If they met the goals but
-            could dig deeper, offer specific feedback on how they could do so
-            in their next reflection.
+            Review the student's response and provide helpful and growth-encouraging 
+            feedback on how well they addressed the goals you set out for them. 
+            If they met the goals but could dig deeper, offer specific feedback on 
+            how they could do so in their next reflection, which may have a different topic. 
+            Keep your feedback short and actionable without getting wordy or overly verbose.
             """
         messages = [
             {"role": "assistant", "content": self.initial_question},
