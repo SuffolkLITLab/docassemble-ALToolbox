@@ -14,6 +14,7 @@ from docassemble.base.util import (
     user_has_privilege,
     value,
     word,
+    validation_error,
 )
 import re
 
@@ -36,6 +37,7 @@ __all__ = [
     "thousands",
     "true_values_with_other",
     "yes_no_unknown",
+    "include_a_year",
 ]
 
 
@@ -459,3 +461,21 @@ def true_values_with_other(
         true_values.append(value(other_variable_name))
 
     return true_values
+
+
+def include_a_year(text: str, field: Optional[str] = None) -> bool:
+    """
+    Validates whether the input text contains at least one 4-digit sequence
+    that occurs within a range of ~ 200 years, indicating a valid "year"
+    for an event that should be reported on most court forms, like a birthdate
+    or a moving date.
+
+    Returns True if found, otherwise raises a DAValidationError.
+    """
+    # Match a 4-digit sequence
+    if re.search(r"\b(18|19|20|21)\d{2}\b", text):
+        return True
+    else:
+        validation_error(word("Include a year, like: Fall of 2023"), field=field)
+
+    return False
