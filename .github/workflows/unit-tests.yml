@@ -17,4 +17,4 @@ jobs:
             sudo locale-gen en_US.UTF-8
             sudo locale-gen ar_AE.UTF-8
             sudo update-locale LANG=en_US.UTF-8
-      - uses: SuffolkLITLab/ALActions/pythontests@adjust-to-implicit-namespaces
+      - uses: SuffolkLITLab/ALActions/pythontests
