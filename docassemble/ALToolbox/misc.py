@@ -6,23 +6,27 @@ import docassemble.base.functions
 from docassemble.base.util import (
     action_button_html,
     Address,
-    DADict,
+    as_datetime,
+    DADateTime,
     DAEmpty,
     defined,
     showifdef,
     space_to_underscore,
+    today,
     user_has_privilege,
+    validation_error,
     value,
     word,
-    validation_error,
 )
 import re
 
 __all__ = [
     "add_records",
+    "age_in_years",
     "button_array",
     "collapse_template",
     "fa_icon",
+    "include_a_year",
     "nice_county_name",
     "none_to_empty",
     "number_to_letter",
@@ -37,7 +41,6 @@ __all__ = [
     "thousands",
     "true_values_with_other",
     "yes_no_unknown",
-    "include_a_year",
 ]
 
 
@@ -479,3 +482,52 @@ def include_a_year(text: str, field: Optional[str] = None) -> bool:
         validation_error(word("Include a year, like: Fall of 2023"), field=field)
 
     return False
+
+
+def is_leap_year(year: int) -> bool:
+    """
+    Helper function for `age_in_years` to determine if a year is a leap year.
+
+    Args:
+        year: The year to check.
+    Returns:
+        True if the year is a leap year, False otherwise.
+    """
+    return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
+
+
+def age_in_years(the_date: Union[str, DADateTime]) -> int:
+    """
+    Calculate the age in years from a date (treated like a date of birth).
+
+    Args:
+        the_date: A string or DADateTime object representing the date of birth.
+    Returns:
+        The age in years as an integer.
+    """
+    if isinstance(the_date, str):
+        try:
+            the_date = as_datetime(the_date)
+        except ValueError:
+            raise ValueError("Invalid date format.")
+
+    if isinstance(the_date, DADateTime):
+        today_date = today()
+        year_difference = today_date.year - the_date.year
+
+        is_leap_birthdate = the_date.month == 2 and the_date.day == 29
+
+        if is_leap_birthdate:
+            if (today_date.month, today_date.day) < (2, 28) or (
+                today_date.month == 2
+                and today_date.day == 28
+                and not is_leap_year(today_date.year)
+            ):
+                year_difference -= 1
+        else:
+            if (today_date.month, today_date.day) < (the_date.month, the_date.day):
+                year_difference -= 1
+
+        return year_difference
+    else:
+        raise ValueError("Invalid date format. Expected a string or DADateTime object.")
