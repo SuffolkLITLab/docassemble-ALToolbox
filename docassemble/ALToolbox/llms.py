@@ -12,6 +12,7 @@ from docassemble.base.util import (
     DAList,
     DAObject,
     DADict,
+    DALazyTemplate,
     get_config,
 )
 
@@ -179,11 +180,11 @@ def chat_completion(
         )
 
     if not messages:
-        assert isinstance(system_message, str)
-        assert isinstance(user_message, str)
+        assert isinstance(system_message, (str, DALazyTemplate))
+        assert isinstance(user_message, (str, DALazyTemplate))
         messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message},
+            {"role": "system", "content": str(system_message)},
+            {"role": "user", "content": str(user_message)},
         ]
 
     if openai_base_url:
