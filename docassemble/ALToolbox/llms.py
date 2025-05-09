@@ -12,6 +12,7 @@ from docassemble.base.util import (
     DAList,
     DAObject,
     DADict,
+    DALazyTemplate,
     get_config,
 )
 
@@ -117,18 +118,16 @@ def chat_completion(
     openai_api: Optional[str] = None,
     temperature: float = 0.5,
     json_mode=False,
-    model: str = "gpt-3.5-turbo",
+    model: str = "gpt-4o",
     messages: Optional[List[Dict[str, str]]] = None,
     skip_moderation: bool = False,
+    openai_base_url: Optional[str] = None,  # "https://api.openai.com/v1/",
+    max_output_tokens: Optional[int] = None,
+    max_input_tokens: Optional[int] = None,
 ) -> Union[List[Any], Dict[str, Any], str]:
     """A light wrapper on the OpenAI chat endpoint.
 
-    Includes support for token limits, error handling, and moderation queue.
-
-    It is also possible to specify an alternative model, and we support GPT-4-turbo's JSON
-    mode.
-
-    As of May 2024, json mode is available with both GPT-4-turbo and GPT-3.5-turbo (and no longer requires the 1106-preview versions)
+    Includes support for token limits, minimal error handling, and moderation.
 
     Args:
         system_message (str): The role the chat engine should play
@@ -140,10 +139,19 @@ def chat_completion(
         model (str): The model to use for the GPT API
         messages (Optional[List[Dict[str, str]]]): A list of messages to send to the chat engine. If provided, system_message and user_message will be ignored.
         skip_moderation (bool): Whether to skip the OpenAI moderation step, which may save seconds but risks banning your account. Only enable when you have full control over the inputs.
+        openai_base_url (Optional[str]): The base URL for the OpenAI API. Defaults to value provided in the configuration or "https://api.openai.com/v1/".
+        max_output_tokens (Optional[int]): The maximum number of tokens to return from the API. Defaults to 16380.
+        max_input_tokens (Optional[int]): The maximum number of tokens to send to the API. Defaults to 128000.
 
     Returns:
         A string with the response from the API endpoint or JSON data if json_mode is True
     """
+    if not openai_base_url:
+        openai_base_url = get_config("open ai", {}).get("base url") or "https://api.openai.com/v1/"
+
+    if not openai_api:
+        openai_api = get_config("open ai", {}).get("key") or os.getenv("OPENAI_API_KEY")
+
     if not messages and not system_message:
         raise Exception(
             "You must provide either a system message and user message or a list of messages to use this function."
@@ -172,50 +180,43 @@ def chat_completion(
         )
 
     if not messages:
-        assert isinstance(system_message, str)
-        assert isinstance(user_message, str)
+        assert isinstance(system_message, (str, DALazyTemplate))
+        assert isinstance(user_message, (str, DALazyTemplate))
         messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message},
+            {"role": "system", "content": str(system_message)},
+            {"role": "user", "content": str(user_message)},
         ]
-    if openai_api:
-        openai_client = OpenAI(api_key=openai_api)
-    else:
-        if openai_client is None:
-            if client:
-                openai_client = client
-            else:
-                if get_config("open ai", {}).get("key"):
-                    openai_client = OpenAI(api_key=get_config("open ai", {}).get("key"))
-                else:
-                    raise Exception(
-                        "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment or Docassemble configuration. Try adding a new section in your global config that looks like this:\n\nopen ai:\n    key: sk-..."
-                    )
 
-    encoding = tiktoken.encoding_for_model(model)
+    if openai_base_url:
+        openai_client = None # Always override client in this circumstance
+    openai_client = openai_client or OpenAI(base_url=openai_base_url, api_key=openai_api) or client
 
-    encoding = tiktoken.encoding_for_model(model)
+    if not openai_client:
+        raise Exception(
+            "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment or Docassemble configuration. Try adding a new section in your global config that looks like this:\n\nopen ai:\n    key: sk-..."
+        )
+
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+    except:
+        # We can try encoding for gpt-4o because it seems like OpenAI isn't really changing the encoding anymore
+        encoding = tiktoken.encoding_for_model("gpt-4o")
+
     token_count = len(encoding.encode(str(messages)))
 
-    if model.startswith("gpt-4-"):  # E.g., "gpt-4-turbo"
-        max_input_tokens = 128000
-        max_output_tokens = 4096
-    elif model.startswith("gpt-4o"):  # E.g., "gpt-4o or 4o-mini"
-        max_input_tokens = 128000
-        max_output_tokens = 16380
-    elif model.startswith("gpt-3.5-turbo"):
-        max_input_tokens = 16380
-        max_output_tokens = 4096
-    else:
-        max_input_tokens = 4096
-        max_output_tokens = 4096 - token_count - 100  # small safety margin
+    # Set the max tokens to a reasonable default if not provided. This is reasonable for current models. The ones with smaller limits are mostly
+    # obsolete now
+
+    max_output_tokens = max_output_tokens or 16380
+    max_input_tokens = max_input_tokens or 128000
 
     if token_count > max_input_tokens:
         raise Exception(
             f"Input to OpenAI is too long ({ token_count } tokens). Maximum is {max_input_tokens} tokens."
         )
 
-    if not skip_moderation:
+    if not skip_moderation and openai_base_url == "https://api.openai.com/v1/":
+        # Currently only checking if we're using the OpenAI endpoint
         moderation_response = openai_client.moderations.create(input=str(messages))
         if moderation_response.results[0].flagged:
             raise Exception(
@@ -228,9 +229,6 @@ def chat_completion(
         response_format={"type": "json_object"} if json_mode else None,  # type: ignore
         temperature=temperature,
         max_tokens=max_output_tokens,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0,
     )
 
     # check finish reason
@@ -254,7 +252,7 @@ def extract_fields_from_text(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model="gpt-3.5-turbo-1106",
+    model="gpt-4o-mini",
 ) -> Dict[str, Any]:
     """Extracts fields from text.
 
@@ -295,7 +293,7 @@ def match_goals_from_text(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model="gpt-3.5-turbo-1106",
+    model="gpt-4o-mini",
 ) -> Dict[str, Any]:
     """Reads a user's message and determines whether it meets a set of goals, with the help of an LLM.
 
@@ -350,7 +348,7 @@ def classify_text(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model="gpt-3.5-turbo-1106",
+    model="gpt-4o-mini",
 ) -> str:
     """Given a text, classify it into one of the provided choices with the assistance of a large language model.
 
@@ -388,7 +386,7 @@ def synthesize_user_responses(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model: str = "gpt-3.5-turbo",
+    model: str = "gpt-4o-mini",
 ) -> str:
     """Given a first draft and a series of follow-up questions and answers, use an LLM to synthesize the user's responses
     into a single, coherent reply.
