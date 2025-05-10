@@ -147,7 +147,9 @@ def chat_completion(
         A string with the response from the API endpoint or JSON data if json_mode is True
     """
     if not openai_base_url:
-        openai_base_url = get_config("open ai", {}).get("base url") or "https://api.openai.com/v1/"
+        openai_base_url = (
+            get_config("open ai", {}).get("base url") or "https://api.openai.com/v1/"
+        )
 
     if not openai_api:
         openai_api = get_config("open ai", {}).get("key") or os.getenv("OPENAI_API_KEY")
@@ -188,8 +190,10 @@ def chat_completion(
         ]
 
     if openai_base_url:
-        openai_client = None # Always override client in this circumstance
-    openai_client = openai_client or OpenAI(base_url=openai_base_url, api_key=openai_api) or client
+        openai_client = None  # Always override client in this circumstance
+    openai_client = (
+        openai_client or OpenAI(base_url=openai_base_url, api_key=openai_api) or client
+    )
 
     if not openai_client:
         raise Exception(
