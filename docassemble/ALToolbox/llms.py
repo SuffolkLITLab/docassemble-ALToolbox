@@ -211,7 +211,7 @@ def chat_completion(
     # Set the max tokens to a reasonable default if not provided. This is reasonable for current models. The ones with smaller limits are mostly
     # obsolete now
 
-    if model == "gpt-4" or model.startswith("gpt-4-") or model.startswith("gpt-3.5"):
+    if model == "gpt-4" or (model and (model.startswith("gpt-4-") or model.startswith("gpt-3.5"))):
         max_output_tokens = max_output_tokens or 4096
         max_input_tokens = max_input_tokens or 32768
     else:
