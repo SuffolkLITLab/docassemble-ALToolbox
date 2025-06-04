@@ -211,8 +211,12 @@ def chat_completion(
     # Set the max tokens to a reasonable default if not provided. This is reasonable for current models. The ones with smaller limits are mostly
     # obsolete now
 
-    max_output_tokens = max_output_tokens or 16380
-    max_input_tokens = max_input_tokens or 128000
+    if model == "gpt-4" or model.startswith("gpt-4-") or model.startswith("gpt-3.5"):
+        max_output_tokens = max_output_tokens or 4096
+        max_input_tokens = max_input_tokens or 32768
+    else:
+        max_output_tokens = max_output_tokens or 16380
+        max_input_tokens = max_input_tokens or 128000
 
     if token_count > max_input_tokens:
         raise Exception(
@@ -854,7 +858,8 @@ class IntakeQuestionList(DAList):
         initial_problem_description (str): The initial description of the problem from the user
         initial_question (str): The original question posed in the interview
         question_limit (int): The maximum number of follow-up questions to ask the user. Defaults to 10.
-        model (str): The model to use for the GPT API. Defaults to gpt-4-turbo. gpt-3.5 is not smart enough
+        model (str): The model to use for the GPT API. Defaults to gpt-4.1.
+        max_output_tokens (int): The maximum number of tokens to return from the API. Defaults to 4096
         llm_role (str): The role the LLM should play. Allows you to customize the script the LLM uses to guide the user.
             We have provided a default script that should work for most intake questionnaires.
         llm_user_qualifies_prompt (str): The prompt to use to determine if the user qualifies. We have provided a default prompt.
@@ -870,7 +875,11 @@ class IntakeQuestionList(DAList):
         self.qualifies = None
 
         if not hasattr(self, "model"):
-            self.model = "gpt-4-turbo"
+            self.model = "gpt-4.1"
+            self.max_output_tokens = 4096
+
+        if not hasattr(self, "max_output_tokens"):
+            self.max_output_tokens = 4096
 
         if not hasattr(self, "question_limit"):
             self.question_limit = 10
@@ -990,6 +999,7 @@ class IntakeQuestionList(DAList):
             ]
             + self._get_thread(),
             model=self.model,
+            max_output_tokens=self.max_output_tokens,
             json_mode=True,
         )
 
@@ -1026,5 +1036,6 @@ class IntakeQuestionList(DAList):
                 {"role": "system", "content": summary_prompt},
             ],
             model=self.model,
+            max_output_tokens=self.max_output_tokens,
             json_mode=False,
         )
