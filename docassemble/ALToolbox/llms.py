@@ -877,7 +877,7 @@ class IntakeQuestionList(DAList):
         if not hasattr(self, "model"):
             self.model = "gpt-4.1"
             self.max_output_tokens = 4096
-        
+
         if not hasattr(self, "max_output_tokens"):
             self.max_output_tokens = 4096
 
@@ -1035,7 +1035,7 @@ class IntakeQuestionList(DAList):
             + [
                 {"role": "system", "content": summary_prompt},
             ],
-            model=self.model, 
-            max_output_tokens=self.max_output_tokens,           
+            model=self.model,
+            max_output_tokens=self.max_output_tokens,
             json_mode=False,
         )
