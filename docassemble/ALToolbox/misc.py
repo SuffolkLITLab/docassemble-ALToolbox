@@ -9,6 +9,7 @@ from docassemble.base.util import (
     as_datetime,
     DADateTime,
     DAEmpty,
+    DALazyTemplate,
     defined,
     showifdef,
     space_to_underscore,
@@ -164,11 +165,12 @@ def number_to_letter(n: Optional[int]) -> str:
 
 
 def collapse_template(
-    template,
-    classname=None,
-    closed_icon="caret-right",
-    open_icon="caret-down",
-):
+    template: DALazyTemplate,
+    classname: str | None = None,
+    closed_icon: str = "caret-right",
+    open_icon: str = "caret-down",
+    collapsed: bool = True,
+) -> str:
     """
     Insert HTML for a Bootstrap "collapse" div.
 
@@ -193,9 +195,9 @@ def collapse_template(
 
     return f"""\
 <div id="{ container_id }" class="{ container_classnames }">
-<a class="collapsed al_toggle" data-bs-toggle="collapse" href="#{ contents_id }" role="button" aria-expanded="false" aria-controls="{ contents_id }"><span class="toggle-icon pdcaretopen">{ fa_icon(open_icon) }</span><span class="toggle-icon pdcaretclosed">{ fa_icon(closed_icon) }</span>
+<a class="{"collapsed" if collapsed else ""} al_toggle" data-bs-toggle="collapse" href="#{ contents_id }" role="button" aria-expanded="{"false" if collapsed else "true"}" aria-controls="{ contents_id }"><span class="toggle-icon pdcaretopen">{ fa_icon(open_icon) }</span><span class="toggle-icon pdcaretclosed">{ fa_icon(closed_icon) }</span>
 <span class="subject">{ template.subject_as_html(trim=True) }</span></a>
-<div class="collapse" id="{ contents_id }">
+<div class="collapse {"" if collapsed else "show"}" id="{ contents_id }">
 <div class="card card-body pb-1{ classname }">{ template.content_as_html() }</div>
 </div>
 </div>\
