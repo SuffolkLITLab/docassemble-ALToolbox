@@ -537,7 +537,9 @@ def age_in_years(the_date: Union[str, DADateTime]) -> int:
         raise ValueError("Invalid date format. Expected a string or DADateTime object.")
 
 
-def format_date_if_defined(date_object_name: str, *pargs, default: str = "", **kwargs) -> str:
+def format_date_if_defined(
+    date_object_name: str, *pargs, default: str = "", **kwargs
+) -> str:
     """
     Format a date string if it is defined, otherwise return an empty string.
 
