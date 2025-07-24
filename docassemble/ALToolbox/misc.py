@@ -18,6 +18,7 @@ from docassemble.base.util import (
     validation_error,
     value,
     word,
+    format_date,
 )
 import re
 
@@ -42,6 +43,7 @@ __all__ = [
     "thousands",
     "true_values_with_other",
     "yes_no_unknown",
+    "format_date_if_defined",
 ]
 
 
@@ -533,3 +535,37 @@ def age_in_years(the_date: Union[str, DADateTime]) -> int:
         return year_difference
     else:
         raise ValueError("Invalid date format. Expected a string or DADateTime object.")
+
+
+def format_date_if_defined(
+    date_object_name: str, *pargs, default: str = "", **kwargs
+) -> str:
+    """
+    Format a date string if it is defined, otherwise return an empty string.
+
+    Passes all additional arguments to the `format_date` function.
+
+    Args:
+        date_object_name: The date string to format.
+        *pargs: Additional positional arguments to pass to `format_date`.
+        default: A default string to return if `date_object_name` is not defined.
+        **kwargs: Additional keyword arguments to pass to `format_date`. E.g., format="yyyy-MM-dd"
+
+    Returns:
+        A formatted date string if `date_object_name` is defined, otherwise an empty string.
+
+    Example:
+
+        >>> format_date_if_defined("users[0].birthdate", format='yyyy-MM-dd')
+
+        Returns a formatted date string if "users[0].birthdate" is defined, otherwise returns an empty string.
+
+        >>> format_date_if_defined("users[0].birthdate", default="No date provided", format='yyyy-MM-dd ')
+
+        Returns a formatted date string followed by one space if "users[0].birthdate" is defined, otherwise returns "No date provided". (Note space is added to the format="..." parameter)
+    """
+    the_date = showifdef(date_object_name)
+    if the_date:
+        return format_date(the_date, *pargs, **kwargs)
+    else:
+        return default
