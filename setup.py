@@ -1,6 +1,6 @@
 import os
 import sys
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 from fnmatch import fnmatchcase
 from distutils.util import convert_path
 
@@ -52,8 +52,7 @@ setup(name='docassemble.ALToolbox',
       author_email='52798256+plocket@users.noreply.github.com',
       license='The MIT License (MIT)',
       url='https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/framework/altoolbox',
-      packages=find_packages(),
-      namespace_packages=['docassemble'],
+      packages=find_namespace_packages(),
       install_requires=['holidays>=0.38', 'pandas>=2.0.3'],
       zip_safe=False,
       package_data=find_package_data(where='docassemble/ALToolbox/', package='docassemble.ALToolbox'),
