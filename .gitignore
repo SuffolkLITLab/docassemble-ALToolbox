@@ -2,5 +2,12 @@
 .vscode/
 docassemble.ALToolbox.egg-info/**
 .history/
+.DS_Store
+
+.jj
 
 .venv
+
+# Python testing stuff
+.coverage
+coverage_html

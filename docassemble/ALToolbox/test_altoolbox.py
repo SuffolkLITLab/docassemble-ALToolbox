@@ -36,6 +36,12 @@ class TestBusinessDays(unittest.TestCase):
             as_datetime("2022-12-30"),
         )
 
+    def test_get_next_business_day(self):
+        self.assertEqual(
+            get_next_business_day("2022-12-24", wait_n_days=4),
+            as_datetime("2022-12-28"),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

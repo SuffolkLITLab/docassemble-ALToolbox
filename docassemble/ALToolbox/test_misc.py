@@ -6,11 +6,9 @@ import xml.etree.ElementTree as ET
 
 
 class TestButtonArray(unittest.TestCase):
-    def normalize_whitespace(self, s):
-        return re.sub(r"\s+", " ", s)
-
     @patch("docassemble.ALToolbox.misc.user_has_privilege", return_value=False)
-    def test_button_array_generates_correct_html(self, mock_privilege):
+    @patch("ALToolbox.misc.user_has_privilege", return_value=False)
+    def test_button_array_generates_correct_html(self, mock_privilege, mock_privilege2):
         buttons = [
             ButtonDict(name="Button 1", image="image1", url="url1"),
             ButtonDict(name="Button 2", image="image2", url="url2"),
@@ -28,8 +26,11 @@ class TestButtonArray(unittest.TestCase):
         self.assertIn("Button 2", button_array_html)
 
     @patch("docassemble.ALToolbox.misc.user_has_privilege", return_value=False)
+    @patch("ALToolbox.misc.user_has_privilege", return_value=False)
     @patch("docassemble.base.functions.this_thread")
-    def test_button_array_filters_by_privilege(self, mock_this_thread, mock_privilege):
+    def test_button_array_filters_by_privilege(
+        self, mock_this_thread, mock_privilege, mock_privilege2
+    ):
         mock_this_thread.current_info = {"user": {"is_authenticated": True}}
         buttons = [
             ButtonDict(name="Button 1", image="image1", url="url1", privilege="admin"),
