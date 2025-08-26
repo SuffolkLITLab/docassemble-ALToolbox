@@ -53,7 +53,7 @@ setup(name='docassemble.ALToolbox',
       license='The MIT License (MIT)',
       url='https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/framework/altoolbox',
       packages=find_namespace_packages(),
-      install_requires=['holidays>=0.38', 'pandas>=2.0.3'],
+      install_requires=['holidays>=0.38', 'pandas>=2.0.3', 'tiktoken>=0.8.0', 'openai>=1.99.1'],
       zip_safe=False,
       package_data=find_package_data(where='docassemble/ALToolbox/', package='docassemble.ALToolbox'),
      )
