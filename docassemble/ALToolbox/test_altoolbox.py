@@ -1,3 +1,5 @@
+# do not pre-load
+
 import unittest
 from .business_days import (
     is_business_day,
