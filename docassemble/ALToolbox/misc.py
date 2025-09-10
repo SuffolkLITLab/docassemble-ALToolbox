@@ -95,7 +95,7 @@ def fa_icon(
     Args:
         icon: a string representing a fontawesome icon. The icon needs to be in the
             [free library](https://fontawesome.com/search?o=r&m=free).
-        color: can be any [Bootstrap color variable](https://getbootstrapc.mo/docs/4.0/utilities/colors).
+        color: can be any [Bootstrap color variable](https://getbootstrap.com/docs/5.0/utilities/colors/).
             For example: `primary`, `secondary`, `warning`
         color_css: allows you to use a CSS code to represent the color, e.g., `blue`, or `#fff` for black
         size: used to control the [fontawesome size](https://fontawesome.com/v6.0/docs/web/style/size)
