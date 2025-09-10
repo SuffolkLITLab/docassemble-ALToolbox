@@ -7,15 +7,16 @@ __all__ = ["Addup"]
 class Addup:
     """
     Utility class for calculating sums of numeric fields across DAList objects.
-    
-    This class provides functionality to sum specific numeric fields from all 
+
+    This class provides functionality to sum specific numeric fields from all
     items in a Docassemble DAList, which is useful for financial calculations
     and data aggregation in legal document automation.
     """
+
     def __init__(self, listName, varName):
         """
         Initialize the Addup calculator and compute the sum immediately.
-        
+
         Args:
             self: The instance being initialized.
             listName: A DAList object containing items with numeric fields.

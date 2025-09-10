@@ -7,7 +7,18 @@ from distutils.util import convert_path
 standard_exclude = ('*.pyc', '*~', '.*', '*.bak', '*.swp*')
 standard_exclude_directories = ('.*', 'CVS', '_darcs', './build', './dist', 'EGG-INFO', '*.egg-info')
 
-def find_package_data(where='.', package='', exclude=standard_exclude, exclude_directories=standard_exclude_directories):
+def find_package_data(where='.', package='', exclude=standard_exclude, exclude_directories=standard_exclude_directories) -> dict:
+    """Find package data.
+
+    Args:
+        where (str, optional): The path to search. Defaults to '.'.
+        package (str, optional): The package name. Defaults to ''.
+        exclude (tuple, optional): A tuple of patterns to exclude. Defaults to standard_exclude.
+        exclude_directories (tuple, optional): A tuple of directories to exclude. Defaults to standard_exclude_directories.
+
+    Returns:
+        A dictionary of package data.
+    """
     out = {}
     stack = [(convert_path(where), '', package)]
     while stack:

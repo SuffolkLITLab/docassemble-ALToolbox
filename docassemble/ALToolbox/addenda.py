@@ -5,15 +5,16 @@ __all__ = ["myTable", "myTextList", "safe_json2"]
 class myTable:
     """
     Utility class for creating table representations from DAList objects for addenda.
-    
-    This class processes DAList objects containing 'Individual' or 'Thing' objects 
+
+    This class processes DAList objects containing 'Individual' or 'Thing' objects
     and converts them into structured table format suitable for document addenda.
     It handles data sanitization and formatting for display purposes.
     """
+
     def __init__(self, tblData, tblTitle, tblHeader):
         """
         Initialize a table from DAList data with title and headers.
-        
+
         Args:
             tblData: A DAList object containing Individual or Thing objects.
             tblTitle (str): The title for the table.
@@ -65,15 +66,16 @@ class myTable:
 class myTextList:
     """
     Utility class for managing text fields that may exceed form space limits.
-    
+
     This class handles text content that might be too long to fit in the main form
     by truncating it at a specified limit and storing the overflow text for use
     in addenda or continuation pages.
     """
+
     def __init__(self, text, limit, title):
         """
         Initialize text processing with truncation limits.
-        
+
         Args:
             text (str): The text content to process and potentially truncate.
             limit (int): The character limit for the main form field.

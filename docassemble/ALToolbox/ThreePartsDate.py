@@ -1049,19 +1049,19 @@ class BirthDate(ThreePartsDate):
     def validate(cls, item: str) -> bool:
         """
         Validate a birth date string ensuring it's a valid past date.
-        
+
         Validates that the input is a properly formatted date string in MM/DD/YYYY
         format that represents a date on or before today and after the year 1000.
         Empty or None values are considered valid.
-        
+
         Args:
             item (str): The birth date string to validate in MM/DD/YYYY format.
-            
+
         Returns:
             True if the date is valid, otherwise raises DAValidationError.
-            
+
         Raises:
-            DAValidationError: If the date is invalid, improperly formatted, 
+            DAValidationError: If the date is invalid, improperly formatted,
                 or in the future.
         """
         # If there's no input in the item, it's valid

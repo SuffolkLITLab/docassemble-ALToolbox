@@ -70,8 +70,8 @@ def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
             Defaults to False.
 
     Returns:
-        str: The formatted number string with thousands separators, optionally
-            with 2 decimal places.
+        The formatted number string with thousands separators, optionally
+        with 2 decimal places.
 
     Example:
         >>> thousands(1234.56)
@@ -168,8 +168,8 @@ def space(var_name: str, prefix=" ", suffix="") -> str:
         suffix (str, optional): String to append to the value. Defaults to "".
 
     Returns:
-        str: The variable value with prefix and suffix if variable is defined
-            and has a value, otherwise an empty string.
+        The variable value with prefix and suffix if variable is defined
+        and has a value, otherwise an empty string.
 
     Example:
         >>> space("user_middle_name", prefix=" ", suffix="")
@@ -284,8 +284,8 @@ def collapse_template(
             Defaults to True.
 
     Returns:
-        str: Complete HTML string for the Bootstrap collapse component, or empty
-            string if template has no content.
+        Complete HTML string for the Bootstrap collapse component, or empty
+        string if template has no content.
 
     Example:
         >>> collapse_template(my_template, classname="bg-primary", collapsed=False)
@@ -330,8 +330,8 @@ def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
             methods.
 
     Returns:
-        str: Complete HTML string containing Bootstrap tabs navigation and content
-            panels.
+        Complete HTML string containing Bootstrap tabs navigation and content
+        panels.
 
     Example:
         >>> tabbed_templates_html("my_tabs", template1, template2, template3)
@@ -524,8 +524,8 @@ def nice_county_name(address: Address) -> str:
         address (Address): A docassemble Address object that may have a county attribute.
 
     Returns:
-        str: The county name with " County" suffix removed, or empty string if
-            the address has no county attribute.
+        The county name with " County" suffix removed, or empty string if
+        the address has no county attribute.
 
     Example:
         >>> nice_county_name(address_with_county)
@@ -651,8 +651,8 @@ def true_values_with_other(
             Defaults to None (uses variable_name + "_other").
 
     Returns:
-        List[str]: A list of values that are True, with the value of the 'other'
-            variable appended to the end of the list if 'other'/'Other' was selected.
+        A list of values that are True, with the value of the 'other'
+        variable appended to the end of the list if 'other'/'Other' was selected.
     """
     if not other_variable_name:
         other_variable_name = variable_name + "_other"
