@@ -529,37 +529,58 @@ class ALJob(ALIncome):
 
     def gross_total(self, times_per_year: float = 1) -> Decimal:
         """
+        Calculate the gross total income over the specified times_per_year.
+        
         Same as ALIncome total. Returns the income over the specified times_per_year,
         representing the `.value` attribute of the item.
 
-        `times_per_year` is some denominator of a year. E.g. to express a weekly
-        period, use 52. The default is 1 (a year).
+        Args:
+            times_per_year (float, optional): The frequency to calculate income for. 
+                Is some denominator of a year. E.g. to express a weekly period, 
+                use 52. The default is 1 (a year).
+
+        Returns:
+            The calculated gross income amount for the specified frequency.
         """
         return self.total(times_per_year=times_per_year)
 
     def deductions(self, times_per_year: float = 1) -> Decimal:
         """
-        Returns the total deductions from someone's pay over the specificed times_per_year
+        Calculate the total deductions from someone's pay over the specified times_per_year.
+        
+        Returns the total deductions from someone's pay over the specified times_per_year
         (not per hour if hourly).
 
-        `times_per_year` is some denominator of a year. E.g. to express a weekly
-        period, use 52. The default is 1 (a year).
+        Args:
+            times_per_year (float, optional): The frequency to calculate deductions for. 
+                Is some denominator of a year. E.g. to express a weekly period, 
+                use 52. The default is 1 (a year).
+
+        Returns:
+            The calculated deduction amount for the specified frequency.
         """
         deduction = _currency_float_to_decimal(self.deduction)
         return (deduction * Decimal(self.times_per_year)) / Decimal(times_per_year)
 
     def net_total(self, times_per_year: float = 1) -> Decimal:
         """
+        Calculate the net income over a time period using value and deduction.
+        
         Returns the net income over a time period, found using
         `self.value` and `self.deduction`.
 
-        `times_per_year` is some denominator of a year. E.g, to express a weekly
-        period, use 52. The default is 1 (a year).
+        Args:
+            times_per_year (float, optional): The frequency to calculate net income for. 
+                Is some denominator of a year. E.g, to express a weekly period, 
+                use 52. The default is 1 (a year).
 
-        `self.deduction` is the amount deducted from one's pay over a period (not
-        per hour if hourly).
+        Returns:
+            The calculated net income amount (gross - deductions) for the specified frequency.
 
-        This will force the gathering of the ALJob's `.value` and `.deduction` attributes.
+        Note:
+            `self.deduction` is the amount deducted from one's pay over a period (not
+            per hour if hourly). This will force the gathering of the ALJob's `.value` 
+            and `.deduction` attributes.
         """
         return self.total(times_per_year=times_per_year) - self.deductions(
             times_per_year=times_per_year
@@ -567,9 +588,15 @@ class ALJob(ALIncome):
 
     def employer_name_address_phone(self) -> str:
         """
+        Get formatted employer information as a string.
+        
         Returns name, address and phone number of employer as a string. Forces
         gathering the `.employer`, `.employer_address`, and `.employer_phone`
         attributes.
+        
+        Returns:
+            A formatted string containing employer name, optionally with address 
+            and/or phone number if available.
         """
         if self.employer.address.address and self.employer.phone:
             return (
@@ -583,17 +610,26 @@ class ALJob(ALIncome):
 
     def normalized_hours(self, times_per_year: float = 1) -> float:
         """
+        Calculate the normalized number of hours worked in a given times_per_year.
+        
         Returns the normalized number of hours worked in a given times_per_year,
         based on the self.hours_per_period and self.times_per_year attributes.
 
-        For example, if the person works 10 hours a week, it will return
-        520 when the times_per_year parameter is 1.
+        Args:
+            times_per_year (float, optional): The frequency to normalize hours for. 
+                Is some denominator of a year. E.g, to express a weekly period, 
+                use 52. The default is 1 (a year).
 
-        `times_per_year` is some denominator of a year. E.g, to express a weekly
-        period, use 52. The default is 1 (a year).
+        Returns:
+            The normalized number of hours worked for the specified frequency.
 
-        This will force the gathering of the attributes `.hours_per_period` and
-        `.times_per_year`
+        Example:
+            If the person works 10 hours a week, it will return
+            520 when the times_per_year parameter is 1.
+
+        Note:
+            This will force the gathering of the attributes `.hours_per_period` and
+            `.times_per_year`.
         """
         return (float(self.hours_per_period) * int(self.times_per_year)) / float(
             times_per_year
@@ -608,6 +644,13 @@ class ALJobList(ALIncomeList):
     """
 
     def init(self, *pargs, **kwargs):
+        """
+        Initialize an ALJobList with ALJob as the default object type.
+        
+        Args:
+            *pargs: Variable length argument list passed to parent class.
+            **kwargs: Arbitrary keyword arguments passed to parent class.
+        """
         super().init(*pargs, **kwargs)
         self.object_type = ALJob
 

@@ -445,18 +445,19 @@ def synthesize_user_responses(
 def define_fields_from_dict(
     field_dict: Dict[str, Any], fields_to_ignore: Optional[List] = None
 ) -> None:
-    """Assigns the values in a dictionary of fields to the corresponding fields in a Docassemble interview.
+    """
+    Assign values from a dictionary to corresponding Docassemble interview fields.
 
-    Docassemble and built-in keywords are never defined by this function. If fields_to_ignore is provided, those fields will also be ignored.
+    Docassemble and built-in keywords are never defined by this function. If 
+    fields_to_ignore is provided, those fields will also be ignored.
 
     Args:
-        field_dict (Dict[str, Any]): A dictionary of fields to define, with the key being the field name and the value
-            presumably taken from the output of extract_fields_from_text.
-        fields_to_ignore (Optional[List]): A list of fields to ignore. Defaults to None. Should be used to ensure
-            safety when defining fields from untrusted sources. E.g., ["user_is_logged_in"]
-
-    Returns:
-        None
+        field_dict (Dict[str, Any]): A dictionary of fields to define, with the key 
+            being the field name and the value presumably taken from the output of 
+            extract_fields_from_text.
+        fields_to_ignore (Optional[List]): A list of fields to ignore. Defaults to 
+            None. Should be used to ensure safety when defining fields from untrusted 
+            sources. E.g., ["user_is_logged_in"]
     """
     if not isinstance(field_dict, dict):
         log("Field dict is not a dictionary.")
