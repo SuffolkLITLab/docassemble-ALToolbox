@@ -33,25 +33,24 @@ def standard_holidays(
     Note that this draws on the "holidays" package which may deviate slightly from
     holidays observed by a local court, but should be very close to accurate.
 
-    Returns a dictionary like-object that you can treat like:
-
-    ```
-    {
-        "2021-01-01": "New Year's Day",
-        ...
-        "2021-12-25": "Christmas Day",
-    }
-    ```
-
-    In place of a string, the object that is returned can also be treated as though
-    the keys are datetime.date objects.
-
-    Arguments:
+    Args:
         year: the year to get holidays for
         country: the country to use holidays from (default: "US")
         subdiv: the subdivision (e.g. state or province) to use holidays from (default: "MA")
         add_holidays: a dictionary from date strings ("12-25") to the name of the holiday, to add custom holidays
         remove_holidays: a list of holiday name strings to remove from the standard holidays
+
+    Returns:
+        A dictionary like-object that you can treat like:
+        ```
+        {
+            "2021-01-01": "New Year's Day",
+            ...
+            "2021-12-25": "Christmas Day",
+        }
+        ```
+        In place of a string, the object that is returned can also be treated as though
+        the keys are datetime.date objects.
 
     Examples:
         ```python
@@ -113,7 +112,7 @@ def non_business_days(
     This function returns a dictionary of all dates that are not business days, including 
     both weekends (Saturdays and Sundays) and official holidays.
 
-    Arguments:
+    Args:
         year: the year to get non-business days for
         country: the country to use holidays from (default: "US")
         subdiv: the subdivision (e.g. state or province) to use holidays from (default: "MA")
@@ -230,12 +229,15 @@ def is_business_day(
     1. weekdays other than Saturday and Sunday and
     1. days that are not a federal or state-observed holiday
 
-    Arguments:
+    Args:
         date: the date to check. Can be a date-formatted string (i.e. "2023-03-26", or "3-26-2023") or a DADateTime object
         country: the country to use holidays from (default: "US")
         subdiv: the subdivision (e.g. state or province) to use holidays from (default: "MA")
         add_holidays: a dictionary from date strings ("12-25") to the name of the holiday, to add custom holidays
         remove_holidays: a list of holiday name strings to remove from the standard holidays
+
+    Returns:
+        True if the date is a business day, False otherwise.
 
     Examples:
         ```python
@@ -296,7 +298,7 @@ def get_next_business_day(
     court rules may differ. You can see what holidays are used at
     https://github.com/dr-prodigy/python-holidays/tree/master/holidays/countries
 
-    Arguments:
+    Args:
         start_date: the date to start with. Can be a date-formatted string (i.e. "2023-03-26", or
             "3-26-2023") or a DADateTime object
         wait_n_days: the number of days to find the find the date after. If 0, it returns the given
@@ -306,6 +308,9 @@ def get_next_business_day(
         add_holidays: a dictionary from date strings ("12-25") to the name of the holiday,
             to add custom holidays to be considered
         remove_holidays: a list of holiday name strings of dates that are no longer holidays
+
+    Returns:
+        A DADateTime object representing the next business day.
 
     Examples:
         ```python
@@ -356,7 +361,7 @@ def get_date_after_n_business_days(
     """
     Returns a time period which contains a minimum of `n` business days.
 
-    Arguments:
+    Args:
         start_date: the date to start with. Can be a date-formatted string (i.e. "2023-03-26", or
             "3-26-2023") or a DADateTime object
         wait_n_days: the number of businesses days to wait for. For example, `start_date` is a
@@ -366,6 +371,9 @@ def get_date_after_n_business_days(
         add_holidays: a dictionary from date strings ("12-25") to the name of the holiday,
             to add custom holidays to be considered
         remove_holidays: a list of holiday name strings of dates that are no longer holidays
+
+    Returns:
+        A DADateTime object representing the date after exactly n business days.
 
     Examples:
         ```python
