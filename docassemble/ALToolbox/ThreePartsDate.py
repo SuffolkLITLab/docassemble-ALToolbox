@@ -8,6 +8,7 @@ from docassemble.base.util import (
     log,
 )
 from typing import Optional
+from datetime import datetime
 import re
 
 __all__ = ["ThreePartsDate", "BirthDate"]
@@ -889,6 +890,31 @@ function set_up_unhighlight(validator) {{
 
 
 def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Optional[str]:
+    """
+    Validate a date string in MM/DD/YYYY format and return specific error messages for missing parts.
+
+    Analyzes a date string separated by forward slashes to determine which parts
+    (month, day, year) are missing and returns a helpful error message indicating
+    what needs to be entered. Currently only handles US date format.
+
+    Args:
+        item (str): The date string to validate, expected in MM/DD/YYYY format.
+        default_msg (str, optional): Default error message template for invalid dates.
+            Defaults to "{} is not a valid date".
+
+    Returns:
+        Error message if validation fails, None if date is valid.
+        Returns None when the date is complete and valid, otherwise returns
+        a localized error message indicating which parts need to be entered.
+
+    Example:
+        >>> check_empty_parts("12//2023")
+        "Enter a day"
+        >>> check_empty_parts("//")
+        "Enter a month, a day, and a year"
+        >>> check_empty_parts("12/25/2023")
+        None
+    """
     # This only handles US dates. How do we use a locale-specific date?
     parts = item.split("/")
     empty_parts = [part == "" for part in parts]
@@ -937,7 +963,19 @@ class ThreePartsDate(CustomDataType):
     ]
 
     @classmethod
-    def validate(cls, item: str):
+    def validate(cls, item: str) -> bool:
+        """
+        Validate a date string in MM/DD/YYYY format.
+
+        Args:
+            item (str): The date string to validate.
+
+        Returns:
+            bool: True if valid or empty, raises DAValidationError if invalid.
+
+        Raises:
+            DAValidationError: If the date string is invalid or cannot be parsed.
+        """
         # If there's no input in the item, it's valid
         if not isinstance(item, str) or item == "":
             return True
@@ -956,16 +994,37 @@ class ThreePartsDate(CustomDataType):
                 msg = check_empty_parts(item)
                 if msg:
                     raise DAValidationError(msg)
+                return True
 
     @classmethod
-    def transform(cls, item):
+    def transform(cls, item) -> Optional[datetime]:
+        """
+        Transform a date string into a datetime object.
+
+        Args:
+            item: The date string to transform.
+
+        Returns:
+            datetime or None: The parsed datetime object, or None if empty.
+        """
         if item:
             return as_datetime(item)
+        return None
 
     @classmethod
-    def default_for(cls, item):
+    def default_for(cls, item) -> Optional[str]:
+        """
+        Convert a datetime object to MM/dd/yyyy format string.
+
+        Args:
+            item: The datetime object to format.
+
+        Returns:
+            str or None: The formatted date string, or None if empty.
+        """
         if item:
             return item.format("MM/dd/yyyy")
+        return None
 
 
 class BirthDate(ThreePartsDate):
@@ -990,7 +1049,24 @@ class BirthDate(ThreePartsDate):
     ]
 
     @classmethod
-    def validate(cls, item: str):
+    def validate(cls, item: str) -> bool:
+        """
+        Validate a birth date string ensuring it's a valid past date.
+
+        Validates that the input is a properly formatted date string in MM/DD/YYYY
+        format that represents a date on or before today and after the year 1000.
+        Empty or None values are considered valid.
+
+        Args:
+            item (str): The birth date string to validate in MM/DD/YYYY format.
+
+        Returns:
+            True if the date is valid, otherwise raises DAValidationError.
+
+        Raises:
+            DAValidationError: If the date is invalid, improperly formatted,
+                or in the future.
+        """
         # If there's no input in the item, it's valid
         if not isinstance(item, str) or item == "":
             return True
@@ -1018,3 +1094,4 @@ class BirthDate(ThreePartsDate):
                 )
                 if msg:
                     raise DAValidationError(msg)
+                return True

@@ -10,13 +10,15 @@ from docassemble.base.util import today, as_datetime
 
 
 class TestBusinessDays(unittest.TestCase):
-    def test_is_business_day(self):
+    def test_is_business_day(self) -> None:
+        """Test is_business_day"""
         self.assertFalse(is_business_day("2022-09-05"))
         self.assertTrue(is_business_day("2022-09-06"))
         this_years_christmas = today().replace(month=12, day=25)
         self.assertFalse(is_business_day(this_years_christmas))
 
-    def test_get_date_after_n_business_days(self):
+    def test_get_date_after_n_business_days(self) -> None:
+        """Test get_date_after_n_business_days"""
         self.assertEqual(
             get_date_after_n_business_days("2022-12-24", 5), as_datetime("2023-01-03")
         )
@@ -38,7 +40,8 @@ class TestBusinessDays(unittest.TestCase):
             as_datetime("2022-12-30"),
         )
 
-    def test_get_next_business_day(self):
+    def test_get_next_business_day(self) -> None:
+        """Test get_next_business_day"""
         self.assertEqual(
             get_next_business_day("2022-12-24", wait_n_days=4),
             as_datetime("2022-12-28"),

@@ -1,5 +1,10 @@
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
+try:  # Python 3.11+
+    from typing import NotRequired  # type: ignore[attr-defined]
+except Exception:  # Fallback for older Python
+    from typing_extensions import NotRequired  # type: ignore[assignment]
+
 from base64 import b64encode
 from decimal import Decimal
 import docassemble.base.functions
@@ -58,11 +63,26 @@ class shortenMe:
 def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
     """
     Return a whole number formatted with thousands separator.
-    Optionally, format with 2 decimal points (for a PDF form with the
-    currency symbol already present in the form)
 
-    If `show_decimals`, will call `int(num)`, truncating the decimals instead of
-    rounding to the closest int.
+    Optionally, format with 2 decimal points (for a PDF form with the
+    currency symbol already present in the form). If `show_decimals` is False,
+    will call `int(num)`, truncating the decimals instead of rounding to the
+    closest int.
+
+    Args:
+        num (Union[float, str, Decimal]): The numeric value to format.
+        show_decimals (bool, optional): Whether to display 2 decimal places.
+            Defaults to False.
+
+    Returns:
+        The formatted number string with thousands separators, optionally
+        with 2 decimal places.
+
+    Example:
+        >>> thousands(1234.56)
+        '1,234'
+        >>> thousands(1234.56, show_decimals=True)
+        '1,234.56'
     """
     try:
         if show_decimals:
@@ -74,7 +94,22 @@ def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
 
 
 def tel(phone_number) -> str:
-    """Format a phone number so you can click on it to open in your phone dialer"""
+    """
+    Format a phone number so you can click on it to open in your phone dialer.
+
+    Creates an HTML anchor tag with tel: protocol that allows users to click
+    and dial the number on mobile devices or applications that support tel links.
+
+    Args:
+        phone_number: The phone number to format. Can be string or numeric type.
+
+    Returns:
+        str: HTML anchor tag with tel: link containing the phone number.
+
+    Example:
+        >>> tel("555-123-4567")
+        '<a href="tel:555-123-4567">555-123-4567</a>'
+    """
     return '<a href="tel:' + str(phone_number) + '">' + str(phone_number) + "</a>"
 
 
@@ -125,9 +160,28 @@ def fa_icon(
 
 
 def space(var_name: str, prefix=" ", suffix="") -> str:
-    """If the value as a string is defined, return it prefixed/suffixed. Defaults to prefix
-    of a space. Helps build a sentence with less cruft. Equivalent to SPACE function in
-    HotDocs."""
+    """
+    If the value as a string is defined, return it prefixed/suffixed.
+
+    Defaults to prefix of a space. Helps build a sentence with less cruft.
+    Equivalent to SPACE function in HotDocs. Only returns the formatted value
+    if the variable name is valid and the variable is defined and has a value.
+
+    Args:
+        var_name (str): The name of the variable to check and format.
+        prefix (str, optional): String to prepend to the value. Defaults to " ".
+        suffix (str, optional): String to append to the value. Defaults to "".
+
+    Returns:
+        The variable value with prefix and suffix if variable is defined
+        and has a value, otherwise an empty string.
+
+    Example:
+        >>> space("user_middle_name", prefix=" ", suffix="")
+        " John"  # if user_middle_name is defined as "John"
+        >>> space("undefined_var")
+        ""  # if variable is not defined
+    """
     if (
         var_name
         and isinstance(var_name, str)
@@ -142,9 +196,33 @@ def space(var_name: str, prefix=" ", suffix="") -> str:
 
 def yes_no_unknown(
     var_name: str, condition: Optional[bool], unknown="Unknown", placeholder=0
-):
-    """Return 'unknown' if the value is None rather than False. Helper for PDF filling with
-    yesnomaybe fields"""
+) -> Any:
+    """
+    Return 'unknown' if the value is None rather than False.
+
+    Helper for PDF filling with yesnomaybe fields. Distinguishes between
+    False (explicitly no) and None (unknown/not answered).
+
+    Args:
+        var_name (str): The name of the variable to return if condition is True.
+        condition (Optional[bool]): The condition to evaluate. True returns the
+            variable value, False returns placeholder, None returns unknown.
+        unknown (str, optional): Value to return when condition is None.
+            Defaults to "Unknown".
+        placeholder: Value to return when condition is False. Defaults to 0.
+
+    Returns:
+        The value of var_name if condition is True, the unknown string if
+        condition is None, or the placeholder value if condition is False.
+
+    Example:
+        >>> yes_no_unknown("user_answer", True, "Unknown", 0)
+        # Returns value of user_answer variable
+        >>> yes_no_unknown("user_answer", None, "Unknown", 0)
+        "Unknown"
+        >>> yes_no_unknown("user_answer", False, "Unknown", 0)
+        0
+    """
     if condition:
         return value(var_name)
     elif condition is None:
@@ -154,8 +232,25 @@ def yes_no_unknown(
 
 
 def number_to_letter(n: Optional[int]) -> str:
-    """Returns a capital letter representing ordinal position. E.g., 1=A, 2=B, etc. Appends letters
-    once you reach 26 in a way compatible with Excel/Google Sheets column naming conventions. 27=AA, 28=AB...
+    """
+    Returns a capital letter representing ordinal position.
+
+    E.g., 1=A, 2=B, etc. Appends letters once you reach 26 in a way compatible
+    with Excel/Google Sheets column naming conventions. 27=AA, 28=AB...
+
+    Args:
+        n (Optional[int]): The number to convert to letters. If None, treated as 0.
+
+    Returns:
+        str: The letter representation of the number using Excel-style column naming.
+
+    Example:
+        >>> number_to_letter(1)
+        'A'
+        >>> number_to_letter(26)
+        'Z'
+        >>> number_to_letter(27)
+        'AA'
     """
     string = ""
     if n is None:
@@ -176,10 +271,30 @@ def collapse_template(
     """
     Insert HTML for a Bootstrap "collapse" div.
 
-    Optionally, you can specify a custom icon to override the defaults:
+    Creates a collapsible section with a clickable header that shows/hides content.
+    Optionally, you can specify custom icons to override the defaults.
 
-    The default icons are "right caret" which displays when the text is collapsed (`closed_icon`) and
-    "down caret" which displays when the text is open (`open_icon`).
+    The default icons are "right caret" which displays when the text is collapsed
+    (`closed_icon`) and "down caret" which displays when the text is open (`open_icon`).
+
+    Args:
+        template (DALazyTemplate): The docassemble template to render in the collapsible section.
+        classname (str | None, optional): CSS class name for styling the content container.
+            Defaults to None (uses "bg-light").
+        closed_icon (str, optional): FontAwesome icon name for collapsed state.
+            Defaults to "caret-right".
+        open_icon (str, optional): FontAwesome icon name for expanded state.
+            Defaults to "caret-down".
+        collapsed (bool, optional): Whether the section should start collapsed.
+            Defaults to True.
+
+    Returns:
+        Complete HTML string for the Bootstrap collapse component, or empty
+        string if template has no content.
+
+    Example:
+        >>> collapse_template(my_template, classname="bg-primary", collapsed=False)
+        '<div id="..." class="al_collapse_template">...</div>'
     """
     if not template.subject_as_html(trim=True) and not template.content_as_html():
         return ""
@@ -208,7 +323,24 @@ def collapse_template(
 
 def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
     """
-    Provided a list of templates, create Bootstrap v 4.5 tabs with the `subject` as the tab label.
+    Create Bootstrap v 4.5 tabs with template subjects as tab labels.
+
+    Provided a list of templates, creates a tabbed interface where each template's
+    subject becomes the tab label and the content becomes the tab panel content.
+
+    Args:
+        tab_group_name (str): The base name for the tab group, used to generate
+            unique IDs for the tabs.
+        *pargs: Variable number of template objects that have subject and content_as_html
+            methods.
+
+    Returns:
+        Complete HTML string containing Bootstrap tabs navigation and content
+        panels.
+
+    Example:
+        >>> tabbed_templates_html("my_tabs", template1, template2, template3)
+        '<ul class="nav nav-tabs" id="my_tabs">...</ul><div class="tab-content">...</div>'
     """
     if isinstance(tab_group_name, str):
         tab_group_name = space_to_underscore(tab_group_name)
@@ -299,8 +431,24 @@ def review_widget(
     return widget
 
 
-def sum_if_defined(*pargs):
-    """Lets you add up the value of variables that are not in a list"""
+def sum_if_defined(*pargs) -> Union[int, float, Decimal]:
+    """
+    Add up the value of variables that are not in a list.
+
+    Lets you sum the values of multiple variables, but only includes variables
+    that are defined. Undefined variables are skipped rather than causing errors.
+
+    Args:
+        *pargs: Variable number of variable names (strings) to sum up.
+
+    Returns:
+        The sum of all defined variable values. Variables that are not defined
+        are treated as 0 (skipped).
+
+    Example:
+        >>> sum_if_defined("income1", "income2", "income3")
+        # Returns sum of defined income variables, skipping any undefined ones
+    """
     total = 0
     for source in pargs:
         if defined(source):
@@ -308,8 +456,26 @@ def sum_if_defined(*pargs):
     return total
 
 
-def add_records(obj, labels):
-    """List demo interviews in the current package to be run from the landing page"""
+def add_records(obj, labels) -> Any:
+    """
+    List demo interviews in the current package to be run from the landing page.
+
+    Populates a DAList object with records containing interview information
+    including name, description, and reference for creating a demo landing page.
+
+    Args:
+        obj: A DAList object to populate with interview records.
+        labels (dict): Dictionary where keys are interview names and values are
+            tuples/lists containing [description, reference].
+
+    Returns:
+        The populated obj (DAList) with interview records added.
+
+    Example:
+        >>> interviews = {"intake": ["Intake Interview", "intake.yml"]}
+        >>> add_records(my_list, interviews)
+        # my_list[0].name = "intake", description = "Intake Interview", etc.
+    """
     index = 0
     for key, val in labels.items():
         obj.appendObject()
@@ -322,14 +488,29 @@ def add_records(obj, labels):
 
 def output_checkbox(
     value_to_check: bool, checked_value: str = "[X]", unchecked_value: str = "[  ]"
-):
-    """Generate a conditional checkbox for docx templates
+) -> str:
+    """
+    Generate a conditional checkbox for docx templates.
+
+    Returns different values based on whether a boolean condition is true or false,
+    useful for creating checkboxes in document templates.
 
     Args:
-      checked_value: defaults to `[X]` but can be set to any string or even a `DAFile` or `DAStaticFile`
-          with the image of a checkbox
-      unchecked_value: opposite meaning of `checked_value` and defaults to `[  ]`
+        value_to_check (bool): The boolean value to evaluate.
+        checked_value (str, optional): Value to return when condition is True.
+            Defaults to "[X]". Can be any string or even a DAFile or DAStaticFile
+            with the image of a checkbox.
+        unchecked_value (str, optional): Value to return when condition is False.
+            Defaults to "[  ]". Opposite meaning of `checked_value`.
 
+    Returns:
+        The checked_value if value_to_check is True, otherwise unchecked_value.
+
+    Example:
+        >>> output_checkbox(True)
+        '[X]'
+        >>> output_checkbox(False, checked_value="YES", unchecked_value="NO")
+        'NO'
     """
     if value_to_check:
         return checked_value
@@ -339,8 +520,23 @@ def output_checkbox(
 
 def nice_county_name(address: Address) -> str:
     """
+    Clean up county name by removing " County" suffix if present.
+
     If the county name contains the word "County", which Google Address
-    Autocomplete does by default, remove it.
+    Autocomplete does by default, remove it to get a cleaner display name.
+
+    Args:
+        address (Address): A docassemble Address object that may have a county attribute.
+
+    Returns:
+        The county name with " County" suffix removed, or empty string if
+        the address has no county attribute.
+
+    Example:
+        >>> nice_county_name(address_with_county)
+        'Suffolk'  # if address.county was "Suffolk County"
+        >>> nice_county_name(address_without_county)
+        ''
     """
     if not hasattr(address, "county"):
         return ""
@@ -354,7 +550,7 @@ class ButtonDict(TypedDict):
     name: str
     image: str
     url: str
-    privilege: Union[str, List[str]]
+    privilege: NotRequired[Union[str, List[str]]]
 
 
 def button_array(
@@ -372,17 +568,20 @@ def button_array(
     of privileges.
 
     Args:
-        button_list: a dictionary of ButtonDicts (or plain dictionaries) with the following keys:
+        buttons (List[ButtonDict]): A list of ButtonDicts (or plain dictionaries)
+            with the following keys:
             - `name`: the text to display on the button
             - `image`: the name of a fontawesome icon to display on the button
             - `url`: the name of the page to link to
-            - `privilege`: optional, the name of a Docassemble privilege that the user must have to see the button. Can be a list or a single string.
-
-        custom_container_class: optional, a string of additional CSS classes to add to the container div
-        custom_link_class: optional, a string of additional CSS classes to add to each link
+            - `privilege`: optional, the name of a Docassemble privilege that the
+              user must have to see the button. Can be a list or a single string.
+        custom_container_class (str, optional): Additional CSS classes to add to
+            the container div. Defaults to "".
+        custom_link_class (str, optional): Additional CSS classes to add to each
+            link. Defaults to "".
 
     Returns:
-        HTML for a grid of buttons
+        str: HTML for a grid of buttons that mimics Docassemble's button field type.
     """
     buttons = [
         button
@@ -403,7 +602,7 @@ def button_array(
     return output
 
 
-def none_to_empty(val: Any):
+def none_to_empty(val: Any) -> Any:
     """If the value is None or "None", return a DAEmpty value. Otherwise return the value.
 
     This is useful for filling in a template and to prevent the word None from appearing in the output. For example,
@@ -451,10 +650,14 @@ def true_values_with_other(
     This is useful for filling in a template and to prevent the word 'Other' from appearing in the output.
 
     Args:
-        variable: the dictionary of variables to check
-        other_variable_name: the name of the variable (as a string) to return if the value of the first variable is 'Other'
+        variable_name (str): The dictionary of variables to check.
+        other_variable_name (Optional[str], optional): The name of the variable
+            (as a string) to return if the value of the first variable is 'Other'.
+            Defaults to None (uses variable_name + "_other").
+
     Returns:
-        a list of values that are True, with the value of the 'other' variable appended to the end of the list.
+        A list of values that are True, with the value of the 'other'
+        variable appended to the end of the list if 'other'/'Other' was selected.
     """
     if not other_variable_name:
         other_variable_name = variable_name + "_other"
@@ -472,12 +675,28 @@ def true_values_with_other(
 
 def include_a_year(text: str, field: Optional[str] = None) -> bool:
     """
-    Validates whether the input text contains at least one 4-digit sequence
-    that occurs within a range of ~ 200 years, indicating a valid "year"
-    for an event that should be reported on most court forms, like a birthdate
-    or a moving date.
+    Validates whether the input text contains at least one 4-digit year.
 
-    Returns True if found, otherwise raises a DAValidationError.
+    Validates whether the input text contains at least one 4-digit sequence
+    that occurs within a range of ~ 200 years (1800-2199), indicating a valid
+    "year" for an event that should be reported on most court forms, like a
+    birthdate or a moving date.
+
+    Args:
+        text (str): The text to search for a year pattern.
+        field (Optional[str], optional): The field name to use in validation
+            error messages. Defaults to None.
+
+    Returns:
+        bool: True if a valid year is found, otherwise raises a DAValidationError.
+
+    Raises:
+        DAValidationError: If no valid year pattern is found in the text.
+
+    Example:
+        >>> include_a_year("Born in 1985")
+        True
+        >>> include_a_year("Born long ago")  # raises DAValidationError
     """
     # Match a 4-digit sequence
     if re.search(r"\b(18|19|20|21)\d{2}\b", text):

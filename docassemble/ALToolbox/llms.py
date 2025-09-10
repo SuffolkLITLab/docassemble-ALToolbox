@@ -269,6 +269,10 @@ def extract_fields_from_text(
     Args:
         text (str): The text to extract fields from
         field_list (Dict[str,str]): A list of fields to extract, with the key being the field name and the value being a description of the field
+        openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
+        openai_api (Optional[str]): An OpenAI API key. Defaults to None.
+        temperature (float): The temperature to use for the OpenAI API. Defaults to 0.
+        model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
 
     Returns:
         A dictionary of fields extracted from the text
@@ -308,8 +312,13 @@ def match_goals_from_text(
     """Reads a user's message and determines whether it meets a set of goals, with the help of an LLM.
 
     Args:
-        text (str): The text to extract goals from
-        field_list (Dict[str,str]): A list of goals to extract, with the key being the goal name and the value being a description of the goal
+        question (str): The question that was asked to the user
+        user_response (str): The user's response to the question
+        goals (Dict[str,str]): A list of goals to extract, with the key being the goal name and the value being a description of the goal
+        openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
+        openai_api (Optional[str]): An OpenAI API key. Defaults to None.
+        temperature (float): The temperature to use for the OpenAI API. Defaults to 0.
+        model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
 
     Returns:
         A dictionary of fields extracted from the text
@@ -365,10 +374,14 @@ def classify_text(
     Args:
         text (str): The text to classify
         choices (Dict[str,str]): A list of choices to classify the text into, with the key being the choice name and the value being a description of the choice
+        default_response (str): The default response to return if the text cannot be classified. Defaults to "null".
         openai_client (Optional[OpenAI]): An OpenAI client object, optional. If omitted, will fall back to creating a new OpenAI client with the API key provided as an environment variable
         openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
         temperature (float): The temperature to use for GPT. Defaults to 0.
         model (str): The model to use for the GPT API
+
+    Returns:
+        The classification of the text.
     """
     system_prompt = f"""You are an expert annotator. Given a user's message, respond with the classification into one of the following categories:
     ```
@@ -402,13 +415,15 @@ def synthesize_user_responses(
     into a single, coherent reply.
 
     Args:
-        custom_instructions (str): Custom instructions for the LLM to follow in constructing the synthesized response
-        initial_draft (str): The initial draft of the response from the user
         messages (List[Dict[str, str]]): A list of questions from the LLM and responses from the user
+        custom_instructions (str): Custom instructions for the LLM to follow in constructing the synthesized response
         openai_client (Optional[OpenAI]): An OpenAI client object, optional. If omitted, will fall back to creating a new OpenAI client with the API key provided as an environment variable
         openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
         temperature (float): The temperature to use for GPT. Defaults to 0.
         model (str): The model to use for the GPT API
+
+    Returns:
+        A synthesized response from the user.
     """
     system_message = f"""You are a helpful editor engaging in a conversation with the user. You are helping a user write a response to an open-ended question.
     You will see the user's initial draft, followed by a series of questions and answers that clarified additional content to include
@@ -445,18 +460,19 @@ def synthesize_user_responses(
 def define_fields_from_dict(
     field_dict: Dict[str, Any], fields_to_ignore: Optional[List] = None
 ) -> None:
-    """Assigns the values in a dictionary of fields to the corresponding fields in a Docassemble interview.
+    """
+    Assign values from a dictionary to corresponding Docassemble interview fields.
 
-    Docassemble and built-in keywords are never defined by this function. If fields_to_ignore is provided, those fields will also be ignored.
+    Docassemble and built-in keywords are never defined by this function. If
+    fields_to_ignore is provided, those fields will also be ignored.
 
     Args:
-        field_dict (Dict[str, Any]): A dictionary of fields to define, with the key being the field name and the value
-            presumably taken from the output of extract_fields_from_text.
-        fields_to_ignore (Optional[List]): A list of fields to ignore. Defaults to None. Should be used to ensure
-            safety when defining fields from untrusted sources. E.g., ["user_is_logged_in"]
-
-    Returns:
-        None
+        field_dict (Dict[str, Any]): A dictionary of fields to define, with the key
+            being the field name and the value presumably taken from the output of
+            extract_fields_from_text.
+        fields_to_ignore (Optional[List]): A list of fields to ignore. Defaults to
+            None. Should be used to ensure safety when defining fields from untrusted
+            sources. E.g., ["user_is_logged_in"]
     """
     if not isinstance(field_dict, dict):
         log("Field dict is not a dictionary.")
@@ -492,10 +508,15 @@ class Goal(DAObject):
         if the user's response satisfies the goal.
 
         Args:
-            response (str): The response to check
+            messages (List[Dict[str, str]]): The messages to check
+            openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
+            model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
+            system_message (Optional[str]): The system message to use for the OpenAI API. Defaults to None.
+            llm_assumed_role (Optional[str]): The role for the LLM to assume. Defaults to "teacher".
+            user_assumed_role (Optional[str]): The role for the user to assume. Defaults to "student".
 
         Returns:
-            True if the response satisfies the goal, False otherwise
+            The text of the next question to ask the user or the string "satisfied"
         """
         if not system_message:
             system_message = f"""You are a {llm_assumed_role} who is helping to improve and get relevant and thoughtful information from a {user_assumed_role}.
@@ -529,7 +550,16 @@ class Goal(DAObject):
         openai_client: Optional[OpenAI] = None,
         model="gpt-4o-mini",
     ) -> str:
-        """Returns the text of the next question to ask the user."""
+        """Returns the text of the next question to ask the user.
+
+        Args:
+            thread_so_far (List[Dict[str, str]]): The thread of the conversation so far
+            openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
+            model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
+
+        Returns:
+            The text of the next question to ask the user.
+        """
 
         system_instructions = f"""You are helping the user to satisfy this goal with their response: "{ self.description }". Ask a brief appropriate follow-up question that directs the user toward the goal. If they have already provided a partial response, explain why and how they should expand on it."""
 
@@ -555,8 +585,12 @@ class GoalDict(DADict):
         self.object_type = Goal
         self.auto_gather = False
 
-    def satisfied(self):
-        """Returns True if all goals are satisfied, False otherwise."""
+    def satisfied(self) -> bool:
+        """Returns True if all goals are satisfied, False otherwise.
+
+        Returns:
+            True if all goals are satisfied, False otherwise.
+        """
         return all(
             [
                 goal.satisfied if hasattr(goal, "satisfied") else False
@@ -576,6 +610,7 @@ class GoalQuestion(DAObject):
 
     @property
     def complete(self):
+        """Returns True if the goal, question, and response attributes are present."""
         self.goal
         self.question
         self.response
@@ -658,9 +693,6 @@ class GoalSatisfactionList(DAList):
     def mark_satisfied_goals(self) -> None:
         """Marks goals as satisfied if the user's response satisfies the goal.
         This should be used as soon as the user gives their initial reply.
-
-        Returns:
-            None
         """
         extracted_fields = match_goals_from_text(
             self.initial_question,
@@ -672,17 +704,24 @@ class GoalSatisfactionList(DAList):
             if field in self.goal_dict and extracted_fields[field]:
                 self.goal_dict[field].satisfied = True
 
-    def keep_going(self):
-        """Returns True if there is at least one unsatisfied goal and if the number of follow-up questions asked is less than the question limit, False otherwise."""
+    def keep_going(self) -> bool:
+        """Returns True if there is at least one unsatisfied goal and if the number of follow-up questions asked is less than the question limit, False otherwise.
+
+        Returns:
+            True if there is at least one unsatisfied goal and if the number of follow-up questions asked is less than the question limit, False otherwise.
+        """
         if not self._get_next_unsatisfied_goal() or self.satisfied():
             return False
         return len(self.elements) < self.question_limit
 
-    def need_more_questions(self):
+    def need_more_questions(self) -> bool:
         """Returns True if there is at least one unsatisfied goal, False otherwise.
 
         Also has the side effect of checking the user's most recent response to see if it satisfies the goal
         and updating the next question to be asked.
+
+        Returns:
+            True if there is at least one unsatisfied goal, False otherwise.
         """
         goal = self._get_next_unsatisfied_goal()
         if not goal:
@@ -707,8 +746,12 @@ class GoalSatisfactionList(DAList):
 
         return self.keep_going()
 
-    def satisfied(self):
-        """Returns True if all goals are satisfied, False otherwise."""
+    def satisfied(self) -> bool:
+        """Returns True if all goals are satisfied, False otherwise.
+
+        Returns:
+            True if all goals are satisfied, False otherwise.
+        """
         return self.goal_dict.satisfied()
 
     def _get_next_unsatisfied_goal(self) -> Optional[Goal]:
@@ -729,7 +772,7 @@ class GoalSatisfactionList(DAList):
         # log(f"Next goal is { next_goal }")
         return next_goal
 
-    def get_next_goal_and_question(self):
+    def get_next_goal_and_question(self) -> tuple:
         """Returns the next unsatisfied goal, along with a follow-up question to ask the user, if relevant.
 
         Returns:
@@ -782,8 +825,12 @@ class GoalSatisfactionList(DAList):
 
         return messages
 
-    def synthesize_draft_response(self):
-        """Returns a draft response that synthesizes the user's responses to the questions."""
+    def synthesize_draft_response(self) -> str:
+        """Returns a draft response that synthesizes the user's responses to the questions.
+
+        Returns:
+            A draft response that synthesizes the user's responses to the questions.
+        """
         messages = [
             {"role": "assistant", "content": self.initial_question},
             {"role": "user", "content": self.initial_draft},
@@ -797,8 +844,17 @@ class GoalSatisfactionList(DAList):
             model=self.model,
         )
 
-    def provide_feedback(self, feedback_prompt: str = ""):
-        """Returns feedback to the user based on the goals they satisfied."""
+    def provide_feedback(
+        self, feedback_prompt: str = ""
+    ) -> Union[List[Any], Dict[str, Any], str]:
+        """Returns feedback to the user based on the goals they satisfied.
+
+        Args:
+            feedback_prompt (str): The prompt to use for the feedback. Defaults to "".
+
+        Returns:
+            Feedback to the user based on the goals they satisfied.
+        """
         if not feedback_prompt:
             feedback_prompt = """
             You are a helpful instructor who is providing feedback to a student
@@ -836,6 +892,7 @@ class IntakeQuestion(DAObject):
 
     @property
     def complete(self):
+        """Returns True if the question and response attributes are present."""
         self.question
         self.response
         return True
@@ -937,11 +994,14 @@ class IntakeQuestionList(DAList):
             return False
         return True
 
-    def need_more_questions(self):
+    def need_more_questions(self) -> bool:
         """Returns True if the user needs to answer more questions, False otherwise.
 
         Also has the side effect of checking the user's most recent response to see if it satisfies the criteria
         and updating both the next question to be asked and the current qualification status.
+
+        Returns:
+            True if the user needs to answer more questions, False otherwise.
         """
         status = self._current_qualification_status()
         self.qualifies = status["qualifies"]

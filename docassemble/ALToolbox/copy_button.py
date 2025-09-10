@@ -15,16 +15,41 @@ def copy_button_html(
     style_class: str = "",
     adjust_height: str = "",
 ) -> str:
-    """Return the html for a button that will let a user copy the given text
+    """
+    Return the HTML for a button that will let a user copy the given text.
+
+    Creates a copy-to-clipboard button with customizable styling and tooltip text.
+    The button can be configured to display as a simple input field or as a styled
+    template block suitable for displaying longer content.
 
     To use, include `docassemble.ALToolbox:copy_button.yml` in your DA interview.
 
     Args:
-      text_to_copy: text you want the user to be able to copy.
-      text_before: the prompt that will appear to the left of the HTML input
-      label: the label of the Button
-      tooltip_inert_text: text shown when the button is hovered over, before it's clicked
-      tooltip_copied_text: text shown when the button is hovered over, after the text is placed on the clipboard
+        text_to_copy (str): Text you want the user to be able to copy to clipboard.
+        text_before (str, optional): The prompt that will appear to the left of the
+            HTML input. Defaults to "".
+        label (str, optional): The label text displayed on the copy button.
+            Defaults to "Copy".
+        tooltip_inert_text (str, optional): Tooltip text shown when hovering over
+            the button before it's clicked. Defaults to "Copy to clipboard".
+        tooltip_copied_text (str, optional): Tooltip text shown when hovering over
+            the button after the text is placed on the clipboard. Defaults to "Copied!".
+        copy_template_block (bool, optional): If True, displays the content in a
+            textarea with template block styling. If False, uses a simple input field.
+            Defaults to False.
+        scroll_class (str, optional): CSS class for scroll behavior when using
+            template block mode. Defaults to "".
+        style_class (str, optional): Additional CSS classes for styling the container.
+            Defaults to "".
+        adjust_height (str, optional): HTML attributes for height adjustment behavior.
+            Defaults to "".
+
+    Returns:
+        str: Complete HTML string containing the copy button and associated elements.
+
+    Example:
+        >>> copy_button_html("Hello World", text_before="Message:", label="Copy Message")
+        '<div class="al_copy">...<button class="btn btn-secondary al_copy_button">...</div>'
     """
 
     button_str = '<div class="al_copy">\n'

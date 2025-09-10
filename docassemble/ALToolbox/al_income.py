@@ -44,9 +44,19 @@ __all__ = [
 
 
 def _currency_float_to_decimal(value: Union[str, float]) -> Decimal:
-    """Given a float (that was set by a docassemble currency datatype, so
-    rounded to the nearest `fractional_digit` decimal places), returns the
-    exact decimal value, without floating point representation errors
+    """
+    Convert a currency float value to precise Decimal representation.
+
+    Given a float that was set by a docassemble currency datatype (rounded to
+    the nearest fractional_digit decimal places), returns the exact decimal
+    value without floating point representation errors.
+
+    Args:
+        value (Union[str, float]): The currency value to convert, either as
+            a float or string representation.
+
+    Returns:
+        Decimal: The precise decimal representation of the currency value.
     """
     if isinstance(value, float):
         # Print out the value of the float, rounded to the smallest allowable amount in the
@@ -82,6 +92,21 @@ def times_per_year(
     represent "every two years". Items not contained in the list (to provide a
     specific lookup name) will have a string representation that is rounded to
     the nearest whole integer.
+
+    Args:
+        times_per_year_list (List[Tuple[int, str]]): List of tuples containing
+            (frequency, description) pairs to match against.
+        times_per_year (float): The numeric frequency to look up in the list.
+
+    Returns:
+        The lowercase textual description of the frequency, or a generated
+        description if not found in the list.
+
+    Example:
+        >>> times_per_year([(12, "Monthly"), (1, "Annually")], 12)
+        'monthly'
+        >>> times_per_year([(12, "Monthly")], 5)
+        'Five times per year'
     """
     try:
         for row in times_per_year_list:
@@ -101,15 +126,25 @@ def recent_years(
 ) -> List[int]:
     """
     Returns a list of the most recent past years, continuing into the future.
-    Defaults to most recent 15 years+1. Useful to populate a combobox of years
+
+    Defaults to most recent 25 years+1. Useful to populate a combobox of years
     where the most recent ones are most likely. E.g. automobile years or
     birthdate.
 
-    Keyword parameters:
-    * past {float} The number of past years to list, including the current year.
-        The default is 15
-    * order {string} 'descending' or 'ascending'. Default is `descending`.
-    * future (defaults to 1).
+    Args:
+        past (int, optional): The number of past years to list, including the
+            current year. Defaults to 25.
+        order (str, optional): 'descending' or 'ascending'. Defaults to 'descending'.
+        future (int, optional): Number of future years to include. Defaults to 1.
+
+    Returns:
+        List[int]: List of years in the specified order.
+
+    Example:
+        >>> recent_years(past=3, future=1)  # if current year is 2023
+        [2024, 2023, 2022, 2021]
+        >>> recent_years(past=2, order="ascending", future=0)
+        [2022, 2023]
     """
     now = datetime.datetime.now()
     if order == "ascending":
@@ -135,14 +170,33 @@ class ALPeriodicAmount(DAObject):
     """
 
     def __str__(self) -> str:
-        """Returns the income's `.total()` as string, not its object name."""
+        """
+        Returns the income's total value as a string representation.
+
+        Returns:
+            The string representation of this income's total value.
+        """
         return str(self.total())
 
     def total(self, times_per_year: float = 1) -> Decimal:
         """
-        Returns the income over the specified times_per_year,
+        Returns the income over the specified times_per_year.
 
         To calculate `.total()`, an ALPeriodicAmount must have a `.times_per_year` and `.value`.
+
+        Args:
+            times_per_year (float, optional): The frequency to convert the income to.
+                Defaults to 1 (annual).
+
+        Returns:
+            Decimal: The calculated income amount for the specified frequency.
+
+        Example:
+            >>> income = ALPeriodicAmount(value=1000, times_per_year=12)  # $1000/month
+            >>> income.total(1)  # Annual total
+            Decimal('12000')
+            >>> income.total(12)  # Monthly total
+            Decimal('1000')
         """
         val = _currency_float_to_decimal(self.value)
         return (val * Decimal(self.times_per_year)) / Decimal(times_per_year)
@@ -171,6 +225,8 @@ class ALIncome(ALPeriodicAmount):
 
     def total(self, times_per_year: float = 1) -> Decimal:
         """
+        Calculate the income over the specified times_per_year frequency.
+
         Returns the income over the specified times_per_year, taking into account
         hours per period for hourly items. For example, for an hourly income of 10
         an hour, 40 hours a week, `income.total(1)` would be 20,800, the yearly income,
@@ -178,6 +234,13 @@ class ALIncome(ALPeriodicAmount):
 
         To calculate `.total()`, an ALIncome must have a `.times_per_year` and `.value`.
         It can also have `.is_hourly` and `.hours_per_period`.
+
+        Args:
+            times_per_year (float, optional): The frequency to calculate income for.
+                Defaults to 1 (annual).
+
+        Returns:
+            The calculated income amount for the specified frequency.
         """
         if hasattr(self, "is_hourly") and self.is_hourly:
             val = _currency_float_to_decimal(self.value)
@@ -198,10 +261,19 @@ SourceType = Union[Set[str], List[str], str]
 
 
 def _to_set(s: Optional[Union[Set, List, str]]) -> Set:
-    """Converts a str, list of strings, or set of strings into a set of strings,
-    which can be used to filter items in ALIncome classes.
+    """
+    Convert various input types into a set of strings for source filtering.
 
-    This is for internal use meant to ensure that `source` input is always a set.
+    Converts a str, list of strings, or set of strings into a set of strings,
+    which can be used to filter items in ALIncome classes. This is for internal
+    use meant to ensure that `source` input is always a set.
+
+    Args:
+        s (Optional[Union[Set, List, str]]): The input to convert to a set.
+            Can be None, a string, list of strings, or set of strings.
+
+    Returns:
+        A set of strings for filtering purposes.
     """
     if s is None:
         return set()
@@ -217,7 +289,22 @@ def _to_set(s: Optional[Union[Set, List, str]]) -> Set:
 def _source_to_callable(
     source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
 ) -> Callable[[str], bool]:
-    """Combines both a positive and negative lists into a single set that should be tested for inclusion"""
+    """
+    Create a filtering function from positive and negative source lists.
+
+    Combines both a positive and negative lists into a single set that should
+    be tested for inclusion, creating a callable that can filter income sources.
+
+    Args:
+        source (Optional[SourceType], optional): Sources to include in filtering.
+            Defaults to None.
+        exclude_source (Optional[SourceType], optional): Sources to exclude from
+            filtering. Defaults to None.
+
+    Returns:
+        A callable function that takes a source string and returns True if it
+        should be included based on the filtering criteria.
+    """
     exclude_set = _to_set(exclude_source)
     include_set = _to_set(source).difference(exclude_set)
     if include_set:
@@ -241,13 +328,40 @@ class ALIncomeList(DAList):
     .total()
     """
 
-    def init(self, *pargs, **kwargs):
+    # The DAList base sets/uses this dynamically; annotate for type checkers
+    object_type: Optional[type]
+
+    def init(self, *pargs, **kwargs) -> None:
+        """
+        Initialize an ALIncomeList object with default settings.
+
+        Sets up the object type to ALIncome if not already specified, ensuring
+        the list contains appropriate income objects for processing.
+
+        Args:
+            *pargs: Variable length argument list passed to parent class.
+            **kwargs: Arbitrary keyword arguments passed to parent class.
+        """
         super().init(*pargs, **kwargs)
         if not hasattr(self, "object_type") or self.object_type is None:
             self.object_type = ALIncome
 
     def sources(self) -> Set[str]:
-        """Returns a set of the unique sources in the ALIncomeList."""
+        """
+        Returns a set of the unique sources in the ALIncomeList.
+
+        Returns:
+            Set[str]: A set containing all unique source names from items in the list.
+
+        Example:
+            >>> income_list = ALIncomeList([
+            ...     ALIncome(source="wages"),
+            ...     ALIncome(source="tips"),
+            ...     ALIncome(source="wages")
+            ... ])
+            >>> income_list.sources()
+            {'wages', 'tips'}
+        """
         sources = set()
         for item in self.elements:
             if hasattr(item, "source"):
@@ -258,9 +372,28 @@ class ALIncomeList(DAList):
         self, source: SourceType, exclude_source: Optional[SourceType] = None
     ) -> "ALIncomeList":
         """
-        Returns an ALIncomeList consisting only of elements matching the specified
-        income source, assisting in filling PDFs with predefined spaces. `source`
-        may be a list.
+        Returns an ALIncomeList consisting only of elements matching the specified income source.
+
+        Assists in filling PDFs with predefined spaces by filtering income items
+        by their source. The source parameter may be a string or a list.
+
+        Args:
+            source (SourceType): The income source(s) to match. Can be a string or list of strings.
+            exclude_source (Optional[SourceType], optional): Source(s) to exclude from the results.
+                Defaults to None.
+
+        Returns:
+            ALIncomeList: A new ALIncomeList containing only items with matching sources.
+
+        Example:
+            >>> income_list = ALIncomeList([
+            ...     ALIncome(source="wages", value=1000),
+            ...     ALIncome(source="tips", value=200),
+            ...     ALIncome(source="wages", value=1200)
+            ... ])
+            >>> wages_only = income_list.matches("wages")
+            >>> len(wages_only)
+            2
         """
         # Always make sure we're working with a set
         satifies_sources = _source_to_callable(source, exclude_source)
@@ -278,13 +411,32 @@ class ALIncomeList(DAList):
         owner: Optional[str] = None,
     ) -> Decimal:
         """
-        Returns the total periodic value in the list, gathering the list items
-        if necessary. You can optionally filter by `source`. `source` can be a
-        string or a list. You can also filter by one `owner`.
+        Returns the total periodic value in the list, gathering the list items if necessary.
 
-        To calculate `.total()` correctly, all items must have a `.total()` and
-        it should be a positive value. Job-type incomes should automatically
+        You can optionally filter by `source` (string or list) and/or by one `owner`.
+        To calculate `.total()` correctly, all items must have a `.total()` method
+        and it should be a positive value. Job-type incomes should automatically
         exclude deductions.
+
+        Args:
+            times_per_year (float, optional): The frequency to convert income to.
+                Defaults to 1 (annual).
+            source (Optional[SourceType], optional): Income source(s) to include.
+                Can be string or list. Defaults to None (all sources).
+            exclude_source (Optional[SourceType], optional): Source(s) to exclude.
+                Defaults to None.
+            owner (Optional[str], optional): Filter by specific owner name.
+                Defaults to None (all owners).
+
+        Returns:
+            Decimal: The total income amount for the specified frequency and filters.
+
+        Example:
+            >>> income_list = ALIncomeList([wages_income, tips_income])
+            >>> income_list.total(times_per_year=12)  # Monthly total
+            Decimal('5000.00')
+            >>> income_list.total(source="wages")  # Annual wages only
+            Decimal('60000.00')
         """
         self._trigger_gather()
         result: Decimal = Decimal(0)
@@ -310,15 +462,19 @@ class ALIncomeList(DAList):
         self,
         selected_types: Optional[DADict] = None,
         selected_terms: Optional[Mapping] = None,
-    ):
+    ) -> None:
         """Gives a 'gather by checklist' option.
         If no selected_types param is passed, requires that a .selected_types
         attribute be set by a `datatype: checkboxes` fields
-        If "other" is in the selected_types, the source will not be set directly
+        If "other" is in the selected_types, the source will not be set directly.
 
         Sets the attribute "moved" to true, doesn't set gathered, because this isn't
         idempotent, so trying to also gather all info about the checks in the list doesn't
         work well.
+
+        Args:
+            selected_types (Optional[DADict]): A dictionary of selected types.
+            selected_terms (Optional[Mapping]): A mapping of selected terms.
         """
         if selected_types is None:
             selected_types = self.selected_types
@@ -363,6 +519,12 @@ class ALJob(ALIncome):
     """
 
     def init(self, *pargs, **kwargs):
+        """
+        Initialize an ALJob object with employer setup.
+
+        Initializes the employer attribute based on the employer_type if available,
+        defaulting to Individual type if no specific type is set.
+        """
         super().init(*pargs, **kwargs)
         # if not hasattr(self, "source") or self.source is None:
         #    self.source = "job"
@@ -374,37 +536,58 @@ class ALJob(ALIncome):
 
     def gross_total(self, times_per_year: float = 1) -> Decimal:
         """
+        Calculate the gross total income over the specified times_per_year.
+
         Same as ALIncome total. Returns the income over the specified times_per_year,
         representing the `.value` attribute of the item.
 
-        `times_per_year` is some denominator of a year. E.g. to express a weekly
-        period, use 52. The default is 1 (a year).
+        Args:
+            times_per_year (float, optional): The frequency to calculate income for.
+                Is some denominator of a year. E.g. to express a weekly period,
+                use 52. The default is 1 (a year).
+
+        Returns:
+            The calculated gross income amount for the specified frequency.
         """
         return self.total(times_per_year=times_per_year)
 
     def deductions(self, times_per_year: float = 1) -> Decimal:
         """
-        Returns the total deductions from someone's pay over the specificed times_per_year
+        Calculate the total deductions from someone's pay over the specified times_per_year.
+
+        Returns the total deductions from someone's pay over the specified times_per_year
         (not per hour if hourly).
 
-        `times_per_year` is some denominator of a year. E.g. to express a weekly
-        period, use 52. The default is 1 (a year).
+        Args:
+            times_per_year (float, optional): The frequency to calculate deductions for.
+                Is some denominator of a year. E.g. to express a weekly period,
+                use 52. The default is 1 (a year).
+
+        Returns:
+            The calculated deduction amount for the specified frequency.
         """
         deduction = _currency_float_to_decimal(self.deduction)
         return (deduction * Decimal(self.times_per_year)) / Decimal(times_per_year)
 
     def net_total(self, times_per_year: float = 1) -> Decimal:
         """
+        Calculate the net income over a time period using value and deduction.
+
         Returns the net income over a time period, found using
         `self.value` and `self.deduction`.
 
-        `times_per_year` is some denominator of a year. E.g, to express a weekly
-        period, use 52. The default is 1 (a year).
+        Args:
+            times_per_year (float, optional): The frequency to calculate net income for.
+                Is some denominator of a year. E.g, to express a weekly period,
+                use 52. The default is 1 (a year).
 
-        `self.deduction` is the amount deducted from one's pay over a period (not
-        per hour if hourly).
+        Returns:
+            The calculated net income amount (gross - deductions) for the specified frequency.
 
-        This will force the gathering of the ALJob's `.value` and `.deduction` attributes.
+        Note:
+            `self.deduction` is the amount deducted from one's pay over a period (not
+            per hour if hourly). This will force the gathering of the ALJob's `.value`
+            and `.deduction` attributes.
         """
         return self.total(times_per_year=times_per_year) - self.deductions(
             times_per_year=times_per_year
@@ -412,9 +595,15 @@ class ALJob(ALIncome):
 
     def employer_name_address_phone(self) -> str:
         """
+        Get formatted employer information as a string.
+
         Returns name, address and phone number of employer as a string. Forces
         gathering the `.employer`, `.employer_address`, and `.employer_phone`
         attributes.
+
+        Returns:
+            A formatted string containing employer name, optionally with address
+            and/or phone number if available.
         """
         if self.employer.address.address and self.employer.phone:
             return (
@@ -428,17 +617,26 @@ class ALJob(ALIncome):
 
     def normalized_hours(self, times_per_year: float = 1) -> float:
         """
+        Calculate the normalized number of hours worked in a given times_per_year.
+
         Returns the normalized number of hours worked in a given times_per_year,
         based on the self.hours_per_period and self.times_per_year attributes.
 
-        For example, if the person works 10 hours a week, it will return
-        520 when the times_per_year parameter is 1.
+        Args:
+            times_per_year (float, optional): The frequency to normalize hours for.
+                Is some denominator of a year. E.g, to express a weekly period,
+                use 52. The default is 1 (a year).
 
-        `times_per_year` is some denominator of a year. E.g, to express a weekly
-        period, use 52. The default is 1 (a year).
+        Returns:
+            The normalized number of hours worked for the specified frequency.
 
-        This will force the gathering of the attributes `.hours_per_period` and
-        `.times_per_year`
+        Example:
+            If the person works 10 hours a week, it will return
+            520 when the times_per_year parameter is 1.
+
+        Note:
+            This will force the gathering of the attributes `.hours_per_period` and
+            `.times_per_year`.
         """
         return (float(self.hours_per_period) * int(self.times_per_year)) / float(
             times_per_year
@@ -453,6 +651,13 @@ class ALJobList(ALIncomeList):
     """
 
     def init(self, *pargs, **kwargs):
+        """
+        Initialize an ALJobList with ALJob as the default object type.
+
+        Args:
+            *pargs: Variable length argument list passed to parent class.
+            **kwargs: Arbitrary keyword arguments passed to parent class.
+        """
         super().init(*pargs, **kwargs)
         self.object_type = ALJob
 
@@ -486,8 +691,13 @@ class ALJobList(ALIncomeList):
         times_per_year. You can filter the jobs by `source`. `source` can be a
         string or a list.
 
-        `times_per_year` is some denominator of a year. E.g, to express a weekly
-        period, use 52. The default is 1 (a year).
+        Args:
+            times_per_year (float): The time period to divide the gross income by. Defaults to 1.
+            source (Optional[SourceType]): The source of the jobs to include. Defaults to None.
+            exclude_source (Optional[SourceType]): The source of the jobs to exclude. Defaults to None.
+
+        Returns:
+            The sum of the gross incomes of its ALJobs divided by the time times_per_year.
         """
         self._trigger_gather()
         result: Decimal = Decimal(0)
@@ -513,8 +723,13 @@ class ALJobList(ALIncomeList):
         If the job is hourly, the `net_total()` may not be comparable to the
         `gross_total()`.
 
-        `times_per_year` is some denominator of a year. E.g, to express a weekly
-        period, use 52. The default is 1 (a year).
+        Args:
+            times_per_year (float): The time period to divide the net income by. Defaults to 1.
+            source (Optional[SourceType]): The source of the jobs to include. Defaults to None.
+            exclude_source (Optional[SourceType]): The source of the jobs to exclude. Defaults to None.
+
+        Returns:
+            The sum of the net incomes of its ALJobs divided by the time times_per_year.
         """
         self._trigger_gather()
         result: Decimal = Decimal(0)
@@ -536,6 +751,14 @@ class ALJobList(ALIncomeList):
         Returns the sum of the deductions of its ALJobs divided by the time
         times_per_year. You can filter the jobs by `source`. Leaving out `source`
         will use all sources.
+
+        Args:
+            times_per_year (float): The time period to divide the deductions by. Defaults to 1.
+            source (Optional[SourceType]): The source of the jobs to include. Defaults to None.
+            exclude_source (Optional[SourceType]): The source of the jobs to exclude. Defaults to None.
+
+        Returns:
+            The sum of the deductions of its ALJobs divided by the time times_per_year.
         """
         self._trigger_gather()
         result: Decimal = Decimal(0)
@@ -793,14 +1016,23 @@ class ALVehicle(ALAsset):
 
     def year_make_model(self, separator: str = " / ") -> str:
         """
-        Returns a string of the format year/make/model of the vehicle. Triggers
-        gathering those attributes.
+        Returns a string of the format year/make/model of the vehicle.
+
+        Triggers gathering those attributes and formats them as a single string.
 
         Args:
-            separator {str} (Optional) The separator between the year, make and model.
+            separator (str, optional): The separator between the year, make and model.
+                Defaults to " / ".
 
         Returns:
-            A string of the format year/make/model of the vehicle.
+            str: A formatted string combining year, make, and model of the vehicle.
+
+        Example:
+            >>> vehicle = ALVehicle(year=2020, make="Toyota", model="Camry")
+            >>> vehicle.year_make_model()
+            '2020 / Toyota / Camry'
+            >>> vehicle.year_make_model(separator=", ")
+            '2020, Toyota, Camry'
         """
         return separator.join(map(str, [self.year, self.make, self.model]))
 
@@ -833,6 +1065,9 @@ class ALSimpleValue(DAObject):
 
         If you use signed values, be careful when placing in an ALIncomeList
         object. The `total()` method may return unexpected results in that case.
+
+        Returns:
+            The total value of the item, taking into account the transaction type.
         """
         val = _currency_float_to_decimal(self.value)
         if hasattr(self, "transaction_type"):
@@ -855,6 +1090,9 @@ class ALSimpleValueList(DAList):
     def sources(self) -> Set:
         """
         Returns a set of the unique sources of values stored in the list.
+
+        Returns:
+            A set of the unique sources of values stored in the list.
         """
         sources = set()
         for value in self.elements:
@@ -871,6 +1109,13 @@ class ALSimpleValueList(DAList):
         Returns the total value in the list, gathering the list items if
         necessary. You can filter the values by `source`. `source` can be a
         string or a list.
+
+        Args:
+            source (Optional[SourceType]): The source of the values to include. Defaults to None.
+            exclude_source (Optional[SourceType]): The source of the values to exclude. Defaults to None.
+
+        Returns:
+            The total value in the list.
         """
         self._trigger_gather()
         result = Decimal(0)
@@ -913,6 +1158,12 @@ class ALItemizedValue(DAObject):
         """
         Returns a YAML structure representing the list of fields for an itemized value,
         to be passed to a `code` attribute of a question's fields
+
+        Args:
+            use_exists (bool): Whether to include the 'exists' field. Defaults to True.
+
+        Returns:
+            A list of dictionaries representing the fields for an itemized value.
         """
         if use_exists:
             return [
@@ -940,6 +1191,24 @@ class ALItemizedValue(DAObject):
             ]
 
     def total(self) -> Decimal:
+        """
+        Calculate the total value of this itemized income item.
+
+        If an item's value doesn't exist or the item is marked as not existing,
+        returns 0. Otherwise returns the decimal value of the item.
+
+        Returns:
+            The total value of this item, or 0 if the item doesn't exist
+            or has no value.
+
+        Example:
+            >>> item = ALItemizedValue(value=1500, exists=True)
+            >>> item.total()
+            Decimal('1500')
+            >>> item_disabled = ALItemizedValue(exists=False)
+            >>> item_disabled.total()
+            Decimal('0')
+        """
         # If an item's value doesn't exist, use a value of 0
         # TODO: is this behavior correct, or should it force gathering the value?
         # What does a no-value item in the list represent?
@@ -1005,6 +1274,22 @@ class ALItemizedValueDict(DAOrderedDict):
             self.delitem(key)
 
     def total(self) -> Decimal:
+        """
+        Calculate the total value of all items in this itemized value dictionary.
+
+        Sums up all values in the dictionary, skipping items that are marked
+        as not existing (exists=False).
+
+        Returns:
+            Decimal: The sum of all existing item values in the dictionary.
+
+        Example:
+            >>> value_dict = ALItemizedValueDict()
+            >>> value_dict['wages'] = ALItemizedValue(value=1000, exists=True)
+            >>> value_dict['bonus'] = ALItemizedValue(value=500, exists=False)
+            >>> value_dict.total()
+            Decimal('1000')  # Only includes wages, not bonus
+        """
         val = Decimal(0)
         for key, value in self.elements.items():
             if hasattr(value, "exists") and not value.exists:
@@ -1158,6 +1443,14 @@ class ALItemizedJob(DAObject):
     ) -> Decimal:
         """
         Alias for ALItemizedJob.gross_total to integrate with ALIncomeList math.
+
+        Args:
+            times_per_year (float): The time period to divide the gross total by. Defaults to 1.
+            source (Optional[SourceType]): The source of the items to include. Defaults to None.
+            exclude_source (Optional[SourceType]): The source of the items to exclude. Defaults to None.
+
+        Returns:
+            The gross total of the job.
         """
         return self.gross_total(
             times_per_year=times_per_year, source=source, exclude_source=exclude_source
@@ -1175,10 +1468,15 @@ class ALItemizedJob(DAObject):
         If you use sources from deductions, they will be ignored.
 
         Args:
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
-        kwarg: source {str | [str]} (Optional) Source or list of sources of desired
-            item(s).
+            times_per_year (float, optional): Number of times per year you want to
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of desired
+                item(s). Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The sum of positive values for the given parameters.
         """
         # self.to_add._trigger_gather()
         total = Decimal(0)
@@ -1205,10 +1503,15 @@ class ALItemizedJob(DAObject):
         filter the items by `source`. `source` can be a string or a list.
 
         Args:
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
-        kwarg: source {str | List[str]} (Optional) Source or list of sources of desired
-            item(s).
+            times_per_year (float, optional): Number of times per year you want to
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of desired
+                item(s). Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The sum of deductions for the given parameters as a positive value.
         """
         # self.to_subtract._trigger_gather()
         total = Decimal(0)
@@ -1236,10 +1539,15 @@ class ALItemizedJob(DAObject):
         string or a list. E.g. "full time" or ["full time", "union dues"]
 
         Args:
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
-        kwarg: source {str | List[str]} (Optional) Source or list of sources of desired
-            item(s).
+            times_per_year (float, optional): Number of times per year you want to
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of desired
+                item(s). Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The net value (gross minus deductions) for the given parameters.
         """
         # self.to_add._trigger_gather()
         # self.to_subtract._trigger_gather()
@@ -1253,6 +1561,9 @@ class ALItemizedJob(DAObject):
         """
         Returns concatenation of employer name and, if they exist, employer
         address and phone number.
+
+        Returns:
+            A string containing the employer's name, address, and phone number.
         """
         info_list = []
         has_address = (
@@ -1281,6 +1592,12 @@ class ALItemizedJob(DAObject):
 
         For example, if the person works 10 hours a week, it will return
         520 when the times_per_year parameter is 1.
+
+        Args:
+            times_per_year (float): The time period to normalize the hours to. Defaults to 1.
+
+        Returns:
+            The normalized number of hours worked in the given time period.
         """
         return (float(self.hours_per_period) * float(self.times_per_year)) / float(
             times_per_year
@@ -1303,6 +1620,12 @@ class ALItemizedJobList(DAList):
     def sources(self, which_side: Optional[str] = None) -> Set[str]:
         """Returns a set of the unique sources in all of the jobs.
         By default gets from both sides, if which_side is "deductions", only gets from deductions.
+
+        Args:
+            which_side (Optional[str]): The side of the job to get the sources from. Can be "incomes", "deductions", or "all". Defaults to "all".
+
+        Returns:
+            A set of the unique sources in all of the jobs.
         """
         sources = set()
         if not which_side:
@@ -1323,6 +1646,14 @@ class ALItemizedJobList(DAList):
         """
         Alias for ALItemizedJobList.gross_total to integrate with
         ALIncomeList math.
+
+        Args:
+            times_per_year (float): The time period to divide the gross total by. Defaults to 1.
+            source (Optional[SourceType]): The source of the items to include. Defaults to None.
+            exclude_source (Optional[SourceType]): The source of the items to exclude. Defaults to None.
+
+        Returns:
+            The gross total of the list.
         """
         return self.gross_total(
             times_per_year=times_per_year, source=source, exclude_source=exclude_source
@@ -1340,11 +1671,16 @@ class ALItemizedJobList(DAList):
         string or a list.
 
         Args:
-        kwarg: source {str | [str]} - (Optional) Source or list of sources of
-            desired job items to sum from every itemized job.
-            E.g. ['tips', 'commissions']
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
+            times_per_year (float, optional): Number of times per year you want to
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of
+                desired job items to sum from every itemized job.
+                E.g. ['tips', 'commissions']. Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The sum of the gross incomes for the given parameters.
         """
         self._trigger_gather()
         total = Decimal(0)
@@ -1371,11 +1707,16 @@ class ALItemizedJobList(DAList):
         string or a list.
 
         Args:
-        kwarg: source {str | [str]} - (Optional) Source or list of sources of
-            desired job items to sum from every itemized job.
-            E.g. ['taxes', 'dues']
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
+            times_per_year (float, optional): Number of times per year you want to
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of
+                desired job items to sum from every itemized job.
+                E.g. ['taxes', 'dues']. Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The sum of the deductions for the given parameters.
         """
         self._trigger_gather()
         total = Decimal(0)
@@ -1402,11 +1743,16 @@ class ALItemizedJobList(DAList):
         string or a list.
 
         Args:
-        kwarg: source {str | List[str]} - (Optional) Source or list of sources of
-            desired job items to sum from every itemized job.
-            E.g. ['tips', 'taxes']
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
+            times_per_year (float, optional): Number of times per year you want to
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of
+                desired job items to sum from every itemized job.
+                E.g. ['tips', 'taxes']. Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The net total (gross minus deductions) for the given parameters.
         """
         return self.gross_total(
             times_per_year=times_per_year, source=source

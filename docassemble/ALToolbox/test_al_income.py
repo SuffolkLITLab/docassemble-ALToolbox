@@ -22,7 +22,8 @@ from .al_income import (
 
 
 class test_correct_outputs(unittest.TestCase):
-    def test_simple_value(self):
+    def test_simple_value(self) -> None:
+        """Test ALSimpleValue"""
         value = ALSimpleValue(transaction_type="expense", value=5)
         self.assertEqual(Decimal(-5), value.total())
         value.transaction_type = "asset"
@@ -36,7 +37,8 @@ class test_correct_outputs(unittest.TestCase):
         self.assertEqual(Decimal("6.3"), value_float.total())
         self.assertEqual("6.30", str(value_float.total()))
 
-    def test_simple_value_list(self):
+    def test_simple_value_list(self) -> None:
+        """Test ALSimpleValueList"""
         val1 = ALSimpleValue(transaction_type="expense", source="real estate", value=5)
         val2 = ALSimpleValue(transaction_type="asset", source="job", value=10.1)
         val_list = ALSimpleValueList(elements=[val1, val2])
@@ -47,7 +49,8 @@ class test_correct_outputs(unittest.TestCase):
         )
         self.assertSetEqual(set(["real estate", "job"]), val_list.sources())
 
-    def test_income(self):
+    def test_income(self) -> None:
+        """Test ALIncome"""
         income = ALIncome(value=10.1, times_per_year=12)
         self.assertEqual(Decimal("121.2"), income.total())
         self.assertEqual(Decimal("10.1"), income.total(times_per_year=12))
@@ -61,7 +64,8 @@ class test_correct_outputs(unittest.TestCase):
         self.assertEqual(Decimal("8923.2"), hourly_income.total())
         self.assertEqual(Decimal("171.6"), hourly_income.total(52))
 
-    def test_income_list(self):
+    def test_income_list(self) -> None:
+        """Test ALIncomeList"""
         income = ALIncome(source="coding", value=12.53, times_per_year=12)
         hourly_income = ALIncome(
             source="coding",
@@ -81,15 +85,18 @@ class test_correct_outputs(unittest.TestCase):
             Decimal("511.16"), income_list.total(1, source=["coding", "wrong job"])
         )
 
-    def test_job(self):
+    def test_job(self) -> None:
+        """Test ALJob"""
         # TODO
         pass
 
-    def test_job_list(self):
+    def test_job_list(self) -> None:
+        """Test ALJobList"""
         # TODO
         pass
 
-    def test_asset(self):
+    def test_asset(self) -> None:
+        """Test ALAsset"""
         home = ALAsset(market_value=1234567.89, source="home")
         self.assertEqual(Decimal(0), home.total())
         savings = ALAsset(
@@ -97,7 +104,8 @@ class test_correct_outputs(unittest.TestCase):
         )
         self.assertEqual(Decimal("1.44"), savings.total())
 
-    def test_asset_list(self):
+    def test_asset_list(self) -> None:
+        """Test ALAssetList"""
         home = ALAsset(market_value=1234567.89, source="home")
         savings = ALAsset(
             balance=12.34, value=0.12, times_per_year=12, source="savings"
@@ -117,7 +125,8 @@ class test_correct_outputs(unittest.TestCase):
             Decimal("15.84"), asset_list.total(exclude_source=["checking"])
         )
 
-    def test_asset_list_with_arabic(self):
+    def test_asset_list_with_arabic(self) -> None:
+        """Test ALAssetList with Arabic locale"""
         # arabic locales have 3 frac_digits
         existing_locale = locale.getlocale()
         locale.setlocale(locale.LC_ALL, "ar_AE.UTF-8")
@@ -141,15 +150,18 @@ class test_correct_outputs(unittest.TestCase):
         )
         locale.setlocale(locale.LC_ALL, existing_locale)
 
-    def test_vehicle(self):
+    def test_vehicle(self) -> None:
+        """Test ALVehicle"""
         # TODO
         pass
 
-    def test_vehicle_list(self):
+    def test_vehicle_list(self) -> None:
+        """Test ALVehicleList"""
         # TODO
         pass
 
-    def test_itemized_value_dict(self):
+    def test_itemized_value_dict(self) -> None:
+        """Test ALItemizedValueDict"""
         itemized_dict = ALItemizedValueDict(
             elements={
                 "val1": ALItemizedValue(
@@ -163,7 +175,8 @@ class test_correct_outputs(unittest.TestCase):
         itemized_dict.hook_after_gather()
         self.assertEqual(1, len(itemized_dict))
 
-    def test_itemized_job(self):
+    def test_itemized_job(self) -> None:
+        """Test ALItemizedJob"""
         job = ALItemizedJob(
             is_hourly=True,
             is_part_time=True,
@@ -183,7 +196,8 @@ class test_correct_outputs(unittest.TestCase):
         self.assertEqual(Decimal("14373.84"), job.net_total())
         self.assertEqual("14373.84", str(job.net_total()))
 
-    def test_itemized_job_list(self):
+    def test_itemized_job_list(self) -> None:
+        """Test ALItemizedJobList"""
         job = ALItemizedJob(
             is_hourly=True,
             is_part_time=True,

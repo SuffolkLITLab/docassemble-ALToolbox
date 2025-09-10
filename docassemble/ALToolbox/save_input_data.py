@@ -19,10 +19,36 @@ def save_input_data(
     tags: Optional[List[str]] = None,
 ) -> None:
     """
-    This function is used by survey type interviews to save input data for data reporting purposes.
+    Save survey interview input data to JSON storage for data reporting purposes.
 
-    The input_dict should a dictionary where each key is a string and each value is a value from a Docassemble interview
-    question. Typically that is a string, float, int, or a DADict.
+    Processes and stores user input data from survey-type interviews into the
+    Docassemble JSON storage system. Automatically handles type inference and
+    flattening of complex data structures like checkboxes and multiselect fields.
+
+    Args:
+        title (str, optional): A descriptive title for this data entry.
+            Defaults to "".
+        input_dict (Optional[Dict[str, Any]], optional): Dictionary mapping field
+            names to their values from interview questions. Values can be strings,
+            floats, ints, or DADict objects. If None, an empty dict is used.
+            Defaults to None.
+        tags (Optional[List[str]], optional): List of string tags to associate
+            with this data entry for categorization and filtering. Defaults to None.
+
+    Note:
+        - This function saves data to storage but does not return anything
+        - Checkbox and multiselect fields (DADict) are automatically flattened
+          so each option becomes a separate database column with a boolean value
+        - Each call creates one database record per interview session
+        - Data is stored with a random 32-character alphanumeric key
+
+    Example:
+        >>> survey_data = {
+        ...     "age": 25,
+        ...     "income": 50000.0,
+        ...     "interests": my_checkbox_dict
+        ... }
+        >>> save_input_data("User Survey", survey_data, ["survey", "demographics"])
     """
     type_dict: Dict[str, str] = {}
     field_dict: Dict[str, Any] = {}

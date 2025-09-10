@@ -13,6 +13,35 @@ def display_template(
     classname="bg-light",
     class_name=None,  # deprecated
 ) -> str:
+    """
+    Display a template with optional scrolling, collapsing, and copy functionality.
+
+    Renders a template in a styled container with various display options including
+    scrollable content, collapsible sections, and copy-to-clipboard functionality.
+    Supports both the current `classname` parameter and the deprecated `class_name`
+    parameter for backwards compatibility.
+
+    Args:
+        template: A docassemble template object with content to display.
+        scrollable (bool, optional): Whether the content should be scrollable.
+            Defaults to True.
+        collapse (bool, optional): Whether the content should be collapsible.
+            Defaults to False.
+        copy (bool, optional): Whether to include a copy-to-clipboard button.
+            Defaults to False.
+        classname (str, optional): CSS class name for styling the container.
+            Defaults to "bg-light".
+        class_name (str, optional): Deprecated parameter for CSS class name.
+            Defaults to None.
+
+    Returns:
+        HTML string containing the rendered template with the specified
+        display options.
+
+    Example:
+        >>> display_template(my_template, scrollable=True, collapse=True)
+        '<div id="..." class="al_display_template">...</div>'
+    """
     # 1. Initialize
     if scrollable:
         scroll_class = "scrollable-panel"
