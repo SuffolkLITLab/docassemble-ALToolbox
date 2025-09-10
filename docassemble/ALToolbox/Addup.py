@@ -9,6 +9,28 @@ class Addup:
         self.g(listName, varName)
 
     def g(self, listName, varName):
+        """
+        Calculate the sum of a specific numeric field across all items in a DAList.
+
+        Iterates through each item in the provided DAList, extracts the specified
+        field value, and adds all values together. Raises an error if the sum is 0,
+        which indicates the field was not found or contained no numeric values.
+
+        Args:
+            listName: A DAList object containing items with numeric fields.
+            varName (str): The name of the field to sum across all list items.
+
+        Returns:
+            float: The sum of all values for the specified field.
+
+        Raises:
+            DAValidationError: If the sum is 0, indicating the field was not found
+                or contained no numeric values.
+
+        Example:
+            >>> addup = Addup(income_list, "monthly_amount")
+            >>> # Returns sum of monthly_amount fields from all items in income_list
+        """
         self.sum = 0
         for w in listName:
             my_dict = w.as_serializable()

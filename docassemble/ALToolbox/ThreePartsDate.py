@@ -889,6 +889,30 @@ function set_up_unhighlight(validator) {{
 
 
 def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Optional[str]:
+    """
+    Validate a date string in MM/DD/YYYY format and return specific error messages for missing parts.
+
+    Analyzes a date string separated by forward slashes to determine which parts
+    (month, day, year) are missing and returns a helpful error message indicating
+    what needs to be entered. Currently only handles US date format.
+
+    Args:
+        item (str): The date string to validate, expected in MM/DD/YYYY format.
+        default_msg (str, optional): Default error message template for invalid dates.
+            Defaults to "{} is not a valid date".
+
+    Returns:
+        Optional[str]: None if the date is complete and valid, otherwise a localized
+            error message indicating which parts need to be entered.
+
+    Example:
+        >>> check_empty_parts("12//2023")
+        "Enter a day"
+        >>> check_empty_parts("//")
+        "Enter a month, a day, and a year"
+        >>> check_empty_parts("12/25/2023")
+        None
+    """
     # This only handles US dates. How do we use a locale-specific date?
     parts = item.split("/")
     empty_parts = [part == "" for part in parts]
