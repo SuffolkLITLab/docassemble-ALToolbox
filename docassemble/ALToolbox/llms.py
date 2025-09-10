@@ -27,13 +27,42 @@ __all__ = [
     "IntakeQuestionList",
 ]
 
-if os.getenv("OPENAI_API_KEY"):
-    client: Optional[OpenAI] = OpenAI()
-elif get_config("open ai"):
-    api_key = get_config("open ai", {}).get("key")
-    client = OpenAI(api_key=api_key)
+api_key = _get_openai_api_key()
+if api_key:
+    client: Optional[OpenAI] = OpenAI(api_key=api_key)
 else:
     client = None
+
+
+def _get_openai_api_key() -> Optional[str]:
+    """
+    Get the OpenAI API key from configuration or environment in priority order:
+    1. openai api key (direct key configuration)
+    2. openai: key (standardized nested configuration)
+    3. open ai: key (legacy nested configuration with space)
+    4. OPENAI_API_KEY environment variable
+
+    Returns:
+        The API key if found, None otherwise
+    """
+    # Priority 1: Direct key configuration "openai api key: sk-..."
+    direct_key = get_config("openai api key")
+    if direct_key:
+        return direct_key
+
+    # Priority 2: Standardized nested configuration "openai: key: sk-..."
+    openai_config = get_config("openai", {})
+    if isinstance(openai_config, dict) and openai_config.get("key"):
+        return openai_config.get("key")
+
+    # Priority 3: Legacy nested configuration "open ai: key: sk-..."
+    legacy_config = get_config("open ai", {})
+    if isinstance(legacy_config, dict) and legacy_config.get("key"):
+        return legacy_config.get("key")
+
+    # Priority 4: Environment variable
+    return os.getenv("OPENAI_API_KEY")
+
 
 always_reserved_names = set(
     docassemble.base.util.__all__
@@ -115,7 +144,8 @@ def chat_completion(
     system_message: Optional[str] = None,
     user_message: Optional[str] = None,
     openai_client: Optional[OpenAI] = None,
-    openai_api: Optional[str] = None,
+    openai_api_key: Optional[str] = None,
+    openai_api: Optional[str] = None,  # Kept for backwards compatibility
     temperature: float = 0.5,
     json_mode=False,
     model: str = "gpt-4o",
@@ -133,7 +163,8 @@ def chat_completion(
         system_message (str): The role the chat engine should play
         user_message (str): The message (data) from the user
         openai_client (Optional[OpenAI]): An OpenAI client object, optional. If omitted, will fall back to creating a new OpenAI client with the API key provided as an environment variable
-        openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
+        openai_api_key (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
+        openai_api (Optional[str]): the API key for an OpenAI client, optional. Deprecated, use openai_api_key instead. Kept for backwards compatibility.
         temperature (float): The temperature to use for the GPT API
         json_mode (bool): Whether to use JSON mode for the GPT API. Requires the word `json` in the system message, but will add if you omit it.
         model (str): The model to use for the GPT API
@@ -147,12 +178,20 @@ def chat_completion(
         A string with the response from the API endpoint or JSON data if json_mode is True
     """
     if not openai_base_url:
-        openai_base_url = (
-            get_config("open ai", {}).get("base url") or "https://api.openai.com/v1/"
-        )
+        # Check both new and legacy config formats for base URL
+        openai_config = get_config("openai", {})
+        if isinstance(openai_config, dict) and openai_config.get("base url"):
+            openai_base_url = openai_config.get("base url")
+        else:
+            openai_base_url = (
+                get_config("open ai", {}).get("base url")
+                or "https://api.openai.com/v1/"
+            )
 
-    if not openai_api:
-        openai_api = get_config("open ai", {}).get("key") or os.getenv("OPENAI_API_KEY")
+    # Handle backwards compatibility: prefer openai_api_key, fall back to openai_api, then config
+    api_key = openai_api_key or openai_api
+    if not api_key:
+        api_key = _get_openai_api_key()
 
     if not messages and not system_message:
         raise Exception(
@@ -192,12 +231,12 @@ def chat_completion(
     if openai_base_url:
         openai_client = None  # Always override client in this circumstance
     openai_client = (
-        openai_client or OpenAI(base_url=openai_base_url, api_key=openai_api) or client
+        openai_client or OpenAI(base_url=openai_base_url, api_key=api_key) or client
     )
 
     if not openai_client:
         raise Exception(
-            "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment or Docassemble configuration. Try adding a new section in your global config that looks like this:\n\nopen ai:\n    key: sk-..."
+            "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment or Docassemble configuration. Try adding a new section in your global config that looks like this:\n\nopenai:\n    key: sk-..."
         )
 
     try:
@@ -260,7 +299,8 @@ def extract_fields_from_text(
     text: str,
     field_list: Dict[str, str],
     openai_client: Optional[OpenAI] = None,
-    openai_api: Optional[str] = None,
+    openai_api_key: Optional[str] = None,
+    openai_api: Optional[str] = None,  # Kept for backwards compatibility
     temperature: float = 0,
     model="gpt-4o-mini",
 ) -> Dict[str, Any]:
@@ -270,7 +310,8 @@ def extract_fields_from_text(
         text (str): The text to extract fields from
         field_list (Dict[str,str]): A list of fields to extract, with the key being the field name and the value being a description of the field
         openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
-        openai_api (Optional[str]): An OpenAI API key. Defaults to None.
+        openai_api_key (Optional[str]): An OpenAI API key. Defaults to None.
+        openai_api (Optional[str]): An OpenAI API key. Deprecated, use openai_api_key instead. Kept for backwards compatibility.
         temperature (float): The temperature to use for the OpenAI API. Defaults to 0.
         model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
 
@@ -292,7 +333,7 @@ def extract_fields_from_text(
         user_message=text,
         model=model,
         openai_client=openai_client,
-        openai_api=openai_api,
+        openai_api_key=openai_api_key or openai_api,
         temperature=temperature,
         json_mode=True,
     )
@@ -305,7 +346,8 @@ def match_goals_from_text(
     user_response: str,
     goals: Dict[str, str],
     openai_client: Optional[OpenAI] = None,
-    openai_api: Optional[str] = None,
+    openai_api_key: Optional[str] = None,
+    openai_api: Optional[str] = None,  # Kept for backwards compatibility
     temperature: float = 0,
     model="gpt-4o-mini",
 ) -> Dict[str, Any]:
@@ -316,7 +358,8 @@ def match_goals_from_text(
         user_response (str): The user's response to the question
         goals (Dict[str,str]): A list of goals to extract, with the key being the goal name and the value being a description of the goal
         openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
-        openai_api (Optional[str]): An OpenAI API key. Defaults to None.
+        openai_api_key (Optional[str]): An OpenAI API key. Defaults to None.
+        openai_api (Optional[str]): An OpenAI API key. Deprecated, use openai_api_key instead. Kept for backwards compatibility.
         temperature (float): The temperature to use for the OpenAI API. Defaults to 0.
         model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
 
@@ -352,7 +395,7 @@ def match_goals_from_text(
         user_message=user_response,
         model=model,
         openai_client=openai_client,
-        openai_api=openai_api,
+        openai_api_key=openai_api_key or openai_api,
         temperature=temperature,
         json_mode=True,
     )
@@ -365,7 +408,8 @@ def classify_text(
     choices: Dict[str, str],
     default_response: str = "null",
     openai_client: Optional[OpenAI] = None,
-    openai_api: Optional[str] = None,
+    openai_api_key: Optional[str] = None,
+    openai_api: Optional[str] = None,  # Kept for backwards compatibility
     temperature: float = 0,
     model="gpt-4o-mini",
 ) -> str:
@@ -376,7 +420,8 @@ def classify_text(
         choices (Dict[str,str]): A list of choices to classify the text into, with the key being the choice name and the value being a description of the choice
         default_response (str): The default response to return if the text cannot be classified. Defaults to "null".
         openai_client (Optional[OpenAI]): An OpenAI client object, optional. If omitted, will fall back to creating a new OpenAI client with the API key provided as an environment variable
-        openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
+        openai_api_key (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
+        openai_api (Optional[str]): the API key for an OpenAI client, optional. Deprecated, use openai_api_key instead. Kept for backwards compatibility.
         temperature (float): The temperature to use for GPT. Defaults to 0.
         model (str): The model to use for the GPT API
 
@@ -395,7 +440,7 @@ def classify_text(
         user_message=text,
         model=model,
         openai_client=openai_client,
-        openai_api=openai_api,
+        openai_api_key=openai_api_key or openai_api,
         temperature=temperature,
         json_mode=False,
     )
@@ -407,7 +452,8 @@ def synthesize_user_responses(
     messages: List[Dict[str, str]],
     custom_instructions: Optional[str] = "",
     openai_client: Optional[OpenAI] = None,
-    openai_api: Optional[str] = None,
+    openai_api_key: Optional[str] = None,
+    openai_api: Optional[str] = None,  # Kept for backwards compatibility
     temperature: float = 0,
     model: str = "gpt-4o-mini",
 ) -> str:
@@ -418,7 +464,8 @@ def synthesize_user_responses(
         messages (List[Dict[str, str]]): A list of questions from the LLM and responses from the user
         custom_instructions (str): Custom instructions for the LLM to follow in constructing the synthesized response
         openai_client (Optional[OpenAI]): An OpenAI client object, optional. If omitted, will fall back to creating a new OpenAI client with the API key provided as an environment variable
-        openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
+        openai_api_key (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
+        openai_api (Optional[str]): the API key for an OpenAI client, optional. Deprecated, use openai_api_key instead. Kept for backwards compatibility.
         temperature (float): The temperature to use for GPT. Defaults to 0.
         model (str): The model to use for the GPT API
 
@@ -449,7 +496,7 @@ def synthesize_user_responses(
         ],
         model=model,
         openai_client=openai_client,
-        openai_api=openai_api,
+        openai_api_key=openai_api_key or openai_api,
         temperature=temperature,
         json_mode=False,
     )
@@ -629,7 +676,7 @@ class GoalSatisfactionList(DAList):
     By default, this will use the OpenAI API key defined in the global configuration under this path:
 
     ```
-    open ai:
+    openai:
         key: sk-...
     ```
 
