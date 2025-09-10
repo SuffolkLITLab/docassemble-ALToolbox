@@ -236,7 +236,7 @@ def chat_completion(
 
     if not openai_client:
         raise Exception(
-            "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment or Docassemble configuration. Try adding a new section in your global config that looks like this:\n\nopenai:\n    key: sk-..."
+            "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment or Docassemble configuration. Try adding a new section in your global config that looks like this:\n\nopenai api key: sk-..."
         )
 
     try:
