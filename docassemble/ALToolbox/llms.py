@@ -27,12 +27,6 @@ __all__ = [
     "IntakeQuestionList",
 ]
 
-api_key = _get_openai_api_key()
-if api_key:
-    client: Optional[OpenAI] = OpenAI(api_key=api_key)
-else:
-    client = None
-
 
 def _get_openai_api_key() -> Optional[str]:
     """
@@ -62,6 +56,13 @@ def _get_openai_api_key() -> Optional[str]:
 
     # Priority 4: Environment variable
     return os.getenv("OPENAI_API_KEY")
+
+
+api_key = _get_openai_api_key()
+if api_key:
+    client: Optional[OpenAI] = OpenAI(api_key=api_key)
+else:
+    client = None
 
 
 always_reserved_names = set(
