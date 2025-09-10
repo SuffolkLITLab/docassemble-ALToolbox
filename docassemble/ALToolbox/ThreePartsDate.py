@@ -994,6 +994,7 @@ class ThreePartsDate(CustomDataType):
                 msg = check_empty_parts(item)
                 if msg:
                     raise DAValidationError(msg)
+                return True
 
     @classmethod
     def transform(cls, item) -> Optional[datetime]:
@@ -1008,6 +1009,7 @@ class ThreePartsDate(CustomDataType):
         """
         if item:
             return as_datetime(item)
+        return None
 
     @classmethod
     def default_for(cls, item) -> Optional[str]:
@@ -1022,6 +1024,7 @@ class ThreePartsDate(CustomDataType):
         """
         if item:
             return item.format("MM/dd/yyyy")
+        return None
 
 
 class BirthDate(ThreePartsDate):
@@ -1091,3 +1094,4 @@ class BirthDate(ThreePartsDate):
                 )
                 if msg:
                     raise DAValidationError(msg)
+                return True

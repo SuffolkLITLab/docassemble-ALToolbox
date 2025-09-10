@@ -1,5 +1,10 @@
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
+try:  # Python 3.11+
+    from typing import NotRequired  # type: ignore[attr-defined]
+except Exception:  # Fallback for older Python
+    from typing_extensions import NotRequired  # type: ignore[assignment]
+
 from base64 import b64encode
 from decimal import Decimal
 import docassemble.base.functions
@@ -545,7 +550,7 @@ class ButtonDict(TypedDict):
     name: str
     image: str
     url: str
-    privilege: Union[str, List[str]]
+    privilege: NotRequired[Union[str, List[str]]]
 
 
 def button_array(

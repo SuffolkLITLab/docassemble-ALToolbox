@@ -328,6 +328,9 @@ class ALIncomeList(DAList):
     .total()
     """
 
+    # The DAList base sets/uses this dynamically; annotate for type checkers
+    object_type: Optional[type]
+
     def init(self, *pargs, **kwargs) -> None:
         """
         Initialize an ALIncomeList object with default settings.
