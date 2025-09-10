@@ -844,7 +844,9 @@ class GoalSatisfactionList(DAList):
             model=self.model,
         )
 
-    def provide_feedback(self, feedback_prompt: str = "") -> Union[List[Any], Dict[str, Any], str]:
+    def provide_feedback(
+        self, feedback_prompt: str = ""
+    ) -> Union[List[Any], Dict[str, Any], str]:
         """Returns feedback to the user based on the goals they satisfied.
 
         Args:

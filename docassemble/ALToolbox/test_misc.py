@@ -10,7 +10,9 @@ import xml.etree.ElementTree as ET
 class TestButtonArray(unittest.TestCase):
     @patch("docassemble.ALToolbox.misc.user_has_privilege", return_value=False)
     @patch("ALToolbox.misc.user_has_privilege", return_value=False)
-    def test_button_array_generates_correct_html(self, mock_privilege, mock_privilege2) -> None:
+    def test_button_array_generates_correct_html(
+        self, mock_privilege, mock_privilege2
+    ) -> None:
         """Test button_array generates correct HTML
 
         Args:
