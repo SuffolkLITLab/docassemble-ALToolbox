@@ -2,6 +2,10 @@
   display: none;
 }
 
+.al-review-widget-container {
+  margin-top: 1.5rem;
+}
+
 .al-thumbs-widget {
   margin: 6px 0px 6px;
 }

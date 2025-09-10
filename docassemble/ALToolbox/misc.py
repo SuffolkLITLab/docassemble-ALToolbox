@@ -404,7 +404,7 @@ def review_widget(
     js_thumbs_up = f"javascript:altoolbox_thumbs_up_send('{up_action}', {'true' if review_action else 'false'})"
     js_thumbs_down = f"javascript:altoolbox_thumbs_down_send('{down_action}', {'true' if review_action else 'false'})"
     widget = f"""
-<div class="card" style="width: 20rem;">
+<div class="card al-review-widget-container" style="width: 20rem;">
   <div class="card-body">
     <p class="al-thumbs-widget">{word(thumbs_display)}</p>
     <a href="{js_thumbs_up}" id="al-thumbs-widget-up"
