@@ -82,6 +82,21 @@ def times_per_year(
     represent "every two years". Items not contained in the list (to provide a
     specific lookup name) will have a string representation that is rounded to
     the nearest whole integer.
+
+    Args:
+        times_per_year_list (List[Tuple[int, str]]): List of tuples containing
+            (frequency, description) pairs to match against.
+        times_per_year (float): The numeric frequency to look up in the list.
+
+    Returns:
+        str: The lowercase textual description of the frequency, or a generated
+            description if not found in the list.
+
+    Example:
+        >>> times_per_year([(12, "Monthly"), (1, "Annually")], 12)
+        'monthly'
+        >>> times_per_year([(12, "Monthly")], 5)
+        'Five times per year'
     """
     try:
         for row in times_per_year_list:
@@ -101,15 +116,25 @@ def recent_years(
 ) -> List[int]:
     """
     Returns a list of the most recent past years, continuing into the future.
-    Defaults to most recent 15 years+1. Useful to populate a combobox of years
+
+    Defaults to most recent 25 years+1. Useful to populate a combobox of years
     where the most recent ones are most likely. E.g. automobile years or
     birthdate.
 
-    Keyword parameters:
-    * past {float} The number of past years to list, including the current year.
-        The default is 15
-    * order {string} 'descending' or 'ascending'. Default is `descending`.
-    * future (defaults to 1).
+    Args:
+        past (int, optional): The number of past years to list, including the
+            current year. Defaults to 25.
+        order (str, optional): 'descending' or 'ascending'. Defaults to 'descending'.
+        future (int, optional): Number of future years to include. Defaults to 1.
+
+    Returns:
+        List[int]: List of years in the specified order.
+
+    Example:
+        >>> recent_years(past=3, future=1)  # if current year is 2023
+        [2024, 2023, 2022, 2021]
+        >>> recent_years(past=2, order="ascending", future=0)
+        [2022, 2023]
     """
     now = datetime.datetime.now()
     if order == "ascending":
@@ -140,9 +165,23 @@ class ALPeriodicAmount(DAObject):
 
     def total(self, times_per_year: float = 1) -> Decimal:
         """
-        Returns the income over the specified times_per_year,
+        Returns the income over the specified times_per_year.
 
         To calculate `.total()`, an ALPeriodicAmount must have a `.times_per_year` and `.value`.
+
+        Args:
+            times_per_year (float, optional): The frequency to convert the income to.
+                Defaults to 1 (annual).
+
+        Returns:
+            Decimal: The calculated income amount for the specified frequency.
+
+        Example:
+            >>> income = ALPeriodicAmount(value=1000, times_per_year=12)  # $1000/month
+            >>> income.total(1)  # Annual total
+            Decimal('12000')
+            >>> income.total(12)  # Monthly total
+            Decimal('1000')
         """
         val = _currency_float_to_decimal(self.value)
         return (val * Decimal(self.times_per_year)) / Decimal(times_per_year)
@@ -793,14 +832,23 @@ class ALVehicle(ALAsset):
 
     def year_make_model(self, separator: str = " / ") -> str:
         """
-        Returns a string of the format year/make/model of the vehicle. Triggers
-        gathering those attributes.
+        Returns a string of the format year/make/model of the vehicle.
+
+        Triggers gathering those attributes and formats them as a single string.
 
         Args:
-            separator {str} (Optional) The separator between the year, make and model.
+            separator (str, optional): The separator between the year, make and model.
+                Defaults to " / ".
 
         Returns:
-            A string of the format year/make/model of the vehicle.
+            str: A formatted string combining year, make, and model of the vehicle.
+
+        Example:
+            >>> vehicle = ALVehicle(year=2020, make="Toyota", model="Camry")
+            >>> vehicle.year_make_model()
+            '2020 / Toyota / Camry'
+            >>> vehicle.year_make_model(separator=", ")
+            '2020, Toyota, Camry'
         """
         return separator.join(map(str, [self.year, self.make, self.model]))
 
@@ -940,6 +988,24 @@ class ALItemizedValue(DAObject):
             ]
 
     def total(self) -> Decimal:
+        """
+        Calculate the total value of this itemized income item.
+
+        If an item's value doesn't exist or the item is marked as not existing,
+        returns 0. Otherwise returns the decimal value of the item.
+
+        Returns:
+            Decimal: The total value of this item, or 0 if the item doesn't exist
+                or has no value.
+
+        Example:
+            >>> item = ALItemizedValue(value=1500, exists=True)
+            >>> item.total()
+            Decimal('1500')
+            >>> item_disabled = ALItemizedValue(exists=False)
+            >>> item_disabled.total()
+            Decimal('0')
+        """
         # If an item's value doesn't exist, use a value of 0
         # TODO: is this behavior correct, or should it force gathering the value?
         # What does a no-value item in the list represent?
@@ -1005,6 +1071,22 @@ class ALItemizedValueDict(DAOrderedDict):
             self.delitem(key)
 
     def total(self) -> Decimal:
+        """
+        Calculate the total value of all items in this itemized value dictionary.
+
+        Sums up all values in the dictionary, skipping items that are marked
+        as not existing (exists=False).
+
+        Returns:
+            Decimal: The sum of all existing item values in the dictionary.
+
+        Example:
+            >>> value_dict = ALItemizedValueDict()
+            >>> value_dict['wages'] = ALItemizedValue(value=1000, exists=True)
+            >>> value_dict['bonus'] = ALItemizedValue(value=500, exists=False)
+            >>> value_dict.total()
+            Decimal('1000')  # Only includes wages, not bonus
+        """
         val = Decimal(0)
         for key, value in self.elements.items():
             if hasattr(value, "exists") and not value.exists:
