@@ -63,7 +63,7 @@ def standard_holidays(
 
         # Add custom holidays
         custom_holidays = standard_holidays(
-            2023, 
+            2023,
             add_holidays={"03-17": "Company Founding Day"}
         )
         print(custom_holidays["2023-03-17"])  # Company Founding Day
@@ -108,8 +108,8 @@ def non_business_days(
     last_n_dates=0,
 ) -> dict:
     """
-    Get all non-business days (weekends and holidays) in the specified year, country, and state. 
-    This function returns a dictionary of all dates that are not business days, including 
+    Get all non-business days (weekends and holidays) in the specified year, country, and state.
+    This function returns a dictionary of all dates that are not business days, including
     both weekends (Saturdays and Sundays) and official holidays.
 
     Args:
@@ -122,7 +122,7 @@ def non_business_days(
         last_n_dates: if specified, only return the last N non-business days of the year
 
     Returns:
-        A dictionary where keys are date strings ("YYYY-MM-DD") and values are the name of the non-business day 
+        A dictionary where keys are date strings ("YYYY-MM-DD") and values are the name of the non-business day
         (e.g., "Saturday", "New Year's Day").
 
     Examples:
@@ -134,7 +134,7 @@ def non_business_days(
         # Get just the first 10 non-business days of the year
         first_ten = non_business_days(2023, first_n_dates=10)
 
-        # Get the last 5 non-business days of the year  
+        # Get the last 5 non-business days of the year
         last_five = non_business_days(2023, last_n_dates=5)
 
         # Get non-business days with custom holidays
@@ -322,7 +322,7 @@ def get_next_business_day(
         later_day = get_next_business_day("2023-03-20", wait_n_days=5)
         print(later_day)  # First business day at least 5 days after March 20
 
-        # Handle holidays - if the calculated day falls on a holiday, 
+        # Handle holidays - if the calculated day falls on a holiday,
         # it will automatically find the next business day
         holiday_next = get_next_business_day("2023-07-03")  # Day before July 4th
         print(holiday_next)  # 2023-07-05 (skips July 4th holiday)
