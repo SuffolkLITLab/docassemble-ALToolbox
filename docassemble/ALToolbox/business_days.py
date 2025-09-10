@@ -80,6 +80,25 @@ def non_business_days(
     first_n_dates=0,
     last_n_dates=0,
 ) -> dict:
+    """
+    Get a dictionary of non-business days (weekends and holidays) for a given year.
+
+    Args:
+        year: The year to get non-business days for.
+        country (str, optional): Country code for holidays. Defaults to "US".
+        subdiv (str, optional): State/subdivision code for holidays. Defaults to "MA".
+        add_holidays (Optional[Mapping], optional): Additional holidays to include.
+            Defaults to None.
+        remove_holidays (Optional[Iterable[str]], optional): Holidays to exclude.
+            Defaults to None.
+        first_n_dates (int, optional): Number of dates from start of year to exclude.
+            Defaults to 0.
+        last_n_dates (int, optional): Number of dates from end of year to exclude.
+            Defaults to 0.
+
+    Returns:
+        dict: Dictionary of non-business days with dates as keys.
+    """
     # TODO: this function may not be necessary, but check with @purplesky2016 before removing
     # 1. Collect weekends and standard holidays
     # 1.1 Get all saturdays and sundays in the given year
@@ -217,6 +236,9 @@ def get_next_business_day(
       add_holidays: a dictionary from the date string ("12/25") to the name of the holiday,
           will add those holidays to be considered
       remove_holidays: the list of date strings ("12/25") of dates that are no longer holidays
+
+    Returns:
+        DADateTime: The next business day after the specified start date.
     """
     if not isinstance(start_date, DADateTime):
         start_date = as_datetime(start_date)
@@ -254,6 +276,9 @@ def get_date_after_n_business_days(
       add_holidays: a dictionary from the date string ("12/25") to the name of the holiday,
           will add those holidays to be considered
       remove_holidays: the list of date strings ("12/25") of dates that are no longer holidays
+
+    Returns:
+        DADateTime: The date after n business days from the start date.
     """
     if not isinstance(start_date, DADateTime):
         start_date = as_datetime(start_date)

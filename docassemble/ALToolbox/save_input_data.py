@@ -35,10 +35,8 @@ def save_input_data(
         tags (Optional[List[str]], optional): List of string tags to associate
             with this data entry for categorization and filtering. Defaults to None.
 
-    Returns:
-        None: This function saves data but does not return anything.
-
     Note:
+        - This function saves data to storage but does not return anything
         - Checkbox and multiselect fields (DADict) are automatically flattened
           so each option becomes a separate database column with a boolean value
         - Each call creates one database record per interview session

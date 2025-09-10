@@ -191,7 +191,7 @@ def space(var_name: str, prefix=" ", suffix="") -> str:
 
 def yes_no_unknown(
     var_name: str, condition: Optional[bool], unknown="Unknown", placeholder=0
-):
+) -> Any:
     """
     Return 'unknown' if the value is None rather than False.
 
@@ -426,7 +426,7 @@ def review_widget(
     return widget
 
 
-def sum_if_defined(*pargs):
+def sum_if_defined(*pargs) -> Union[int, float, Decimal]:
     """
     Add up the value of variables that are not in a list.
 
@@ -451,7 +451,7 @@ def sum_if_defined(*pargs):
     return total
 
 
-def add_records(obj, labels):
+def add_records(obj, labels) -> Any:
     """
     List demo interviews in the current package to be run from the landing page.
 
@@ -483,7 +483,7 @@ def add_records(obj, labels):
 
 def output_checkbox(
     value_to_check: bool, checked_value: str = "[X]", unchecked_value: str = "[  ]"
-):
+) -> str:
     """
     Generate a conditional checkbox for docx templates.
 
@@ -597,7 +597,7 @@ def button_array(
     return output
 
 
-def none_to_empty(val: Any):
+def none_to_empty(val: Any) -> Any:
     """If the value is None or "None", return a DAEmpty value. Otherwise return the value.
 
     This is useful for filling in a template and to prevent the word None from appearing in the output. For example,
