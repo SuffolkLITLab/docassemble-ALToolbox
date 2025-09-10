@@ -286,7 +286,21 @@ class ALIncomeList(DAList):
             self.object_type = ALIncome
 
     def sources(self) -> Set[str]:
-        """Returns a set of the unique sources in the ALIncomeList."""
+        """
+        Returns a set of the unique sources in the ALIncomeList.
+
+        Returns:
+            Set[str]: A set containing all unique source names from items in the list.
+
+        Example:
+            >>> income_list = ALIncomeList([
+            ...     ALIncome(source="wages"),
+            ...     ALIncome(source="tips"),
+            ...     ALIncome(source="wages")
+            ... ])
+            >>> income_list.sources()
+            {'wages', 'tips'}
+        """
         sources = set()
         for item in self.elements:
             if hasattr(item, "source"):
@@ -297,9 +311,28 @@ class ALIncomeList(DAList):
         self, source: SourceType, exclude_source: Optional[SourceType] = None
     ) -> "ALIncomeList":
         """
-        Returns an ALIncomeList consisting only of elements matching the specified
-        income source, assisting in filling PDFs with predefined spaces. `source`
-        may be a list.
+        Returns an ALIncomeList consisting only of elements matching the specified income source.
+
+        Assists in filling PDFs with predefined spaces by filtering income items
+        by their source. The source parameter may be a string or a list.
+
+        Args:
+            source (SourceType): The income source(s) to match. Can be a string or list of strings.
+            exclude_source (Optional[SourceType], optional): Source(s) to exclude from the results.
+                Defaults to None.
+
+        Returns:
+            ALIncomeList: A new ALIncomeList containing only items with matching sources.
+
+        Example:
+            >>> income_list = ALIncomeList([
+            ...     ALIncome(source="wages", value=1000),
+            ...     ALIncome(source="tips", value=200),
+            ...     ALIncome(source="wages", value=1200)
+            ... ])
+            >>> wages_only = income_list.matches("wages")
+            >>> len(wages_only)
+            2
         """
         # Always make sure we're working with a set
         satifies_sources = _source_to_callable(source, exclude_source)
@@ -317,13 +350,32 @@ class ALIncomeList(DAList):
         owner: Optional[str] = None,
     ) -> Decimal:
         """
-        Returns the total periodic value in the list, gathering the list items
-        if necessary. You can optionally filter by `source`. `source` can be a
-        string or a list. You can also filter by one `owner`.
+        Returns the total periodic value in the list, gathering the list items if necessary.
 
-        To calculate `.total()` correctly, all items must have a `.total()` and
-        it should be a positive value. Job-type incomes should automatically
+        You can optionally filter by `source` (string or list) and/or by one `owner`.
+        To calculate `.total()` correctly, all items must have a `.total()` method
+        and it should be a positive value. Job-type incomes should automatically
         exclude deductions.
+
+        Args:
+            times_per_year (float, optional): The frequency to convert income to.
+                Defaults to 1 (annual).
+            source (Optional[SourceType], optional): Income source(s) to include.
+                Can be string or list. Defaults to None (all sources).
+            exclude_source (Optional[SourceType], optional): Source(s) to exclude.
+                Defaults to None.
+            owner (Optional[str], optional): Filter by specific owner name.
+                Defaults to None (all owners).
+
+        Returns:
+            Decimal: The total income amount for the specified frequency and filters.
+
+        Example:
+            >>> income_list = ALIncomeList([wages_income, tips_income])
+            >>> income_list.total(times_per_year=12)  # Monthly total
+            Decimal('5000.00')
+            >>> income_list.total(source="wages")  # Annual wages only
+            Decimal('60000.00')
         """
         self._trigger_gather()
         result: Decimal = Decimal(0)
