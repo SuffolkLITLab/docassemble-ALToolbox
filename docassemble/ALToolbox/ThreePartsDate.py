@@ -903,9 +903,9 @@ def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Option
             Defaults to "{} is not a valid date".
 
     Returns:
-        Optional[str]: Error message if validation fails, None if date is valid.
-            Returns None when the date is complete and valid, otherwise returns
-            a localized error message indicating which parts need to be entered.
+        Error message if validation fails, None if date is valid.
+        Returns None when the date is complete and valid, otherwise returns
+        a localized error message indicating which parts need to be entered.
 
     Example:
         >>> check_empty_parts("12//2023")
@@ -1046,7 +1046,24 @@ class BirthDate(ThreePartsDate):
     ]
 
     @classmethod
-    def validate(cls, item: str):
+    def validate(cls, item: str) -> bool:
+        """
+        Validate a birth date string ensuring it's a valid past date.
+        
+        Validates that the input is a properly formatted date string in MM/DD/YYYY
+        format that represents a date on or before today and after the year 1000.
+        Empty or None values are considered valid.
+        
+        Args:
+            item (str): The birth date string to validate in MM/DD/YYYY format.
+            
+        Returns:
+            True if the date is valid, otherwise raises DAValidationError.
+            
+        Raises:
+            DAValidationError: If the date is invalid, improperly formatted, 
+                or in the future.
+        """
         # If there's no input in the item, it's valid
         if not isinstance(item, str) or item == "":
             return True

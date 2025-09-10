@@ -35,8 +35,8 @@ def display_template(
             Defaults to None.
 
     Returns:
-        str: HTML string containing the rendered template with the specified
-            display options.
+        HTML string containing the rendered template with the specified
+        display options.
 
     Example:
         >>> display_template(my_template, scrollable=True, collapse=True)

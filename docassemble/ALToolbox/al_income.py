@@ -44,9 +44,19 @@ __all__ = [
 
 
 def _currency_float_to_decimal(value: Union[str, float]) -> Decimal:
-    """Given a float (that was set by a docassemble currency datatype, so
-    rounded to the nearest `fractional_digit` decimal places), returns the
-    exact decimal value, without floating point representation errors
+    """
+    Convert a currency float value to precise Decimal representation.
+    
+    Given a float that was set by a docassemble currency datatype (rounded to 
+    the nearest fractional_digit decimal places), returns the exact decimal 
+    value without floating point representation errors.
+    
+    Args:
+        value (Union[str, float]): The currency value to convert, either as 
+            a float or string representation.
+    
+    Returns:
+        Decimal: The precise decimal representation of the currency value.
     """
     if isinstance(value, float):
         # Print out the value of the float, rounded to the smallest allowable amount in the
@@ -89,8 +99,8 @@ def times_per_year(
         times_per_year (float): The numeric frequency to look up in the list.
 
     Returns:
-        str: The lowercase textual description of the frequency, or a generated
-            description if not found in the list.
+        The lowercase textual description of the frequency, or a generated
+        description if not found in the list.
 
     Example:
         >>> times_per_year([(12, "Monthly"), (1, "Annually")], 12)
@@ -160,7 +170,12 @@ class ALPeriodicAmount(DAObject):
     """
 
     def __str__(self) -> str:
-        """Returns the income's `.total()` as string, not its object name."""
+        """
+        Returns the income's total value as a string representation.
+        
+        Returns:
+            The string representation of this income's total value.
+        """
         return str(self.total())
 
     def total(self, times_per_year: float = 1) -> Decimal:
@@ -210,6 +225,8 @@ class ALIncome(ALPeriodicAmount):
 
     def total(self, times_per_year: float = 1) -> Decimal:
         """
+        Calculate the income over the specified times_per_year frequency.
+        
         Returns the income over the specified times_per_year, taking into account
         hours per period for hourly items. For example, for an hourly income of 10
         an hour, 40 hours a week, `income.total(1)` would be 20,800, the yearly income,
@@ -217,6 +234,13 @@ class ALIncome(ALPeriodicAmount):
 
         To calculate `.total()`, an ALIncome must have a `.times_per_year` and `.value`.
         It can also have `.is_hourly` and `.hours_per_period`.
+        
+        Args:
+            times_per_year (float, optional): The frequency to calculate income for. 
+                Defaults to 1 (annual).
+                
+        Returns:
+            The calculated income amount for the specified frequency.
         """
         if hasattr(self, "is_hourly") and self.is_hourly:
             val = _currency_float_to_decimal(self.value)
@@ -237,10 +261,19 @@ SourceType = Union[Set[str], List[str], str]
 
 
 def _to_set(s: Optional[Union[Set, List, str]]) -> Set:
-    """Converts a str, list of strings, or set of strings into a set of strings,
-    which can be used to filter items in ALIncome classes.
-
-    This is for internal use meant to ensure that `source` input is always a set.
+    """
+    Convert various input types into a set of strings for source filtering.
+    
+    Converts a str, list of strings, or set of strings into a set of strings,
+    which can be used to filter items in ALIncome classes. This is for internal 
+    use meant to ensure that `source` input is always a set.
+    
+    Args:
+        s (Optional[Union[Set, List, str]]): The input to convert to a set.
+            Can be None, a string, list of strings, or set of strings.
+    
+    Returns:
+        A set of strings for filtering purposes.
     """
     if s is None:
         return set()
@@ -256,7 +289,22 @@ def _to_set(s: Optional[Union[Set, List, str]]) -> Set:
 def _source_to_callable(
     source: Optional[SourceType] = None, exclude_source: Optional[SourceType] = None
 ) -> Callable[[str], bool]:
-    """Combines both a positive and negative lists into a single set that should be tested for inclusion"""
+    """
+    Create a filtering function from positive and negative source lists.
+    
+    Combines both a positive and negative lists into a single set that should 
+    be tested for inclusion, creating a callable that can filter income sources.
+    
+    Args:
+        source (Optional[SourceType], optional): Sources to include in filtering. 
+            Defaults to None.
+        exclude_source (Optional[SourceType], optional): Sources to exclude from 
+            filtering. Defaults to None.
+    
+    Returns:
+        A callable function that takes a source string and returns True if it 
+        should be included based on the filtering criteria.
+    """
     exclude_set = _to_set(exclude_source)
     include_set = _to_set(source).difference(exclude_set)
     if include_set:
@@ -280,7 +328,17 @@ class ALIncomeList(DAList):
     .total()
     """
 
-    def init(self, *pargs, **kwargs):
+    def init(self, *pargs, **kwargs) -> None:
+        """
+        Initialize an ALIncomeList object with default settings.
+        
+        Sets up the object type to ALIncome if not already specified, ensuring
+        the list contains appropriate income objects for processing.
+        
+        Args:
+            *pargs: Variable length argument list passed to parent class.
+            **kwargs: Arbitrary keyword arguments passed to parent class.
+        """
         super().init(*pargs, **kwargs)
         if not hasattr(self, "object_type") or self.object_type is None:
             self.object_type = ALIncome
@@ -454,6 +512,12 @@ class ALJob(ALIncome):
     """
 
     def init(self, *pargs, **kwargs):
+        """
+        Initialize an ALJob object with employer setup.
+        
+        Initializes the employer attribute based on the employer_type if available,
+        defaulting to Individual type if no specific type is set.
+        """
         super().init(*pargs, **kwargs)
         # if not hasattr(self, "source") or self.source is None:
         #    self.source = "job"

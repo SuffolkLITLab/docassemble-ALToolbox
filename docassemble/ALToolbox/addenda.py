@@ -3,7 +3,22 @@ __all__ = ["myTable", "myTextList", "safe_json2"]
 
 # This function creates a Table list to be used in an addendum file. Currently it handles 'Thing' and 'Inidvidual' object type of DAList (special name attribute).
 class myTable:
+    """
+    Utility class for creating table representations from DAList objects for addenda.
+    
+    This class processes DAList objects containing 'Individual' or 'Thing' objects 
+    and converts them into structured table format suitable for document addenda.
+    It handles data sanitization and formatting for display purposes.
+    """
     def __init__(self, tblData, tblTitle, tblHeader):
+        """
+        Initialize a table from DAList data with title and headers.
+        
+        Args:
+            tblData: A DAList object containing Individual or Thing objects.
+            tblTitle (str): The title for the table.
+            tblHeader: The column headers for the table.
+        """
         # 1. Put the DAList items into a regular list
         recordList = list()
         for w in tblData:
@@ -48,7 +63,22 @@ class myTable:
 
 # This function creates a Text Fields list, which can then be used in an addendum file. The limit input is needed to determine if the text field input is too long to fit in the main form.
 class myTextList:
+    """
+    Utility class for managing text fields that may exceed form space limits.
+    
+    This class handles text content that might be too long to fit in the main form
+    by truncating it at a specified limit and storing the overflow text for use
+    in addenda or continuation pages.
+    """
     def __init__(self, text, limit, title):
+        """
+        Initialize text processing with truncation limits.
+        
+        Args:
+            text (str): The text content to process and potentially truncate.
+            limit (int): The character limit for the main form field.
+            title (str): The title or identifier for the text field.
+        """
         self.g(text, limit, title)
 
     def g(self, text, limit, title) -> None:
