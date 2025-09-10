@@ -1309,10 +1309,15 @@ class ALItemizedJob(DAObject):
         If you use sources from deductions, they will be ignored.
 
         Args:
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
-        kwarg: source {str | [str]} (Optional) Source or list of sources of desired
-            item(s).
+            times_per_year (float, optional): Number of times per year you want to 
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of desired
+                item(s). Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The sum of positive values for the given parameters.
         """
         # self.to_add._trigger_gather()
         total = Decimal(0)
@@ -1339,10 +1344,15 @@ class ALItemizedJob(DAObject):
         filter the items by `source`. `source` can be a string or a list.
 
         Args:
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
-        kwarg: source {str | List[str]} (Optional) Source or list of sources of desired
-            item(s).
+            times_per_year (float, optional): Number of times per year you want to 
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of desired
+                item(s). Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The sum of deductions for the given parameters as a positive value.
         """
         # self.to_subtract._trigger_gather()
         total = Decimal(0)
@@ -1370,10 +1380,15 @@ class ALItemizedJob(DAObject):
         string or a list. E.g. "full time" or ["full time", "union dues"]
 
         Args:
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
-        kwarg: source {str | List[str]} (Optional) Source or list of sources of desired
-            item(s).
+            times_per_year (float, optional): Number of times per year you want to 
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of desired
+                item(s). Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The net value (gross minus deductions) for the given parameters.
         """
         # self.to_add._trigger_gather()
         # self.to_subtract._trigger_gather()
@@ -1474,11 +1489,16 @@ class ALItemizedJobList(DAList):
         string or a list.
 
         Args:
-        kwarg: source {str | [str]} - (Optional) Source or list of sources of
-            desired job items to sum from every itemized job.
-            E.g. ['tips', 'commissions']
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
+            times_per_year (float, optional): Number of times per year you want to 
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of
+                desired job items to sum from every itemized job.
+                E.g. ['tips', 'commissions']. Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The sum of the gross incomes for the given parameters.
         """
         self._trigger_gather()
         total = Decimal(0)
@@ -1505,11 +1525,16 @@ class ALItemizedJobList(DAList):
         string or a list.
 
         Args:
-        kwarg: source {str | [str]} - (Optional) Source or list of sources of
-            desired job items to sum from every itemized job.
-            E.g. ['taxes', 'dues']
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
+            times_per_year (float, optional): Number of times per year you want to 
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of
+                desired job items to sum from every itemized job.
+                E.g. ['taxes', 'dues']. Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The sum of the deductions for the given parameters.
         """
         self._trigger_gather()
         total = Decimal(0)
@@ -1536,11 +1561,16 @@ class ALItemizedJobList(DAList):
         string or a list.
 
         Args:
-        kwarg: source {str | List[str]} - (Optional) Source or list of sources of
-            desired job items to sum from every itemized job.
-            E.g. ['tips', 'taxes']
-        kwarg: times_per_year {float} (Optional) Number of times per year you
-            want to calculate. E.g, to express a weekly period, use 52. Default is 1.
+            times_per_year (float, optional): Number of times per year you want to 
+                calculate. E.g, to express a weekly period, use 52. Defaults to 1.
+            source (str | List[str], optional): Source or list of sources of
+                desired job items to sum from every itemized job.
+                E.g. ['tips', 'taxes']. Defaults to None.
+            exclude_source (str | List[str], optional): Source or list of sources to
+                exclude from calculation. Defaults to None.
+
+        Returns:
+            Decimal: The net total (gross minus deductions) for the given parameters.
         """
         return self.gross_total(
             times_per_year=times_per_year, source=source

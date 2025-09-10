@@ -8,6 +8,7 @@ from docassemble.base.util import (
     log,
 )
 from typing import Optional
+from datetime import datetime
 import re
 
 __all__ = ["ThreePartsDate", "BirthDate"]
@@ -902,8 +903,9 @@ def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Option
             Defaults to "{} is not a valid date".
 
     Returns:
-        Optional[str]: None if the date is complete and valid, otherwise a localized
-            error message indicating which parts need to be entered.
+        Optional[str]: Error message if validation fails, None if date is valid.
+            Returns None when the date is complete and valid, otherwise returns
+            a localized error message indicating which parts need to be entered.
 
     Example:
         >>> check_empty_parts("12//2023")
@@ -961,7 +963,19 @@ class ThreePartsDate(CustomDataType):
     ]
 
     @classmethod
-    def validate(cls, item: str):
+    def validate(cls, item: str) -> bool:
+        """
+        Validate a date string in MM/DD/YYYY format.
+
+        Args:
+            item (str): The date string to validate.
+
+        Returns:
+            bool: True if valid or empty, raises DAValidationError if invalid.
+
+        Raises:
+            DAValidationError: If the date string is invalid or cannot be parsed.
+        """
         # If there's no input in the item, it's valid
         if not isinstance(item, str) or item == "":
             return True
@@ -982,12 +996,30 @@ class ThreePartsDate(CustomDataType):
                     raise DAValidationError(msg)
 
     @classmethod
-    def transform(cls, item):
+    def transform(cls, item) -> Optional[datetime]:
+        """
+        Transform a date string into a datetime object.
+
+        Args:
+            item: The date string to transform.
+
+        Returns:
+            datetime or None: The parsed datetime object, or None if empty.
+        """
         if item:
             return as_datetime(item)
 
     @classmethod
-    def default_for(cls, item):
+    def default_for(cls, item) -> Optional[str]:
+        """
+        Convert a datetime object to MM/dd/yyyy format string.
+
+        Args:
+            item: The datetime object to format.
+
+        Returns:
+            str or None: The formatted date string, or None if empty.
+        """
         if item:
             return item.format("MM/dd/yyyy")
 

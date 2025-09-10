@@ -51,7 +51,7 @@ class myTextList:
     def __init__(self, text, limit, title):
         self.g(text, limit, title)
 
-    def g(self, text, limit, title):
+    def g(self, text, limit, title) -> None:
         """
         Process text for addendum generation by truncating if needed and storing overflow.
 
@@ -93,11 +93,12 @@ import datetime
 import decimal
 import re
 import json
+from typing import Any
 
 TypeType = type(type(None))
 
 
-def safe_json2(the_object, level=0, is_key=False):
+def safe_json2(the_object, level=0, is_key=False) -> Any:
     """
     Convert Python objects to JSON-serializable format with enhanced date handling.
 
@@ -189,7 +190,7 @@ def safe_json2(the_object, level=0, is_key=False):
     return the_object
 
 
-def type_name(the_object):
+def type_name(the_object) -> str:
     """
     Extract the class name from a Python object's type string representation.
 

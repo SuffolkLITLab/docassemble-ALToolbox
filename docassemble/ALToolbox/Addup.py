@@ -8,7 +8,7 @@ class Addup:
     def __init__(self, listName, varName):
         self.g(listName, varName)
 
-    def g(self, listName, varName):
+    def g(self, listName, varName) -> float:
         """
         Calculate the sum of a specific numeric field across all items in a DAList.
 
