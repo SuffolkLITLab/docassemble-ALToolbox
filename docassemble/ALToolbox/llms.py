@@ -120,7 +120,7 @@ def chat_completion(
     json_mode=False,
     model: str = "gpt-4o",
     messages: Optional[List[Dict[str, str]]] = None,
-    skip_moderation: bool = False,
+    skip_moderation: bool = True,
     openai_base_url: Optional[str] = None,  # "https://api.openai.com/v1/",
     max_output_tokens: Optional[int] = None,
     max_input_tokens: Optional[int] = None,
