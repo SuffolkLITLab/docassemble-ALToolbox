@@ -150,7 +150,7 @@ def fa_icon(
     if not size and not color and not color_css:
         return ":" + icon + ":"  # Default to letting Docassemble handle it
     if color_css:
-        return f'<i class="{fa_class} fa-{icon}{size_str} style="color:{color_css};" aria-hidden="{str(aria_hidden).lower()}"></i>'
+        return f'<i class="{fa_class} fa-{icon}{size_str}" style="color:{color_css};" aria-hidden="{str(aria_hidden).lower()}"></i>'
     if color:
         return (
             f'<i class="{fa_class} fa-{icon}{size_str}" '
