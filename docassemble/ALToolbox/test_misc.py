@@ -1,9 +1,8 @@
 # do not pre-load
 
-import re
 import unittest
 from unittest.mock import patch
-from .misc import button_array, ButtonDict, true_values_with_other
+from .misc import button_array, ButtonDict, true_values_with_other, fa_icon
 import xml.etree.ElementTree as ET
 
 
@@ -54,6 +53,31 @@ class TestButtonArray(unittest.TestCase):
             ButtonDict(name="Button 2", image="image2", url="url2"),
         ]
         self.assertNotIn("Button 1", button_array(buttons))
+
+    def test_fa_icon(self):
+        try:
+            ET.fromstring(fa_icon("question-circle"))
+        except ET.ParseError:
+            self.fail("fa_icon generated malformed HTML")
+
+        try:
+            ET.fromstring(fa_icon("question-circle", color="red"))
+        except ET.ParseError:
+            self.fail("fa_icon with color arg generated malformed HTML")
+
+        try:
+            ET.fromstring(fa_icon("question-circle", color_css="#0dcaf0"))
+        except ET.ParseError:
+            self.fail("fa_icon with color_css arg generated malformed HTML")
+
+        try:
+            ET.fromstring(fa_icon("question-circle", color=None))
+        except ET.ParseError:
+            self.fail("fa_icon with color_css arg generated malformed HTML")
+
+        self.assertTrue(
+            fa_icon("question-circle", color=None, size=None).startswith(":")
+        )
 
 
 if __name__ == "__main__":
