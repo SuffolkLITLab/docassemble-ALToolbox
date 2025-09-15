@@ -318,20 +318,16 @@ def _source_to_callable(
 
 class ALIncomeList(DAList):
     """
-    Represents a filterable DAList of incomes-type items. It can make
-    use of these attributes and methods in its items:
+    Represents a filterable DAList of incomes-type items.
 
-    Item Attributes:
-        source: Source identifier for filtering
-        owner: Owner name for filtering
-        times_per_year: Frequency of the income
-        value: Amount value
+    This list expects its items to have the following attributes and methods:
+    - source: Source identifier for filtering
+    - owner: Owner name for filtering
+    - times_per_year: Frequency of the income
+    - value: Amount value
+    - total(): Calculate total amount for a given frequency
+    """  # The DAList base sets/uses this dynamically; annotate for type checkers
 
-    Item Methods:
-        total(): Calculate total amount for a given frequency
-    """
-
-    # The DAList base sets/uses this dynamically; annotate for type checkers
     object_type: Optional[type]
 
     def init(self, *pargs, **kwargs) -> None:
@@ -1139,9 +1135,10 @@ class ALItemizedValue(DAObject):
     Should be a positive number, even if it will later be subtracted from the
     job's net total.
 
-    WARNING: This item's period-based value can't be calculated correctly
-    outside of an ALItemizedJob. Its value should only be accessed through the
-    filtering methods of the ALItemizedJob that contains it.
+    Warning:
+        This item's period-based value can't be calculated correctly
+        outside of an ALItemizedJob. Its value should only be accessed through the
+        filtering methods of the ALItemizedJob that contains it.
 
     Attributes:
         value (float | Decimal): A number representing an amount of money accumulated
@@ -1246,7 +1243,8 @@ class ALItemizedValueDict(DAOrderedDict):
     An ALItemizedJob will have two ALItemizedValueDicts, one for income
     and one for deductions.
 
-    WARNING: Should only be accessed through an ALItemizedJob. Otherwise
+    Warning:
+        Should only be accessed through an ALItemizedJob. Otherwise
         you may get unexpected results.
     """
 
