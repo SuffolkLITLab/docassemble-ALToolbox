@@ -102,7 +102,7 @@ def times_per_year(
         The lowercase textual description of the frequency, or a generated
         description if not found in the list.
 
-    Example:
+    Examples:
         >>> times_per_year([(12, "Monthly"), (1, "Annually")], 12)
         'monthly'
         >>> times_per_year([(12, "Monthly")], 5)
@@ -140,7 +140,7 @@ def recent_years(
     Returns:
         List[int]: List of years in the specified order.
 
-    Example:
+    Examples:
         >>> recent_years(past=3, future=1)  # if current year is 2023
         [2024, 2023, 2022, 2021]
         >>> recent_years(past=2, order="ascending", future=0)
@@ -160,13 +160,13 @@ class ALPeriodicAmount(DAObject):
     is 1 (a year).
 
     Attributes:
-    .value {str | float | Decimal} A number representing an amount of money accumulated during
-        the `times_per_year` of this income.
-    .times_per_year {float | Decimal} Represents a number of the annual frequency of
-        the income. E.g. 12 for a monthly income.
-    .source {str} (Optional) The "source" of the income, like a "job" or a "house".
-    .display_name {str} (Optional) If present, will have a translated string to show the
-        user, as opposed to a raw english string from the program
+        value (str | float | Decimal): A number representing an amount of money accumulated during
+            the `times_per_year` of this income.
+        times_per_year (float | Decimal): Represents a number of the annual frequency of
+            the income. E.g. 12 for a monthly income.
+        source (str, optional): The "source" of the income, like a "job" or a "house".
+        display_name (str, optional): If present, will have a translated string to show the
+            user, as opposed to a raw english string from the program.
     """
 
     def __str__(self) -> str:
@@ -191,7 +191,7 @@ class ALPeriodicAmount(DAObject):
         Returns:
             Decimal: The calculated income amount for the specified frequency.
 
-        Example:
+        Examples:
             >>> income = ALPeriodicAmount(value=1000, times_per_year=12)  # $1000/month
             >>> income.total(1)  # Annual total
             Decimal('12000')
@@ -210,17 +210,17 @@ class ALIncome(ALPeriodicAmount):
     is 1 (a year).
 
     Attributes:
-    .value {str | float | Decimal} A number representing an amount of money accumulated during
-        the `times_per_year` of this income.
-    .times_per_year {float | Decimal} Represents a number of the annual frequency of
-        the income. E.g. 12 for a monthly income.
-    .is_hourly {bool} (Optional) True if the income is hourly.
-    .hours_per_period {float | Decimal} (Optional) If the income is hourly, the number of
-        hours during the annual frequency of this job. E.g. if the annual
-        frequency is 52 (weekly), the hours per week might be 50. That is, 50
-        hours per week. This attribute is required if `.is_hourly` is True.
-    .source {str} (Optional) The "source" of the income, like a "job" or a "house".
-    .owner {str} (Optional) Full name of the income's owner as a single string.
+        value (str | float | Decimal): A number representing an amount of money accumulated during
+            the `times_per_year` of this income.
+        times_per_year (float | Decimal): Represents a number of the annual frequency of
+            the income. E.g. 12 for a monthly income.
+        is_hourly (bool, optional): True if the income is hourly.
+        hours_per_period (float | Decimal, optional): If the income is hourly, the number of
+            hours during the annual frequency of this job. E.g. if the annual
+            frequency is 52 (weekly), the hours per week might be 50. That is, 50
+            hours per week. This attribute is required if `.is_hourly` is True.
+        source (str, optional): The "source" of the income, like a "job" or a "house".
+        owner (str, optional): Full name of the income's owner as a single string.
     """
 
     def total(self, times_per_year: float = 1) -> Decimal:
@@ -318,17 +318,16 @@ def _source_to_callable(
 
 class ALIncomeList(DAList):
     """
-    Represents a filterable DAList of incomes-type items. It can make
-    use of these attributes and methods in its items:
+    Represents a filterable DAList of incomes-type items.
 
-    .source
-    .owner
-    .times_per_year
-    .value
-    .total()
-    """
+    This list expects its items to have the following attributes and methods:
+    - source: Source identifier for filtering
+    - owner: Owner name for filtering
+    - times_per_year: Frequency of the income
+    - value: Amount value
+    - total(): Calculate total amount for a given frequency
+    """  # The DAList base sets/uses this dynamically; annotate for type checkers
 
-    # The DAList base sets/uses this dynamically; annotate for type checkers
     object_type: Optional[type]
 
     def init(self, *pargs, **kwargs) -> None:
@@ -353,7 +352,7 @@ class ALIncomeList(DAList):
         Returns:
             Set[str]: A set containing all unique source names from items in the list.
 
-        Example:
+        Examples:
             >>> income_list = ALIncomeList([
             ...     ALIncome(source="wages"),
             ...     ALIncome(source="tips"),
@@ -385,7 +384,7 @@ class ALIncomeList(DAList):
         Returns:
             ALIncomeList: A new ALIncomeList containing only items with matching sources.
 
-        Example:
+        Examples:
             >>> income_list = ALIncomeList([
             ...     ALIncome(source="wages", value=1000),
             ...     ALIncome(source="tips", value=200),
@@ -431,7 +430,7 @@ class ALIncomeList(DAList):
         Returns:
             Decimal: The total income amount for the specified frequency and filters.
 
-        Example:
+        Examples:
             >>> income_list = ALIncomeList([wages_income, tips_income])
             >>> income_list.total(times_per_year=12)  # Monthly total
             Decimal('5000.00')
@@ -502,20 +501,20 @@ class ALJob(ALIncome):
     Can be stored in an ALJobList.
 
     Attributes:
-    .value {float | Decimal} A number representing an amount of money accumulated during
-        the `times_per_year` of this income.
-    .times_per_year {float} Represents a number of the annual frequency of
-        the value. E.g. 12 for a monthly value.
-    .is_hourly {bool} (Optional): Whether the gross total should be calculated based on hours
-        worked per week
-    .hours_per_period {float} (Optional) The number of hours during the annual
-        frequency of this job. E.g. if the annual frequency is 52 (weekly), the
-        hours per week might be 50. That is, 50 hours per week.
-    .deduction {float} (Optional) The amount of money deducted from the total value each period.
-        If this job is hourly, deduction is still from each period, not each hour. Used to
-        calculate the net income in `net_income()`.
-    .employer {Individual} (Optional) A docassemble Individual object, employer.address is the address
-        and employer.phone is the phone
+        value (float | Decimal): A number representing an amount of money accumulated during
+            the `times_per_year` of this income.
+        times_per_year (float): Represents a number of the annual frequency of
+            the value. E.g. 12 for a monthly value.
+        is_hourly (bool, optional): Whether the gross total should be calculated based on hours
+            worked per week.
+        hours_per_period (float, optional): The number of hours during the annual
+            frequency of this job. E.g. if the annual frequency is 52 (weekly), the
+            hours per week might be 50. That is, 50 hours per week.
+        deduction (float, optional): The amount of money deducted from the total value each period.
+            If this job is hourly, deduction is still from each period, not each hour. Used to
+            calculate the net income in `net_income()`.
+        employer (Individual, optional): A docassemble Individual object, employer.address is the address
+            and employer.phone is the phone.
     """
 
     def init(self, *pargs, **kwargs):
@@ -630,7 +629,7 @@ class ALJob(ALIncome):
         Returns:
             The normalized number of hours worked for the specified frequency.
 
-        Example:
+        Examples:
             If the person works 10 hours a week, it will return
             520 when the times_per_year parameter is 1.
 
@@ -773,12 +772,12 @@ class ALJobList(ALIncomeList):
 
 class ALExpenseList(ALIncomeList):
     """
-    A list of expenses
+    A list of expenses.
 
-    * each element has a:
-        * value
-        * source
-        * display name
+    Each element has:
+        value: The monetary value of the expense
+        source: The source category of the expense
+        display_name: Human-readable name for display
     """
 
     def init(self, *pargs, **kwargs):
@@ -795,18 +794,18 @@ class ALAsset(ALIncome):
     Can be stored in an ALAssetList.
 
     Attributes:
-     .market_value {float | Decimal} Market value of the asset.
-    .balance {float | Decimal } Current balance of the account, e.g., like
-        the balance in a checking account, but could also represent a loan
-        amount.
-    .value {float | Decimal} (Optional) Represents the income the asset earns
-        for a given `times_per_year`, such as interest earned in a checking
-        account. If not defined, the income will be set to 0, to simplify
-        representing the many common assets that do not earn any income.
-    .times_per_year {float} (Optional) Number of times per year the asset
-        earns the income listed in the `value` attribute.
-    .owner {str} (Optional) Full name of the asset owner as a single string.
-    .source {str} (Optional) The "source" of the asset, like "vase".
+        market_value (float | Decimal): Market value of the asset.
+        balance (float | Decimal): Current balance of the account, e.g., like
+            the balance in a checking account, but could also represent a loan
+            amount.
+        value (float | Decimal, optional): Represents the income the asset earns
+            for a given `times_per_year`, such as interest earned in a checking
+            account. If not defined, the income will be set to 0, to simplify
+            representing the many common assets that do not earn any income.
+        times_per_year (float, optional): Number of times per year the asset
+            earns the income listed in the `value` attribute.
+        owner (str, optional): Full name of the asset owner as a single string.
+        source (str, optional): The "source" of the asset, like "vase".
     """
 
     def total(self, times_per_year: float = 1) -> Decimal:
@@ -1027,7 +1026,7 @@ class ALVehicle(ALAsset):
         Returns:
             str: A formatted string combining year, make, and model of the vehicle.
 
-        Example:
+        Examples:
             >>> vehicle = ALVehicle(year=2020, make="Toyota", model="Camry")
             >>> vehicle.year_make_model()
             '2020 / Toyota / Camry'
@@ -1048,13 +1047,13 @@ class ALVehicleList(ALAssetList):
 class ALSimpleValue(DAObject):
     """
     Represents a currency value. It's meant to be stored in a list. Can be an
-        item in an ALSimpleValueList.
+    item in an ALSimpleValueList.
 
     Attributes:
-    .value {str | float } The monetary value of the item.
-    .transaction_type {str} (Optional) Can be "expense", which will give a
-        negative value to the total of the item.
-    .source {str} (Optional) The "source" of the item, like "vase".
+        value (str | float): The monetary value of the item.
+        transaction_type (str, optional): Can be "expense", which will give a
+            negative value to the total of the item.
+        source (str, optional): The "source" of the item, like "vase".
     """
 
     def total(self) -> Decimal:
@@ -1136,22 +1135,23 @@ class ALItemizedValue(DAObject):
     Should be a positive number, even if it will later be subtracted from the
     job's net total.
 
-    WARNING: This item's period-based value can't be calculated correctly
-    outside of an ALItemizedJob. Its value should only be accessed through the
-    filtering methods of the ALItemizedJob that contains it.
+    Warning:
+        This item's period-based value can't be calculated correctly
+        outside of an ALItemizedJob. Its value should only be accessed through the
+        filtering methods of the ALItemizedJob that contains it.
 
     Attributes:
-    .value {float | Decimal} A number representing an amount of money accumulated
-        during the `times_per_year` of this item or this item's job.
-    .is_hourly {bool} Whether this particular item is calculated hourly.
-    .times_per_year { float} A denominator of a year representing the annual
-         frequency of the job. E.g. 12 for monthly.
-    .exists {bool} (Optional) Allows an interview author to pre-define some common
-        descriptors, like "wages" or "union dues" without requiring the user to
-        provide a value for each item.
+        value (float | Decimal): A number representing an amount of money accumulated
+            during the `times_per_year` of this item or this item's job.
+        is_hourly (bool): Whether this particular item is calculated hourly.
+        times_per_year (float): A denominator of a year representing the annual
+            frequency of the job. E.g. 12 for monthly.
+        exists (bool, optional): Allows an interview author to pre-define some common
+            descriptors, like "wages" or "union dues" without requiring the user to
+            provide a value for each item.
 
-        If the ".exists" attribute is False or undefined, the item will not be used
-        when calculating totals.
+            If the ".exists" attribute is False or undefined, the item will not be used
+            when calculating totals.
     """
 
     def income_fields(self, use_exists=True) -> List[Dict[str, Any]]:
@@ -1201,7 +1201,7 @@ class ALItemizedValue(DAObject):
             The total value of this item, or 0 if the item doesn't exist
             or has no value.
 
-        Example:
+        Examples:
             >>> item = ALItemizedValue(value=1500, exists=True)
             >>> item.total()
             Decimal('1500')
@@ -1243,7 +1243,8 @@ class ALItemizedValueDict(DAOrderedDict):
     An ALItemizedJob will have two ALItemizedValueDicts, one for income
     and one for deductions.
 
-    WARNING: Should only be accessed through an ALItemizedJob. Otherwise
+    Warning:
+        Should only be accessed through an ALItemizedJob. Otherwise
         you may get unexpected results.
     """
 
@@ -1283,7 +1284,7 @@ class ALItemizedValueDict(DAOrderedDict):
         Returns:
             Decimal: The sum of all existing item values in the dictionary.
 
-        Example:
+        Examples:
             >>> value_dict = ALItemizedValueDict()
             >>> value_dict['wages'] = ALItemizedValue(value=1000, exists=True)
             >>> value_dict['bonus'] = ALItemizedValue(value=500, exists=False)
@@ -1331,37 +1332,38 @@ class ALItemizedJob(DAObject):
     income in code.
 
     Attributes:
-    .to_add {ALItemizedValueDict} Dict of ALItemizedValues that would be added
-        to a job's net total, like wages and tips.
-    .to_subtract {ALItemizedValueDict} Dict of ALItemizedValues that would be
-        subtracted from a net total, like union dues or insurance premiums.
-    .times_per_year {float} A denominator of a year, like 12 for monthly, that
-        represents how frequently the income is earned
-    .is_hourly {bool} (Optional) Whether the value represents a figure that the
-        user earns on an hourly basis, rather than for the full time period
-    .hours_per_period {int} (Optional) If the job is hourly, how many hours the
-        user works per period.
-    .employer {Individual} (Optional) Individual assumed to have a name and,
-        optionally, an address and phone.
-    .source {str} (Optional) The category of this item, like "public service".
-        Defaults to "job".
+        to_add (ALItemizedValueDict): Dict of ALItemizedValues that would be added
+            to a job's net total, like wages and tips.
+        to_subtract (ALItemizedValueDict): Dict of ALItemizedValues that would be
+            subtracted from a net total, like union dues or insurance premiums.
+        times_per_year (float): A denominator of a year, like 12 for monthly, that
+            represents how frequently the income is earned.
+        is_hourly (bool, optional): Whether the value represents a figure that the
+            user earns on an hourly basis, rather than for the full time period.
+        hours_per_period (int, optional): If the job is hourly, how many hours the
+            user works per period.
+        employer (Individual, optional): Individual assumed to have a name and,
+            optionally, an address and phone.
+        source (str, optional): The category of this item, like "public service".
+            Defaults to "job".
 
-    WARNING: Individual items in `.to_add` and `.to_subtract` should not be used
+    Warning:
+        Individual items in `.to_add` and `.to_subtract` should not be used
         directly. They should only be accessed through the filtering methods of
         this job.
 
     Fulfills these requirements:
-    - A job can be hourly. Its wages will be calculated with that in mind.
-    - Despite an hourly job, some individual items must be calculated using the
-        job's whole period.
-    - Some items will have their own periods.
-    - In a list of jobs, a developer may need to access full time and part time
-        jobs separately.
-    - In a list of jobs, a developer may need to sum all items from one source,
-        such as tips or taxes.
-    - The developer needs access to total money coming in, total money going out,
-        and the total of money going in and money coming out.
-    - A user must be able to add their own arbitrary items.
+        - A job can be hourly. Its wages will be calculated with that in mind.
+        - Despite an hourly job, some individual items must be calculated using the
+          job's whole period.
+        - Some items will have their own periods.
+        - In a list of jobs, a developer may need to access full time and part time
+          jobs separately.
+        - In a list of jobs, a developer may need to sum all items from one source,
+          such as tips or taxes.
+        - The developer needs access to total money coming in, total money going out,
+          and the total of money going in and money coming out.
+        - A user must be able to add their own arbitrary items.
     """
 
     def init(self, *pargs, **kwargs):
