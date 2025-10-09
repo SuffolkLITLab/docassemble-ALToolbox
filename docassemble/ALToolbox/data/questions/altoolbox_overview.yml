@@ -69,6 +69,7 @@ code: |
     "Shorten a url": ['Shorten a long url for neater display on the screen', 'misc.py'],
     "TextCounter": ['Text input with a counter', 'TextCounter.js'], 
     "ThreePartsDate": ['Date input with month, day, year as separate parts', 'ThreePartsDate.py'],
+    "conversation_followup_demo": ['Flexible conversation tracking with LLM-generated follow-up questions (up to 3 per turn) using different input types (open-ended, multiple choice, yes/no, checkboxes)', 'conversation_followup.yml'],
   }
   add_records(samples_list, labels)
   list_done = True  

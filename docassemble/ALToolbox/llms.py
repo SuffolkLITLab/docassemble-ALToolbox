@@ -25,6 +25,11 @@ __all__ = [
     "define_fields_from_dict",
     "GoalSatisfactionList",
     "IntakeQuestionList",
+    "ConversationFollowUp",
+    "ConversationTurn",
+    "ConversationFollowUpList",
+    "generate_fields_from_followup",
+    "generate_fields_from_turn",
 ]
 
 if os.getenv("OPENAI_API_KEY"):
@@ -124,6 +129,7 @@ def chat_completion(
     openai_base_url: Optional[str] = None,  # "https://api.openai.com/v1/",
     max_output_tokens: Optional[int] = None,
     max_input_tokens: Optional[int] = None,
+    response_format: Optional[Dict[str, Any]] = None,
 ) -> Union[List[Any], Dict[str, Any], str]:
     """A light wrapper on the OpenAI chat endpoint.
 
@@ -142,9 +148,10 @@ def chat_completion(
         openai_base_url (Optional[str]): The base URL for the OpenAI API. Defaults to value provided in the configuration or "https://api.openai.com/v1/".
         max_output_tokens (Optional[int]): The maximum number of tokens to return from the API. Defaults to 16380.
         max_input_tokens (Optional[int]): The maximum number of tokens to send to the API. Defaults to 128000.
+        response_format (Optional[Dict[str, Any]]): The response format for structured outputs. If provided, takes precedence over json_mode.
 
     Returns:
-        A string with the response from the API endpoint or JSON data if json_mode is True
+        A string with the response from the API endpoint or JSON data if json_mode is True or response_format is provided
     """
     if not openai_base_url:
         openai_base_url = (
@@ -233,10 +240,17 @@ def chat_completion(
                 f"OpenAI moderation error: { moderation_response.results[0] }"
             )
 
+    # Determine response format
+    format_param = None
+    if response_format:
+        format_param = response_format
+    elif json_mode:
+        format_param = {"type": "json_object"}
+
     response = openai_client.chat.completions.create(
         model=model,
         messages=messages,
-        response_format={"type": "json_object"} if json_mode else None,  # type: ignore
+        response_format=format_param,  # type: ignore
         temperature=temperature,
         max_tokens=max_output_tokens,
     )
@@ -247,7 +261,7 @@ def chat_completion(
             f"OpenAI did not finish processing the document. Finish reason: {response.choices[0].finish_reason}"
         )
 
-    if json_mode:
+    if response_format or json_mode:
         assert isinstance(response.choices[0].message.content, str)
         # log(f"JSON response is { response.choices[0].message.content }")
         return json.loads(response.choices[0].message.content)
@@ -1100,4 +1114,454 @@ class IntakeQuestionList(DAList):
             model=self.model,
             max_output_tokens=self.max_output_tokens,
             json_mode=False,
+        )
+
+
+class ConversationFollowUp(DAObject):
+    """A class to represent a single follow-up question/response in a conversation.
+
+    This class supports different types of follow-up questions (open-ended, multiple choice,
+    yes/no, etc.) and can generate appropriate Docassemble field formats.
+
+    Attributes:
+        question_text (str): The text of the question to ask
+        question_type (str): The type of question (open, multiple_choice, yes_no, checkboxes)
+        choices (Optional[List[str]]): List of choices for multiple choice or checkbox questions
+        field_name (str): The Docassemble field name to store the response
+        response: The user's response to the question
+        datatype (Optional[str]): The Docassemble datatype for the field
+    """
+
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        if not hasattr(self, "question_type"):
+            self.question_type = "open"
+        if not hasattr(self, "datatype"):
+            if self.question_type == "yes_no":
+                self.datatype = "yesnoradio"
+            elif self.question_type == "checkboxes":
+                self.datatype = "checkboxes"
+            elif self.question_type == "multiple_choice":
+                self.datatype = "radio"
+            else:
+                self.datatype = "text"
+
+    @property
+    def complete(self):
+        """Returns True if the question_text, question_type, field_name, and response are present."""
+        self.question_text
+        self.question_type
+        self.field_name
+        self.response
+        return True
+
+    def to_field_dict(self) -> Dict[str, Any]:
+        """Converts this follow-up question into a Docassemble field dictionary format.
+
+        Returns:
+            A dictionary that can be used in a Docassemble fields list
+        """
+        field_dict = {
+            "label": self.question_text,
+            "field": self.field_name,
+            "datatype": self.datatype,
+        }
+
+        if self.question_type in ["multiple_choice", "checkboxes"] and hasattr(
+            self, "choices"
+        ):
+            if self.question_type == "checkboxes":
+                field_dict["choices"] = self.choices
+            else:
+                field_dict["choices"] = self.choices
+
+        return field_dict
+
+
+def generate_fields_from_followup(
+    followup_list: List[ConversationFollowUp],
+) -> List[Dict[str, Any]]:
+    """Helper function to convert a list of ConversationFollowUp objects into Docassemble field format.
+
+    Args:
+        followup_list: List of ConversationFollowUp objects
+
+    Returns:
+        List of field dictionaries suitable for use in Docassemble fields with code
+    """
+    return [followup.to_field_dict() for followup in followup_list]
+
+
+def generate_fields_from_turn(turn: "ConversationTurn") -> List[Dict[str, Any]]:
+    """Helper function to convert a ConversationTurn object into Docassemble field format.
+
+    Args:
+        turn: ConversationTurn object containing multiple questions
+
+    Returns:
+        List of field dictionaries suitable for use in Docassemble fields with code
+    """
+    return turn.to_fields_list()
+
+
+class ConversationTurn(DAObject):
+    """A class to represent a single question screen that can contain multiple related fields.
+
+    This allows the LLM to generate up to 3 structured fields for a single question screen,
+    which are displayed together as multiple fields on one Docassemble question.
+
+    Attributes:
+        questions (List[ConversationFollowUp]): List of related fields for this question screen
+        turn_complete (bool): Whether all fields on this question screen have been answered
+    """
+
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        if not hasattr(self, "questions"):
+            self.questions = []
+        self.turn_complete = False
+
+    @property
+    def complete(self):
+        """Returns True if all questions in this turn have been answered."""
+
+        # If there are no questions, this turn is complete immediately
+        if not self.questions:
+            self.turn_complete = True
+            return True
+
+        # If we have questions but they haven't been displayed yet, not complete
+        if not hasattr(self, "displayed_question"):
+            return False
+
+        # Check if all questions have responses
+        for question in self.questions:
+            if not hasattr(question, "response") or question.response is None:
+                return False
+
+        self.turn_complete = True
+        return True
+
+    def add_question(
+        self, question_data: Dict[str, Any], turn_index: int, question_index: int
+    ):
+        """Add a field to this question screen based on LLM response data.
+
+        Args:
+            question_data: Dictionary with question_text, question_type, choices, etc.
+            turn_index: The index of this question screen in the conversation
+            question_index: The index of this field within the question screen
+        """
+        question = ConversationFollowUp()
+        question.init()
+        question.question_text = question_data.get("question_text", "")
+        question.question_type = question_data.get("question_type", "open")
+        question.field_name = f"turn_{turn_index}_q_{question_index}"
+
+        if question_data.get("choices"):
+            question.choices = question_data["choices"]
+
+        # Set appropriate datatype
+        if question.question_type == "yes_no":
+            question.datatype = "yesnoradio"
+        elif question.question_type == "checkboxes":
+            question.datatype = "checkboxes"
+        elif question.question_type == "multiple_choice":
+            question.datatype = "radio"
+        else:
+            question.datatype = "text"
+
+        self.questions.append(question)
+
+    def to_fields_list(self) -> List[Dict[str, Any]]:
+        """Convert all fields in this question screen to Docassemble fields format.
+
+        Returns:
+            List of field dictionaries for use in Docassemble fields with code
+        """
+        return [question.to_field_dict() for question in self.questions]
+
+    def collect_responses(self, response_dict: Dict[str, Any]):
+        """Collect responses from the user for all fields in this question screen.
+
+        Args:
+            response_dict: Dictionary mapping field names to responses
+        """
+        for question in self.questions:
+            if question.field_name in response_dict:
+                question.response = response_dict[question.field_name]
+
+
+class ConversationFollowUpList(DAList):
+    """A conversation tracking class that creates question screens with multiple related fields.
+
+    This class is less dogmatic than GoalSatisfactionList and allows the LLM to generate
+    multiple related fields for a single question screen (open-ended, multiple choice, yes/no, checkboxes).
+    It uses a loose rubric to gently guide the conversation rather than tracking specific goals.
+
+    Attributes:
+        rubric (str): A loose rubric or set of guidelines for the conversation
+        initial_question (str): The original question posed in the interview
+        initial_response (str): The user's initial response
+        question_limit (int): Maximum number of follow-up screens (default: 5)
+        max_questions_per_turn (int): Maximum fields per question screen (default: 3)
+        model (str): OpenAI model to use (default: "gpt-4o")
+        llm_role (str): The role/persona for the LLM
+        conversation_complete (bool): Whether the conversation has reached a natural conclusion
+    """
+
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        self.object_type = ConversationTurn
+        self.complete_attribute = "complete"
+        self.conversation_complete = False
+
+        if not hasattr(self, "question_limit"):
+            self.question_limit = 5
+
+        if not hasattr(self, "model"):
+            self.model = "gpt-4o"
+
+        if not hasattr(self, "max_questions_per_turn"):
+            self.max_questions_per_turn = 3  # Max fields per question screen
+
+        if not hasattr(self, "llm_role"):
+            self.llm_role = """You are a helpful assistant conducting a thoughtful conversation with a user. 
+            Ask follow-up questions that help gather more complete and nuanced information, but don't be 
+            repetitive or overly persistent. When you have enough information or the user has provided 
+            a complete response, you should indicate the conversation is complete."""
+
+    def need_more_questions(self) -> bool:
+        """Returns True if more follow-up question screens are needed, False otherwise.
+
+        Also updates the next set of fields to be displayed and determines if conversation is complete.
+
+        Returns:
+            True if more follow-up question screens are needed, False otherwise.
+        """
+        log(
+            f"need_more_questions called. Current elements: {len(self.elements)}, limit: {self.question_limit}"
+        )
+
+        if len(self.elements) >= self.question_limit:
+            log("Reached question limit")
+            self.conversation_complete = True
+            return False
+
+        # Get the next follow-up questions from the LLM
+        log("Getting next followup from LLM...")
+        log(f"Initial response: {getattr(self, 'initial_response', 'NOT SET')}")
+        log(f"Rubric: {getattr(self, 'rubric', 'NOT SET')}")
+        followup_response = self._get_next_followup()
+        log(f"Followup response: {followup_response}")
+
+        if followup_response.get("complete", False):
+            log("LLM says conversation is complete")
+            self.conversation_complete = True
+            return False
+
+        # Store the next turn details for use by the interview
+        self.next_turn_questions = followup_response.get("questions", [])
+        log(f"Next turn questions: {self.next_turn_questions}")
+
+        if not self.next_turn_questions:
+            log("No questions generated, marking complete")
+            self.conversation_complete = True
+            return False
+
+        log(f"Generated {len(self.next_turn_questions)} questions for next turn")
+        return True
+
+    def get_next_followup_turn(self) -> Optional[List[Dict[str, Any]]]:
+        """Returns the details for the next turn of follow-up questions.
+
+        Returns:
+            List of question dictionaries or None if conversation is complete
+        """
+        if self.conversation_complete:
+            return None
+
+        if not hasattr(self, "next_turn_questions"):
+            return None
+
+        return self.next_turn_questions
+
+    def get_next_turn_and_questions(self) -> Optional["ConversationTurn"]:
+        """Returns the next question screen with fields ready to display, similar to GoalSatisfactionList pattern.
+
+        Returns:
+            ConversationTurn object with fields set up, or None if conversation is complete
+        """
+        if self.conversation_complete:
+            log("Conversation already marked complete")
+            return None
+
+        # Create a new turn
+        turn = ConversationTurn()
+        turn.init()
+
+        # Get questions from the next_turn_questions that should have been set by need_more_questions()
+        if hasattr(self, "next_turn_questions") and self.next_turn_questions:
+            for idx, question_data in enumerate(self.next_turn_questions):
+                turn.add_question(question_data, len(self.elements), idx)
+            log(f"Created turn with {len(self.next_turn_questions)} questions")
+            # Clear the next_turn_questions since we've used them
+            del self.next_turn_questions
+        else:
+            log("No questions available to add to turn")
+
+        return turn
+
+    def process_turn_responses(self) -> None:
+        """Process responses from the most recent turn, similar to mark_satisfied_goals."""
+        if len(self.elements) > 0:
+            latest_turn = self.elements[-1]
+            if hasattr(latest_turn, "questions"):
+                log(
+                    f"Processing {len(latest_turn.questions)} responses from latest turn"
+                )
+                # Any additional processing can go here
+
+    def _get_next_followup(self) -> Dict[str, Any]:
+        """Gets the next follow-up questions from the LLM using structured outputs.
+
+        Returns:
+            Dictionary containing the follow-up questions details (can be 1-3 questions)
+        """
+        system_message = f"""{self.llm_role}
+
+        You are having a conversation with a user based on this rubric: {self.rubric}
+
+        Based on the conversation so far, determine if you need to create a follow-up question screen
+        to get more complete information, or if the conversation is complete.
+
+        You can create up to {self.max_questions_per_turn} related fields for a single question screen.
+        This allows you to gather multiple pieces of related information efficiently on one screen.
+
+        For each field, choose the most appropriate input type:
+        - "open": Open-ended text field
+        - "multiple_choice": Radio button selection from choices  
+        - "yes_no": Yes/No radio buttons
+        - "checkboxes": Multiple selection checkboxes
+
+        Respond with a JSON object in this format:
+        {{
+            "complete": false,
+            "questions": [
+                {{
+                    "question_text": "Label for your first field",
+                    "question_type": "open",
+                    "choices": []
+                }},
+                {{
+                    "question_text": "Label for your second field", 
+                    "question_type": "multiple_choice",
+                    "choices": ["Choice 1", "Choice 2", "Choice 3"]
+                }}
+            ]
+        }}
+
+        If the conversation is complete, respond with:
+        {{
+            "complete": true,
+            "questions": []
+        }}
+        """
+
+        # Build the conversation thread
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "assistant", "content": self.initial_question},
+            {"role": "user", "content": self.initial_response},
+        ]
+
+        # Add all previous follow-ups from all turns
+        for turn in self.elements:
+            if hasattr(turn, "questions"):
+                for question in turn.questions:
+                    messages.append(
+                        {"role": "assistant", "content": question.question_text}
+                    )
+                    messages.append({"role": "user", "content": str(question.response)})
+
+        # Define the response schema for structured outputs
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "followup_response",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "complete": {"type": "boolean"},
+                        "questions": {
+                            "type": "array",
+                            "maxItems": self.max_questions_per_turn,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "question_text": {"type": "string"},
+                                    "question_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "open",
+                                            "multiple_choice",
+                                            "yes_no",
+                                            "checkboxes",
+                                        ],
+                                    },
+                                    "choices": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                    },
+                                },
+                                "required": ["question_text", "question_type"],
+                                "additionalProperties": False,
+                            },
+                        },
+                    },
+                    "required": ["complete", "questions"],
+                    "additionalProperties": False,
+                },
+            },
+        }
+
+        try:
+            result = chat_completion(
+                messages=messages,
+                model=self.model,
+                response_format=response_format,
+                temperature=0.7,
+            )
+
+            log(f"LLM response for follow-up: {result}")
+            assert isinstance(result, dict)
+            return result
+        except Exception as e:
+            log(f"Error in _get_next_followup: {e}")
+            # Return a fallback response to avoid breaking the conversation
+            return {"complete": True, "questions": []}
+
+    def synthesize_conversation_summary(self) -> str:
+        """Returns a summary of the entire conversation.
+
+        Returns:
+            A summary that synthesizes the initial response and all follow-ups
+        """
+        messages = [
+            {"role": "assistant", "content": self.initial_question},
+            {"role": "user", "content": self.initial_response},
+        ]
+
+        for turn in self.elements:
+            if hasattr(turn, "questions"):
+                for question in turn.questions:
+                    messages.append(
+                        {"role": "assistant", "content": question.question_text}
+                    )
+                    messages.append({"role": "user", "content": str(question.response)})
+
+        return synthesize_user_responses(
+            messages=messages,
+            custom_instructions="Synthesize this conversation into a comprehensive summary that captures all the key information discussed.",
+            model=self.model,
         )
