@@ -233,13 +233,22 @@ def chat_completion(
                 f"OpenAI moderation error: { moderation_response.results[0] }"
             )
 
-    response = openai_client.chat.completions.create(
-        model=model,
-        messages=messages,
-        response_format={"type": "json_object"} if json_mode else None,  # type: ignore
-        temperature=temperature,
-        max_tokens=max_output_tokens,
+    # Thinking models (o1, o3, gpt-5) don't support temperature parameter
+    is_thinking_model = any(
+        model.startswith(prefix) for prefix in ["o1", "o3", "gpt-5"]
     )
+    
+    completion_params = {
+        "model": model,
+        "messages": messages,
+        "response_format": {"type": "json_object"} if json_mode else None,  # type: ignore
+        "max_completion_tokens": max_output_tokens,
+    }
+    
+    if not is_thinking_model:
+        completion_params["temperature"] = temperature
+    
+    response = openai_client.chat.completions.create(**completion_params)
 
     # check finish reason
     if response.choices[0].finish_reason != "stop":
