@@ -911,12 +911,55 @@ class GoalOrientedQuestion(DAObject):
     def response_as_text(self) -> str:
         """Returns the response in a readable text format for the LLM.
         
+        Combines both structured responses from response_dict and the open-ended response.
+        
         Returns:
-            A formatted string representation of the response.
+            A formatted string representation of all responses.
         """
-        if isinstance(self.response, dict):
-            return json.dumps(self.response)
-        return str(self.response)
+        response_parts = []
+        
+        # Add structured field responses if they exist
+        if hasattr(self, 'response_dict') and len(self.response_dict) > 0:
+            for key, value in self.response_dict.items():
+                response_parts.append(f"{key}: {value}")
+        
+        # Add the open-ended response
+        if hasattr(self, 'response') and self.response:
+            if response_parts:
+                # If we already have structured responses, add a separator
+                response_parts.append(f"Additional comments: {self.response}")
+            else:
+                # If only open-ended response exists
+                response_parts.append(str(self.response))
+        
+        return "\n".join(response_parts) if response_parts else ""
+    
+    def build_field_list(self) -> List[Dict[str, Any]]:
+        """
+        Build a field list from this question object for use in docassemble fields.
+        
+        Returns:
+            A list of field dictionaries suitable for use in a fields: code: block
+        """
+        field_list = []
+        
+        if isinstance(self.question, dict):
+            # Add structured fields from the LLM, storing them in response_dict
+            for field_spec in self.question.get('fields', []):
+                # Use attr_name() to build the proper field path
+                field_dict = {
+                    'label': field_spec['label'],
+                    'field': self.attr_name(f"response_dict['{space_to_underscore(field_spec['label'])}']")
+                }
+                if 'datatype' in field_spec:
+                    field_dict['datatype'] = field_spec['datatype']
+                if 'choices' in field_spec and field_spec.get('datatype') in ['radio', 'checkboxes']:
+                    field_dict['choices'] = field_spec['choices']
+                if 'required' in field_spec:
+                    field_dict['required'] = field_spec['required']
+                field_list.append(field_dict)
+        
+        return field_list
 
 
 class GoalOrientedQuestionList(DAList):
@@ -966,37 +1009,6 @@ class GoalOrientedQuestionList(DAList):
 
         if not hasattr(self, "user_assumed_role"):
             self.user_assumed_role = "applicant for legal help"
-
-    def build_field_list_for_question(self, question_obj: Union[str, Dict[str, Any]], index: int) -> List[Dict[str, Any]]:
-        """
-        Helper function to build a field list from a question object for use in docassemble fields.
-        
-        Args:
-            question_obj: The question (dict with structured fields or str for simple text)
-            index: The current index in the list
-        
-        Returns:
-            A list of field dictionaries suitable for use in a fields: code: block
-        """
-        field_list = []
-        
-        if isinstance(question_obj, dict):
-            # Add structured fields from the LLM, storing them in response_dict
-            for field_spec in question_obj.get('fields', []):
-                # Use attr_name() with the dictionary key directly (no extra quotes)
-                field_dict = {
-                    'label': field_spec['label'],
-                    'field': self[index].attr_name(f"response_dict['{space_to_underscore(field_spec['label'])}']")
-                }
-                if 'datatype' in field_spec:
-                    field_dict['datatype'] = field_spec['datatype']
-                if 'choices' in field_spec and field_spec.get('datatype') in ['radio', 'checkboxes']:
-                    field_dict['choices'] = field_spec['choices']
-                if 'required' in field_spec:
-                    field_dict['required'] = field_spec['required']
-                field_list.append(field_dict)
-        
-        return field_list
 
     def keep_going(self) -> bool:
         """Returns True if the response is not yet complete and the question limit hasn't been reached.
