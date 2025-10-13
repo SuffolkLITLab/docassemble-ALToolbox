@@ -44,8 +44,8 @@ template: x.show_current_progress
 subject: |
   Your questions and answers so far
 content: |
-  Your initial draft:
-  > ${ x.initial_draft }
+  Your initial response:
+  > ${ x.initial_response_as_text() }
 
   % for question in x.complete_elements():
   * ${ question.response_as_text() }

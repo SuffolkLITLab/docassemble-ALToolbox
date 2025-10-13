@@ -913,6 +913,7 @@ class GoalOrientedQuestion(DAObject):
         
         Combines both structured responses from response_dict and the open-ended response.
         Uses original labels from the question for better context.
+        Handles checkboxes specially by using .true_values() to show only checked items.
         
         Returns:
             A formatted string representation of all responses.
@@ -921,18 +922,30 @@ class GoalOrientedQuestion(DAObject):
         
         # Add structured field responses if they exist
         if hasattr(self, 'response_dict') and len(self.response_dict) > 0:
-            # Build a mapping from underscored keys to original labels
+            # Build a mapping from underscored keys to original labels and datatypes
             label_mapping = {}
+            datatype_mapping = {}
             if isinstance(self.question, dict):
                 for field_spec in self.question.get('fields', []):
                     underscored_key = space_to_underscore(field_spec['label'])
                     label_mapping[underscored_key] = field_spec['label']
+                    datatype_mapping[underscored_key] = field_spec.get('datatype', 'text')
             
             # Use original labels when displaying responses
             for key, value in self.response_dict.items():
                 # Use the original label if available, otherwise use the key
                 label = label_mapping.get(key, key)
-                if value:  # Only include non-empty responses
+                datatype = datatype_mapping.get(key, 'text')
+                
+                # Handle checkboxes specially - only show checked values
+                if datatype == 'checkboxes':
+                    if hasattr(value, 'true_values'):
+                        checked_values = value.true_values()
+                        if checked_values:
+                            response_parts.append(f"{label}: {', '.join(str(v) for v in checked_values)}")
+                    elif value:  # Fallback if not a proper DADict
+                        response_parts.append(f"{label}: {value}")
+                elif value:  # Only include non-empty responses for other field types
                     response_parts.append(f"{label}: {value}")
         
         # Add the open-ended response
@@ -997,12 +1010,15 @@ class GoalOrientedQuestionList(DAList):
 
     Attributes:
         rubric (str): The rubric that describes what constitutes a complete response
-        question_limit (int): The maximum number of follow-up questions to ask the user. Defaults to 10.
-        initial_draft (str): The initial draft of the user's response
+        question_limit (int): The maximum number of follow-up questions to ask the user. Defaults to 6.
+        initial_draft (str, optional): The initial draft of the user's response (for open-ended initial questions)
+        initial_draft_dict (DADict, optional): Dictionary of structured responses (for structured initial questions)
+        initial_draft_response (str, optional): Open-ended response for structured initial questions
         initial_question (str): The original question posed in the interview
-        model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
-        llm_assumed_role (str): The role for the LLM to assume. Defaults to "teacher".
-        user_assumed_role (str): The role for the user to assume. Defaults to "student".
+        use_structured_initial_question (bool): If True, generate structured fields for initial question. Defaults to False.
+        model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
+        llm_assumed_role (str): The role for the LLM to assume. Defaults to "legal aid intake worker".
+        user_assumed_role (str): The role for the user to assume. Defaults to "applicant for legal help".
     """
 
     def init(self, *pargs, **kwargs):
@@ -1021,6 +1037,141 @@ class GoalOrientedQuestionList(DAList):
 
         if not hasattr(self, "user_assumed_role"):
             self.user_assumed_role = "applicant for legal help"
+        
+        if not hasattr(self, "use_structured_initial_question"):
+            self.use_structured_initial_question = False
+
+    def generate_initial_question_fields(self) -> Dict[str, Any]:
+        """Generate structured fields for the initial question using the LLM.
+        
+        This allows the initial question to use structured fields (radio, checkboxes, etc.)
+        instead of requiring an open-ended narrative response.
+        
+        Returns:
+            A dict with the structure for the initial question fields.
+        """
+        system_message = f"""You are a {self.llm_assumed_role} creating an intake form.
+        
+        Based on this question, generate 1-5 structured fields to gather the initial information:
+        
+        Question: {self.initial_question}
+        
+        Goal: {self.rubric}
+        
+        Create structured fields that will help gather relevant information. Use structured question types
+        (yesnoradio, radio, checkboxes, date, currency, email) whenever possible.
+        
+        Respond with a JSON object in this format:
+        {{
+          "question_text": "Brief intro text for the question screen",
+          "fields": [
+            {{
+              "label": "Field label text",
+              "field": "temp_field_1",
+              "datatype": "yesnoradio|radio|checkboxes|text|area|date|currency|email",
+              "choices": ["Option 1", "Option 2"],  // only for radio/checkboxes
+              "required": false
+            }}
+          ]
+        }}
+        
+        Guidelines:
+        - Generate 1-5 fields that capture the key information needed
+        - Use yesnoradio for yes/no questions
+        - Use radio for single-choice questions (2-5 options)
+        - Use checkboxes for multiple-choice questions
+        - Use text for short text responses
+        - Use area for longer narrative responses
+        - All fields must have required: false
+        """
+        
+        results = chat_completion(
+            messages=[
+                {"role": "system", "content": system_message},
+            ],
+            model=self.model,
+            json_mode=True,
+        )
+        assert isinstance(results, dict)
+        return results
+
+    def build_initial_field_list(self) -> List[Dict[str, Any]]:
+        """Build field list for the initial question when using structured format.
+        
+        Returns:
+            A list of field dictionaries suitable for use in a fields: code: block
+        """
+        if not hasattr(self, 'initial_question_structure'):
+            self.initial_question_structure = self.generate_initial_question_fields()
+        
+        field_list = []
+        for field_spec in self.initial_question_structure.get('fields', []):
+            field_dict = {
+                'label': field_spec['label'],
+                'field': self.attr_name(f"initial_draft_dict['{space_to_underscore(field_spec['label'])}']")
+            }
+            if 'datatype' in field_spec:
+                field_dict['datatype'] = field_spec['datatype']
+            if 'choices' in field_spec and field_spec.get('datatype') in ['radio', 'checkboxes']:
+                field_dict['choices'] = field_spec['choices']
+            if 'required' in field_spec:
+                field_dict['required'] = field_spec['required']
+            field_list.append(field_dict)
+        
+        return field_list
+
+    def initial_response_as_text(self) -> str:
+        """Returns the initial response in text format, handling both string and dict formats.
+        
+        Handles checkboxes specially by using .true_values() to show only checked items.
+        
+        Returns:
+            A formatted string representation of the initial response.
+        """
+        # If initial_draft is a string (traditional open-ended response)
+        if hasattr(self, 'initial_draft') and isinstance(self.initial_draft, str):
+            return self.initial_draft
+        
+        # If using structured initial question with initial_draft_dict
+        if hasattr(self, 'initial_draft_dict') and len(self.initial_draft_dict) > 0:
+            response_parts = []
+            
+            # Build mapping from underscored keys to original labels and datatypes
+            label_mapping = {}
+            datatype_mapping = {}
+            if hasattr(self, 'initial_question_structure'):
+                for field_spec in self.initial_question_structure.get('fields', []):
+                    underscored_key = space_to_underscore(field_spec['label'])
+                    label_mapping[underscored_key] = field_spec['label']
+                    datatype_mapping[underscored_key] = field_spec.get('datatype', 'text')
+            
+            # Use original labels when displaying responses
+            for key, value in self.initial_draft_dict.items():
+                label = label_mapping.get(key, key)
+                datatype = datatype_mapping.get(key, 'text')
+                
+                # Handle checkboxes specially - only show checked values
+                if datatype == 'checkboxes':
+                    if hasattr(value, 'true_values'):
+                        checked_values = value.true_values()
+                        if checked_values:
+                            response_parts.append(f"{label}: {', '.join(str(v) for v in checked_values)}")
+                    elif value:  # Fallback if not a proper DADict
+                        response_parts.append(f"{label}: {value}")
+                elif value:  # Only include non-empty responses for other field types
+                    response_parts.append(f"{label}: {value}")
+            
+            # Add open-ended response if provided
+            if hasattr(self, 'initial_draft_response') and self.initial_draft_response:
+                if response_parts:
+                    response_parts.append(f"Additional comments: {self.initial_draft_response}")
+                else:
+                    response_parts.append(str(self.initial_draft_response))
+            
+            return "\n".join(response_parts) if response_parts else ""
+        
+        # Fallback to empty string if nothing is set
+        return ""
 
     def keep_going(self) -> bool:
         """Returns True if the response is not yet complete and the question limit hasn't been reached.
@@ -1185,7 +1336,7 @@ IMPORTANT: Do not ask for any information listed above unless it is genuinely in
         """
         messages = [
             {"role": "assistant", "content": self.initial_question},
-            {"role": "user", "content": self.initial_draft},
+            {"role": "user", "content": self.initial_response_as_text()},
         ]
         for element in self.elements:
             # Serialize question (could be text or dict)
@@ -1207,7 +1358,7 @@ IMPORTANT: Do not ask for any information listed above unless it is genuinely in
         """
         messages = [
             {"role": "assistant", "content": self.initial_question},
-            {"role": "user", "content": self.initial_draft},
+            {"role": "user", "content": self.initial_response_as_text()},
         ]
         for question in self.elements:
             # Serialize question (could be text or dict)
