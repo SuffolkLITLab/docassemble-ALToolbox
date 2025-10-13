@@ -24,6 +24,7 @@ __all__ = [
     "synthesize_user_responses",
     "define_fields_from_dict",
     "GoalSatisfactionList",
+    "GoalOrientedQuestionList",
     "IntakeQuestionList",
 ]
 
@@ -872,6 +873,245 @@ class GoalSatisfactionList(DAList):
             Review the student's response and provide helpful and growth-encouraging 
             feedback on how well they addressed the goals you set out for them. 
             If they met the goals but could dig deeper, offer specific feedback on 
+            how they could do so in their next reflection, which may have a different topic. 
+            Keep your feedback short and actionable without getting wordy or overly verbose.
+            """
+        messages = [
+            {"role": "assistant", "content": self.initial_question},
+            {"role": "user", "content": self.initial_draft},
+        ]
+        for question in self.elements:
+            messages.append({"role": "assistant", "content": question.question})
+            messages.append({"role": "user", "content": question.response})
+
+        messages.append({"role": "assistant", "content": feedback_prompt})
+
+        return chat_completion(
+            messages=messages,
+            model=self.model,
+        )
+
+
+class GoalOrientedQuestion(DAObject):
+    """A class to represent a question in a goal-oriented questionnaire.
+
+    Attributes:
+        question (str): The question to ask the user
+        response (str): The user's response to the question
+    """
+
+    @property
+    def complete(self):
+        """Returns True if the question and response attributes are present."""
+        self.question
+        self.response
+        return True
+
+
+class GoalOrientedQuestionList(DAList):
+    """A class to help ask the user follow-up questions until their response satisfies a single rubric.
+
+    Unlike GoalSatisfactionList which tracks multiple individual goals, this class focuses on a single
+    rubric that describes what constitutes a complete response. The AI will continue asking follow-up
+    questions until the response satisfies the rubric or the question limit is reached.
+
+    This can consume a lot of tokens, as each follow-up has a chance to send the whole conversation
+    thread to the LLM.
+
+    By default, this will use the OpenAI API key defined in the global configuration under this path:
+
+    ```
+    open ai:
+        key: sk-...
+    ```
+
+    You can specify the path to an alternative configuration by setting the `openai_configuration_path` attribute.
+
+    This object does NOT accept the key as a direct parameter, as that will be leaked in the user's answers.
+
+    Attributes:
+        rubric (str): The rubric that describes what constitutes a complete response
+        question_limit (int): The maximum number of follow-up questions to ask the user. Defaults to 10.
+        initial_draft (str): The initial draft of the user's response
+        initial_question (str): The original question posed in the interview
+        model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
+        llm_assumed_role (str): The role for the LLM to assume. Defaults to "teacher".
+        user_assumed_role (str): The role for the user to assume. Defaults to "student".
+    """
+
+    def init(self, *pargs, **kwargs):
+        super().init(*pargs, **kwargs)
+        self.object_type = GoalOrientedQuestion
+        self.complete_attribute = "complete"
+
+        if not hasattr(self, "question_limit"):
+            self.question_limit = 6
+
+        if not hasattr(self, "model"):
+            self.model = "gpt-5-mini"
+
+        if not hasattr(self, "llm_assumed_role"):
+            self.llm_assumed_role = "legal aid intake worker"
+
+        if not hasattr(self, "user_assumed_role"):
+            self.user_assumed_role = "applicant for legal help"
+
+    def keep_going(self) -> bool:
+        """Returns True if the response is not yet complete and the question limit hasn't been reached.
+
+        Returns:
+            True if more questions can be asked, False otherwise.
+        """
+        if self.satisfied():
+            return False
+        return len(self.elements) < self.question_limit
+
+    def need_more_questions(self) -> bool:
+        """Returns True if the user needs to answer more questions, False otherwise.
+
+        Also has the side effect of checking the user's most recent response to see if it satisfies
+        the rubric and updating the next question to be asked.
+
+        Returns:
+            True if more questions are needed, False otherwise.
+        """
+        status = self._check_satisfaction()
+
+        if status.strip().lower() == "satisfied":
+            return False
+        else:
+            self.next_question = status
+
+        return self.keep_going()
+
+    def satisfied(self) -> bool:
+        """Returns True if the rubric is satisfied, False otherwise.
+
+        Returns:
+            True if the rubric is satisfied, False otherwise.
+        """
+        if not hasattr(self, "_satisfied"):
+            self._satisfied = False
+        return self._satisfied
+
+    def _check_satisfaction(self) -> str:
+        """Checks if the user's responses satisfy the rubric.
+
+        Returns:
+            The text "satisfied" if the rubric is satisfied, otherwise a follow-up question.
+        """
+        system_message = f"""You are a {self.llm_assumed_role} who is helping to improve and get relevant and thoughtful information from a {self.user_assumed_role}.
+        You will be ready to encourage the {self.user_assumed_role} to dig deeper if the answer is shallow and lacks detail,
+        but if the answer is complete you will not need to ask a follow-up.
+
+        Read the entire exchange with the {self.user_assumed_role}, in light of this rubric: 
+        ```{self.rubric}```
+
+        Respond with the exact text "satisfied" (and no other text) if the rubric is satisfied. If the rubric is not satisfied, 
+        respond with a brief follow-up question that directs the {self.user_assumed_role} toward satisfying the rubric. If they have already provided a partial 
+        response, encourage them to provide more information with an appropriate follow-up question. Your follow-up should be short, and 
+        organized as a narrative sentence.
+        """
+
+        results = chat_completion(
+            messages=[
+                {"role": "system", "content": system_message},
+            ]
+            + self._get_thread(),
+            model=self.model,
+        )
+        assert isinstance(results, str)
+
+        if results.strip().lower() == "satisfied":
+            self._satisfied = True
+
+        return results
+
+    def get_next_question(self) -> Optional[str]:
+        """Returns the text of the next question to ask the user.
+
+        Returns:
+            The text of the next question to ask the user, or None if no more questions are needed.
+        """
+        if not self.keep_going():
+            return None
+
+        # This should have been set by the last call to need_more_questions
+        # unless we're just starting out
+        if hasattr(self, "next_question") and self.next_question:
+            temp_question = self.next_question
+            del self.next_question
+            return temp_question
+
+        # Generate a new question
+        system_instructions = f"""You are helping the user to satisfy this rubric with their response: "{self.rubric}". Ask a brief appropriate follow-up question that directs the user toward the rubric. If they have already provided a partial response, explain why and how they should expand on it."""
+
+        messages = [{"role": "system", "content": system_instructions}]
+        results = chat_completion(
+            messages=messages + self._get_thread(),
+            model=self.model,
+        )
+        assert isinstance(results, str)
+        return results
+
+    def _get_thread(self) -> List[Dict[str, str]]:
+        """Returns a list of messages (with corresponding role) for the conversation thread.
+
+        This is appropriate to pass to the OpenAI ChatCompletion APIs.
+
+        Returns:
+            A list of messages (with corresponding role) for the conversation.
+        """
+        messages = [
+            {"role": "assistant", "content": self.initial_question},
+            {"role": "user", "content": self.initial_draft},
+        ]
+        for element in self.elements:
+            messages.append({"role": "assistant", "content": element.question})
+            messages.append({"role": "user", "content": element.response})
+
+        return messages
+
+    def synthesize_draft_response(self) -> str:
+        """Returns a draft response that synthesizes the user's responses to the questions.
+
+        Returns:
+            A draft response that synthesizes the user's responses to the questions.
+        """
+        messages = [
+            {"role": "assistant", "content": self.initial_question},
+            {"role": "user", "content": self.initial_draft},
+        ]
+        for question in self.elements:
+            messages.append({"role": "assistant", "content": question.question})
+            messages.append({"role": "user", "content": question.response})
+        return synthesize_user_responses(
+            custom_instructions="",
+            messages=messages,
+            model=self.model,
+        )
+
+    def provide_feedback(
+        self, feedback_prompt: str = ""
+    ) -> Union[List[Any], Dict[str, Any], str]:
+        """Returns feedback to the user based on how well they satisfied the rubric.
+
+        Args:
+            feedback_prompt (str): The prompt to use for the feedback. Defaults to "".
+
+        Returns:
+            Feedback to the user based on how well they satisfied the rubric.
+        """
+        if not feedback_prompt:
+            feedback_prompt = f"""
+            You are a helpful instructor who is providing feedback to a student
+            based on their reflection and response to any questions you asked.
+
+            Review the student's response in light of this rubric:
+            ```{self.rubric}```
+
+            Provide helpful and growth-encouraging feedback on how well they addressed the rubric. 
+            If they met the rubric but could dig deeper, offer specific feedback on 
             how they could do so in their next reflection, which may have a different topic. 
             Keep your feedback short and actionable without getting wordy or overly verbose.
             """
