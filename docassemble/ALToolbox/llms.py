@@ -912,6 +912,7 @@ class GoalOrientedQuestion(DAObject):
         """Returns the response in a readable text format for the LLM.
         
         Combines both structured responses from response_dict and the open-ended response.
+        Uses original labels from the question for better context.
         
         Returns:
             A formatted string representation of all responses.
@@ -920,8 +921,19 @@ class GoalOrientedQuestion(DAObject):
         
         # Add structured field responses if they exist
         if hasattr(self, 'response_dict') and len(self.response_dict) > 0:
+            # Build a mapping from underscored keys to original labels
+            label_mapping = {}
+            if isinstance(self.question, dict):
+                for field_spec in self.question.get('fields', []):
+                    underscored_key = space_to_underscore(field_spec['label'])
+                    label_mapping[underscored_key] = field_spec['label']
+            
+            # Use original labels when displaying responses
             for key, value in self.response_dict.items():
-                response_parts.append(f"{key}: {value}")
+                # Use the original label if available, otherwise use the key
+                label = label_mapping.get(key, key)
+                if value:  # Only include non-empty responses
+                    response_parts.append(f"{label}: {value}")
         
         # Add the open-ended response
         if hasattr(self, 'response') and self.response:
@@ -1002,7 +1014,7 @@ class GoalOrientedQuestionList(DAList):
             self.question_limit = 6
 
         if not hasattr(self, "model"):
-            self.model = "gpt-5-mini"
+            self.model = "gpt-5-nano"
 
         if not hasattr(self, "llm_assumed_role"):
             self.llm_assumed_role = "legal aid intake worker"
@@ -1032,6 +1044,7 @@ class GoalOrientedQuestionList(DAList):
         status = self._check_satisfaction()
 
         if status == "satisfied":
+            self.next_question = None
             return False
         else:
             self.next_question = status
@@ -1054,18 +1067,31 @@ class GoalOrientedQuestionList(DAList):
         Returns:
             Either the string "satisfied" if the rubric is satisfied, or a dict with generated fields for the next question.
         """
-        system_message = f"""You are a {self.llm_assumed_role} who is helping to improve and get relevant and thoughtful information from a {self.user_assumed_role}.
-        You will be ready to encourage the {self.user_assumed_role} to dig deeper if the answer is shallow and lacks detail,
+        system_message = f"""You are a {self.llm_assumed_role} who is helping to get relevant and thoughtful information from a {self.user_assumed_role}.
+        You will be ready to encourage the {self.user_assumed_role} to provide more information if it is helpful at this stage,
         but if the answer is complete you will not need to ask a follow-up.
 
-        Read the entire exchange with the {self.user_assumed_role}, in light of this rubric: 
+        Read the entire exchange with the {self.user_assumed_role}, in light of this goal: 
         ```{self.rubric}```
 
-        If the rubric is satisfied, respond with a JSON object containing only:
+        If the goal or rubric is satisfied, respond with a JSON object containing only:
         {{"status": "satisfied"}}
 
-        If the rubric is NOT satisfied, generate a follow-up question with 1-3 specific fields to gather missing information, plus an optional open-ended field.
-        Use structured question types (yesnoradio, radio, checkboxes) whenever possible instead of open-ended text.
+        If the goal or rubric is NOT satisfied, generate a follow-up question with 1-3 specific fields to gather missing information.
+        The user will always have an opportunity to provide additional open-ended context in a text area field that you do not need to
+        generate.
+
+        Your goal is to gently encourage a complete response, but be humble as you are only a simple
+        AI tool and the user may not be comfortable sharing certain information.
+
+        CRITICAL: Before generating any follow-up question, carefully review ALL previous responses in the conversation thread.
+        - DO NOT ask for information that has already been provided, even if the format was different than expected
+        - If the user says "I already answered" or similar, ACCEPT their previous answer and mark that topic as satisfied
+        - If the user provides information that partially answers a question, DO NOT ask for the exact same information again
+        - Only ask clarifying questions if critical details are genuinely missing AND the user hasn't already declined to provide them
+        - If a question has been asked 2+ times without a satisfactory answer, STOP asking and move to different missing information
+
+        Use structured question types (yesnoradio, radio, checkboxes, date, currency, email) whenever possible instead of open-ended text.
         
         Respond with a JSON object in this format:
         {{
@@ -1075,17 +1101,11 @@ class GoalOrientedQuestionList(DAList):
             {{
               "label": "Field label text",
               "field": "temp_field_1",
-              "datatype": "yesnoradio|radio|checkboxes|text|area",
+              "datatype": "yesnoradio|radio|checkboxes|text|area|date|currency|email",
               "choices": ["Option 1", "Option 2"],  // only for radio/checkboxes
               "required": false
             }}
-          ],
-          "open_ended_field": {{
-            "label": "Is there anything else you want to tell us about this?",
-            "field": "temp_open_ended",
-            "datatype": "area",
-            "required": false
-          }}
+          ]
         }}
 
         Guidelines:
@@ -1094,23 +1114,43 @@ class GoalOrientedQuestionList(DAList):
         - Use radio for single-choice questions (2-5 options)
         - Use checkboxes for multiple-choice questions
         - Use text for short text responses
-        - Use area only when longer narrative is needed
-        - Always include the open_ended_field for additional context
+        - Use area when longer narrative is needed
+        - Use date only when a precise date is likely to be known, or text when the date is likely to be approximate
+        - Use currency for dollar amounts
+        - Use email for email addresses
         - All fields must have required: false
-        - Field names should be temp_field_1, temp_field_2, etc.
+        - Write questions and field labels at about a 6th-grade reading level
         """
 
+        # Build message thread
+        messages = [{"role": "system", "content": system_message}]
+        
+        # Add a summary of collected information as a user message for better caching
+        if len(self.elements) > 0:
+            collected_info = []
+            for element in self.elements:
+                element_summary = element.response_as_text()
+                if element_summary:
+                    collected_info.append(element_summary)
+            
+            if collected_info:
+                summary_message = f"""INFORMATION ALREADY COLLECTED:
+{chr(10).join(['- ' + info.replace(chr(10), ' ') for info in collected_info])}
+
+IMPORTANT: Do not ask for any information listed above unless it is genuinely incomplete or unclear."""
+                messages.append({"role": "user", "content": summary_message})
+        
+        # Add the conversation thread
+        messages.extend(self._get_thread())
+
         results = chat_completion(
-            messages=[
-                {"role": "system", "content": system_message},
-            ]
-            + self._get_thread(),
+            messages=messages,
             model=self.model,
             json_mode=True,
         )
         assert isinstance(results, dict)
 
-        if results.get("status") == "satisfied":
+        if results.get("status") == "satisfied" or isinstance(results, str) and results.strip().lower() == "satisfied":
             self._satisfied = True
             return "satisfied"
 
@@ -1127,7 +1167,7 @@ class GoalOrientedQuestionList(DAList):
 
         # This should have been set by the last call to need_more_questions
         # unless we're just starting out
-        if hasattr(self, "next_question") and self.next_question:
+        if hasattr(self, "next_question") and self.next_question is not None:
             temp_question = self.next_question
             del self.next_question
             return temp_question
