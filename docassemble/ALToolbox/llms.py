@@ -14,6 +14,7 @@ from docassemble.base.util import (
     DADict,
     DALazyTemplate,
     get_config,
+    space_to_underscore,
 )
 
 __all__ = [
@@ -896,8 +897,8 @@ class GoalOrientedQuestion(DAObject):
     """A class to represent a question in a goal-oriented questionnaire.
 
     Attributes:
-        question (str): The question to ask the user
-        response (str): The user's response to the question
+        question (str or dict): The question to ask the user (text or field structure)
+        response (str or dict): The user's response to the question (text or field values)
     """
 
     @property
@@ -906,6 +907,16 @@ class GoalOrientedQuestion(DAObject):
         self.question
         self.response
         return True
+    
+    def response_as_text(self) -> str:
+        """Returns the response in a readable text format for the LLM.
+        
+        Returns:
+            A formatted string representation of the response.
+        """
+        if isinstance(self.response, dict):
+            return json.dumps(self.response)
+        return str(self.response)
 
 
 class GoalOrientedQuestionList(DAList):
@@ -956,6 +967,37 @@ class GoalOrientedQuestionList(DAList):
         if not hasattr(self, "user_assumed_role"):
             self.user_assumed_role = "applicant for legal help"
 
+    def build_field_list_for_question(self, question_obj: Union[str, Dict[str, Any]], index: int) -> List[Dict[str, Any]]:
+        """
+        Helper function to build a field list from a question object for use in docassemble fields.
+        
+        Args:
+            question_obj: The question (dict with structured fields or str for simple text)
+            index: The current index in the list
+        
+        Returns:
+            A list of field dictionaries suitable for use in a fields: code: block
+        """
+        field_list = []
+        
+        if isinstance(question_obj, dict):
+            # Add structured fields from the LLM, storing them in response_dict
+            for field_spec in question_obj.get('fields', []):
+                # Use attr_name() with the dictionary key directly (no extra quotes)
+                field_dict = {
+                    'label': field_spec['label'],
+                    'field': self[index].attr_name(f"response_dict['{space_to_underscore(field_spec['label'])}']")
+                }
+                if 'datatype' in field_spec:
+                    field_dict['datatype'] = field_spec['datatype']
+                if 'choices' in field_spec and field_spec.get('datatype') in ['radio', 'checkboxes']:
+                    field_dict['choices'] = field_spec['choices']
+                if 'required' in field_spec:
+                    field_dict['required'] = field_spec['required']
+                field_list.append(field_dict)
+        
+        return field_list
+
     def keep_going(self) -> bool:
         """Returns True if the response is not yet complete and the question limit hasn't been reached.
 
@@ -977,7 +1019,7 @@ class GoalOrientedQuestionList(DAList):
         """
         status = self._check_satisfaction()
 
-        if status.strip().lower() == "satisfied":
+        if status == "satisfied":
             return False
         else:
             self.next_question = status
@@ -994,11 +1036,11 @@ class GoalOrientedQuestionList(DAList):
             self._satisfied = False
         return self._satisfied
 
-    def _check_satisfaction(self) -> str:
+    def _check_satisfaction(self) -> Union[str, Dict[str, Any]]:
         """Checks if the user's responses satisfy the rubric.
 
         Returns:
-            The text "satisfied" if the rubric is satisfied, otherwise a follow-up question.
+            Either the string "satisfied" if the rubric is satisfied, or a dict with generated fields for the next question.
         """
         system_message = f"""You are a {self.llm_assumed_role} who is helping to improve and get relevant and thoughtful information from a {self.user_assumed_role}.
         You will be ready to encourage the {self.user_assumed_role} to dig deeper if the answer is shallow and lacks detail,
@@ -1007,10 +1049,43 @@ class GoalOrientedQuestionList(DAList):
         Read the entire exchange with the {self.user_assumed_role}, in light of this rubric: 
         ```{self.rubric}```
 
-        Respond with the exact text "satisfied" (and no other text) if the rubric is satisfied. If the rubric is not satisfied, 
-        respond with a brief follow-up question that directs the {self.user_assumed_role} toward satisfying the rubric. If they have already provided a partial 
-        response, encourage them to provide more information with an appropriate follow-up question. Your follow-up should be short, and 
-        organized as a narrative sentence.
+        If the rubric is satisfied, respond with a JSON object containing only:
+        {{"status": "satisfied"}}
+
+        If the rubric is NOT satisfied, generate a follow-up question with 1-3 specific fields to gather missing information, plus an optional open-ended field.
+        Use structured question types (yesnoradio, radio, checkboxes) whenever possible instead of open-ended text.
+        
+        Respond with a JSON object in this format:
+        {{
+          "status": "continue",
+          "question_text": "Brief intro text for the question screen",
+          "fields": [
+            {{
+              "label": "Field label text",
+              "field": "temp_field_1",
+              "datatype": "yesnoradio|radio|checkboxes|text|area",
+              "choices": ["Option 1", "Option 2"],  // only for radio/checkboxes
+              "required": false
+            }}
+          ],
+          "open_ended_field": {{
+            "label": "Is there anything else you want to tell us about this?",
+            "field": "temp_open_ended",
+            "datatype": "area",
+            "required": false
+          }}
+        }}
+
+        Guidelines:
+        - Generate 1-3 specific fields that help gather information relevant to the rubric
+        - Use yesnoradio for yes/no questions
+        - Use radio for single-choice questions (2-5 options)
+        - Use checkboxes for multiple-choice questions
+        - Use text for short text responses
+        - Use area only when longer narrative is needed
+        - Always include the open_ended_field for additional context
+        - All fields must have required: false
+        - Field names should be temp_field_1, temp_field_2, etc.
         """
 
         results = chat_completion(
@@ -1019,19 +1094,21 @@ class GoalOrientedQuestionList(DAList):
             ]
             + self._get_thread(),
             model=self.model,
+            json_mode=True,
         )
-        assert isinstance(results, str)
+        assert isinstance(results, dict)
 
-        if results.strip().lower() == "satisfied":
+        if results.get("status") == "satisfied":
             self._satisfied = True
+            return "satisfied"
 
         return results
 
-    def get_next_question(self) -> Optional[str]:
-        """Returns the text of the next question to ask the user.
+    def get_next_question(self) -> Optional[Union[str, Dict[str, Any]]]:
+        """Returns the text or field structure of the next question to ask the user.
 
         Returns:
-            The text of the next question to ask the user, or None if no more questions are needed.
+            The text/fields of the next question, or None if no more questions are needed.
         """
         if not self.keep_going():
             return None
@@ -1043,16 +1120,8 @@ class GoalOrientedQuestionList(DAList):
             del self.next_question
             return temp_question
 
-        # Generate a new question
-        system_instructions = f"""You are helping the user to satisfy this rubric with their response: "{self.rubric}". Ask a brief appropriate follow-up question that directs the user toward the rubric. If they have already provided a partial response, explain why and how they should expand on it."""
-
-        messages = [{"role": "system", "content": system_instructions}]
-        results = chat_completion(
-            messages=messages + self._get_thread(),
-            model=self.model,
-        )
-        assert isinstance(results, str)
-        return results
+        # This shouldn't happen if the flow is correct, but handle it gracefully
+        return self._check_satisfaction()
 
     def _get_thread(self) -> List[Dict[str, str]]:
         """Returns a list of messages (with corresponding role) for the conversation thread.
@@ -1067,8 +1136,14 @@ class GoalOrientedQuestionList(DAList):
             {"role": "user", "content": self.initial_draft},
         ]
         for element in self.elements:
-            messages.append({"role": "assistant", "content": element.question})
-            messages.append({"role": "user", "content": element.response})
+            # Serialize question (could be text or dict)
+            if isinstance(element.question, dict):
+                question_text = element.question.get("question_text", "Follow-up question")
+            else:
+                question_text = str(element.question)
+            
+            messages.append({"role": "assistant", "content": question_text})
+            messages.append({"role": "user", "content": element.response_as_text()})
 
         return messages
 
@@ -1083,8 +1158,14 @@ class GoalOrientedQuestionList(DAList):
             {"role": "user", "content": self.initial_draft},
         ]
         for question in self.elements:
-            messages.append({"role": "assistant", "content": question.question})
-            messages.append({"role": "user", "content": question.response})
+            # Serialize question (could be text or dict)
+            if isinstance(question.question, dict):
+                question_text = question.question.get("question_text", "Follow-up question")
+            else:
+                question_text = str(question.question)
+            
+            messages.append({"role": "assistant", "content": question_text})
+            messages.append({"role": "user", "content": question.response_as_text()})
         return synthesize_user_responses(
             custom_instructions="",
             messages=messages,
@@ -1120,8 +1201,14 @@ class GoalOrientedQuestionList(DAList):
             {"role": "user", "content": self.initial_draft},
         ]
         for question in self.elements:
-            messages.append({"role": "assistant", "content": question.question})
-            messages.append({"role": "user", "content": question.response})
+            # Serialize question (could be text or dict)
+            if isinstance(question.question, dict):
+                question_text = question.question.get("question_text", "Follow-up question")
+            else:
+                question_text = str(question.question)
+            
+            messages.append({"role": "assistant", "content": question_text})
+            messages.append({"role": "user", "content": question.response_as_text()})
 
         messages.append({"role": "assistant", "content": feedback_prompt})
 
