@@ -1,0 +1,52 @@
+---
+modules:
+  - .llms
+  - .misc
+---
+include:
+  - display_template.yml
+---
+generic object: GoalOrientedQuestionList
+objects:
+  - x[i].response_dict: DADict.using(auto_gather=False, gathered=True)
+---
+generic object: GoalOrientedQuestionList
+code: |
+  x[i].question = x.get_next_question()
+---
+generic object: GoalOrientedQuestionList
+question: |
+  % if isinstance(x[i].question, dict):
+  ${ x[i].question.get('question_text', 'Please provide more information') }
+  % else:
+  ${ x[i].question }
+  % endif
+subquestion: |
+  ${ collapse_template(x.show_current_progress) }
+fields:
+  - code: |
+      x[i].build_field_list()
+  - Is there anything else you want to tell us? (optional): x[i].response
+    datatype: area
+    rows: 4
+    required: False
+---
+generic object: GoalOrientedQuestionList
+code: |
+  x.there_are_any = x.need_more_questions()
+---
+generic object: GoalOrientedQuestionList
+code: |
+  x.there_is_another = x.need_more_questions()
+---
+generic object: GoalOrientedQuestionList
+template: x.show_current_progress
+subject: |
+  Your questions and answers so far
+content: |
+  Your initial response:
+  > ${ x.initial_response_as_text() }
+
+  % for question in x.complete_elements():
+  * ${ question.response_as_text() }
+  % endfor

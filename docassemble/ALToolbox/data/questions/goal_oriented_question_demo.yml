@@ -1,0 +1,139 @@
+---
+include:
+  - goal_oriented_question.yml
+---
+metadata:
+  title: Legal Aid Intake - Goal-Oriented Questions Demo
+  short title: Intake Questions Demo
+  description: |
+    This interview demonstrates how to use the GoalOrientedQuestionList
+    to conduct a legal aid intake by asking follow-up questions until
+    the intake worker has sufficient information about the client's goals.
+---
+objects:
+  - divorce_intake: GoalOrientedQuestionList.using(rubric="The response is complete and gives clear guidance to the intake worker about the client's primary goals and circumstances for the divorce, including enough detail to understand the key issues before the initial meeting.", initial_question="Are you filing for no-fault divorce (for example, 'irretrievable breakdown' or 'separated for at least six months'), or do you believe you have a fault-based reason (for example, cruelty, adultery, desertion, substance abuse, etc.)?\n\nIf it's no-fault, please say when you and your spouse stopped living together (if you still live in the same home, please explain how things are separated — e.g., 'separate bedrooms, no financial sharing').\n\nIf it's fault-based, please give a short description of what happened and when the behavior occurred.", llm_assumed_role="intake worker", user_assumed_role="client")
+---
+mandatory: True
+code: |
+  intro_screen
+  divorce_intake.initial_draft
+  divorce_intake.gather()
+  final_response
+  intake_summary
+---
+code: |
+  if len(divorce_intake):
+    final_response_default = divorce_intake.synthesize_draft_response()
+  else:
+    final_response_default = divorce_intake.initial_draft
+---
+continue button field: intro_screen
+question: |
+  Welcome to Legal Aid Intake
+subquestion: |
+  This demo shows how the **GoalOrientedQuestionList** can be used
+  in a legal aid intake setting to gather complete information from clients.
+  
+  #### Scenario
+  
+  You are seeking help with a divorce case. An intake worker needs to understand
+  your situation to determine if you qualify for services and to prepare for
+  your initial consultation.
+  
+  #### How it works:
+  
+  1. You'll be asked an open-ended question about your divorce situation
+  2. The AI intake assistant will evaluate your response to see if it provides enough detail
+  3. If more information is needed, you'll get follow-up questions
+  4. The assistant will continue asking questions (up to a limit) until it has sufficient information
+  5. Your responses will be synthesized into a complete intake summary
+  
+  This approach allows for a more natural conversation while ensuring the intake
+  worker gets all the essential information before your first meeting.
+---
+question: |
+  Tell us about your divorce situation
+subquestion: |
+  To help us prepare for your consultation, please answer the following:
+  
+  **Are you filing for no-fault divorce** (for example, "irretrievable breakdown" 
+  or "separated for at least six months"), **or do you believe you have a fault-based 
+  reason** (for example, cruelty, adultery, desertion, substance abuse, etc.)?
+  
+  * If it's **no-fault**, please say when you and your spouse stopped living together. 
+    If you still live in the same home, please explain how things are separated 
+    (e.g., "separate bedrooms, no financial sharing").
+  
+  * If it's **fault-based**, please give a short description of what happened and 
+    when the behavior occurred.
+  
+  Don't worry if you're not sure about the legal terms—just tell us about your 
+  situation in your own words.
+fields:
+  - Your response: divorce_intake.initial_draft
+    datatype: area
+    rows: 8
+---
+question: |
+  Review your intake information
+subquestion: |
+  % if len(divorce_intake):
+  Based on your responses, we've prepared this summary of your situation.
+  Please review it and make any corrections or additions before we finalize
+  your intake information.
+
+  ${ collapse_template(divorce_intake.show_current_progress) }
+  % else:
+  Here is the information you provided. You can make any edits before we finalize
+  your intake.
+  % endif
+fields:
+  - Intake summary: final_response
+    datatype: area
+    rows: 10
+    default: |
+      ${ final_response_default }
+---
+event: intake_summary
+question: |
+  Intake completed
+subquestion: |
+  Thank you for providing this information. Your intake summary is ready
+  for the intake worker to review before your consultation.
+  
+  #### Intake Summary
+  
+  > ${ final_response }
+  
+  % if len(divorce_intake):
+  #### Your Conversation
+  
+  ${ collapse_template(divorce_intake.show_current_progress) }
+  
+  % endif
+  
+  #### Next Steps
+  
+  An intake worker will review this information and contact you to schedule
+  your initial consultation. They now have a clear understanding of your
+  situation and can better prepare to help you.
+  
+  ---
+  
+  #### About this demo
+  
+  This demo used a **GoalOrientedQuestionList** with:
+  
+  * **Question limit**: ${ divorce_intake.question_limit } follow-up questions maximum
+  * **Follow-ups asked**: ${ len(divorce_intake) }
+  * **Sufficient information gathered**: ${ "Yes" if divorce_intake.satisfied() else "Partially" }
+  * **Model**: ${ divorce_intake.model }
+  * **LLM role**: ${ divorce_intake.llm_assumed_role }
+  * **User role**: ${ divorce_intake.user_assumed_role }
+  
+  The AI asked follow-up questions until the response met this rubric:
+  
+  > ${ divorce_intake.rubric }
+buttons:
+  - Exit: exit
+  - Restart: restart

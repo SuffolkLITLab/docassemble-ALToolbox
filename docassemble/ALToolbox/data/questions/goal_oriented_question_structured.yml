@@ -1,0 +1,46 @@
+---
+comment: |
+  This file provides support for GoalOrientedQuestionList with structured initial questions.
+  Use this when you want the initial question to use structured fields (radio, checkboxes, etc.)
+  instead of an open-ended narrative response.
+---
+modules:
+  - .llms
+  - .misc
+---
+include:
+  - display_template.yml
+  - goal_oriented_question.yml
+---
+generic object: GoalOrientedQuestionList
+objects:
+  - x.initial_draft_dict: DADict.using(auto_gather=False, gathered=True)
+---
+generic object: GoalOrientedQuestionList
+code: |
+  # Generate the structured initial question fields
+  x.initial_question_structure = x.generate_initial_question_fields()
+  x.use_structured_initial_question = True
+---
+generic object: GoalOrientedQuestionList
+code: |
+  # Mark the initial_draft_dict as gathered after the question is answered
+  x.initial_draft_dict.gathered = True
+  x._initial_structured_complete = True
+---
+generic object: GoalOrientedQuestionList
+question: |
+  % if hasattr(x, 'initial_question_structure'):
+  ${ x.initial_question_structure.get('question_text', x.initial_question) }
+  % else:
+  ${ x.initial_question }
+  % endif
+field: x._initial_structured_complete
+fields:
+  - code: |
+      x.build_initial_field_list()
+  - Is there anything else you want to tell us? (optional): x.initial_draft_response
+    datatype: area
+    rows: 4
+    required: False
+---
