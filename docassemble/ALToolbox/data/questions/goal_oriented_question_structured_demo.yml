@@ -3,21 +3,40 @@ include:
   - goal_oriented_question_structured.yml
 ---
 metadata:
-  title: Legal Aid Intake - Structured Initial Question Demo
-  short title: Structured Intake Demo
+  title: Legal Aid Intake - Goal-Oriented Questions Demo (Structured or Unstructured)
+  short title: Flexible Intake Demo
   description: |
-    This interview demonstrates using GoalOrientedQuestionList with a
-    structured initial question (using radio buttons, checkboxes, etc.)
-    instead of an open-ended narrative response.
+    This interview demonstrates using GoalOrientedQuestionList with either
+    a structured initial question (using radio buttons, checkboxes, etc.)
+    or an open-ended narrative response. You can choose the format that works
+    best for your use case.
 ---
 objects:
-  - housing_intake: GoalOrientedQuestionList.using(rubric="The response provides complete information about the tenant's housing situation, including the type of issue, timeline, communication with landlord, and any immediate safety or habitability concerns.", initial_question="We need to understand your housing situation to determine how we can help. Please provide information about your housing issue.", llm_assumed_role="housing intake specialist", user_assumed_role="tenant seeking help")
+  - housing_intake: GoalOrientedQuestionList.using(
+                    rubric="The response provides complete information about the tenant's housing situation, including the type of issue, timeline, communication with landlord, and any immediate safety or habitability concerns.",
+                    initial_question="We need to understand your housing situation to determine how we can help. Please provide information about your housing issue.",
+                    llm_assumed_role="housing intake specialist", 
+                    user_assumed_role="tenant seeking help",
+                    model=model,
+                    reasoning_effort=reasoning_effort,
+                    skip_moderation=skip_moderation,
+                  )
 ---
 mandatory: True
 code: |
   intro_screen
-  # Trigger the initial structured question
-  housing_intake._initial_structured_complete
+  question_format_choice
+  
+  # Set the use_structured_initial_question based on user choice
+  if question_format == "structured":
+    housing_intake.use_structured_initial_question = True
+    # Trigger the initial structured question
+    housing_intake._initial_structured_complete
+  else:
+    housing_intake.use_structured_initial_question = False
+    # Trigger the initial open-ended question
+    housing_intake.initial_draft
+  
   housing_intake.gather()
   final_response
   intake_summary
@@ -28,27 +47,80 @@ code: |
   else:
     final_response_default = housing_intake.initial_response_as_text()
 ---
+code: |
+  # This code block is needed to define the question_format_choice step
+  question_format_choice = True
+---
 continue button field: intro_screen
 question: |
-  Welcome to Housing Legal Aid Intake (Structured)
+  Welcome to Housing Legal Aid Intake
 subquestion: |
   This demo shows how the **GoalOrientedQuestionList** can use structured
-  fields (radio buttons, checkboxes, etc.) for the initial question instead
-  of requiring an open-ended narrative.
+  fields (radio buttons, checkboxes, etc.) or an open-ended narrative for 
+  the initial question.
   
   #### Scenario
   
   You are seeking help with a housing issue. An intake worker needs to understand
-  your situation using a structured form.
+  your situation to determine if you qualify for services and to prepare for
+  your initial consultation.
   
   #### How it works:
   
-  1. The AI will generate structured fields for the initial question based on the rubric
-  2. You'll answer using radio buttons, checkboxes, dates, etc. (not just a text area)
-  3. The AI will then ask follow-up questions if more information is needed
-  4. Your responses will be synthesized into a complete intake summary
+  1. You'll choose between a structured form or an open-ended question
+  2. You'll provide information about your housing situation
+  3. The AI will evaluate your response to see if it provides enough detail
+  4. If more information is needed, you'll get follow-up questions
+  5. Your responses will be synthesized into a complete intake summary
   
-  This approach is useful when you want more structured data collection from the start.
+  This approach allows you to choose the most appropriate format for data collection.
+---
+question: |
+  Choose your initial question format
+subquestion: |
+  How would you like to provide information about your housing situation?
+fields: 
+  - Question format: question_format
+    datatype: radio
+    choices:
+      - Structured form with specific fields (AI-generated): structured
+      - Open-ended narrative response: unstructured
+  - Reasoning effort: reasoning_effort
+    datatype: radio
+    choices:
+      - Minimal: minimal
+      - Low effort (faster responses, less depth): low
+      - Medium effort (balanced speed and depth): medium
+      - High effort (more thoughtful responses, slower): high
+  - Skip moderation: skip_moderation
+    datatype: yesnoradio
+    default: True
+  - Model: model
+    datatype: radio
+    choices:
+      - gpt-4.1-nano
+      - gpt-5-nano
+      - gpt-5-mini
+---
+question: |
+  Tell us about your housing situation
+subquestion: |
+  To help us prepare for your consultation, please tell us about your housing issue.
+  
+  You can describe:
+  
+  * What type of problem you're having (repairs, eviction, etc.)
+  * When the issue started
+  * What you've tried to do about it
+  * Any communication with your landlord
+  * Whether there are safety or health concerns
+  
+  Don't worry if you're not sure what's important—just tell us about your 
+  situation in your own words.
+fields:
+  - Your response: housing_intake.initial_draft
+    datatype: area
+    rows: 8
 ---
 question: |
   Review your intake information
@@ -97,9 +169,9 @@ subquestion: |
   
   #### About this demo
   
-  This demo used a **GoalOrientedQuestionList** with structured initial question:
+  This demo used a **GoalOrientedQuestionList** with:
   
-  * **Initial question format**: Structured fields (generated by AI)
+  * **Initial question format**: ${ "Structured fields (generated by AI)" if question_format == "structured" else "Open-ended narrative" }
   * **Question limit**: ${ housing_intake.question_limit } follow-up questions maximum
   * **Follow-ups asked**: ${ len(housing_intake) }
   * **Sufficient information gathered**: ${ "Yes" if housing_intake.satisfied() else "Partially" }
@@ -107,7 +179,7 @@ subquestion: |
   * **LLM role**: ${ housing_intake.llm_assumed_role }
   * **User role**: ${ housing_intake.user_assumed_role }
   
-  The AI generated structured fields for the initial question and then asked follow-ups until the response met this rubric:
+  The AI ${ "generated structured fields for the initial question and then" if question_format == "structured" else "" } asked follow-ups until the response met this rubric:
   
   > ${ housing_intake.rubric }
 buttons:

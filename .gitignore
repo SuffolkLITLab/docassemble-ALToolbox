@@ -11,3 +11,4 @@ docassemble.ALToolbox.egg-info/**
 # Python testing stuff
 .coverage
 coverage_html
+.env

@@ -126,6 +126,7 @@ def chat_completion(
     openai_base_url: Optional[str] = None,  # "https://api.openai.com/v1/",
     max_output_tokens: Optional[int] = None,
     max_input_tokens: Optional[int] = None,
+    reasoning_effort: Optional[str] = None,
 ) -> Union[List[Any], Dict[str, Any], str]:
     """A light wrapper on the OpenAI chat endpoint.
 
@@ -148,6 +149,9 @@ def chat_completion(
     Returns:
         A string with the response from the API endpoint or JSON data if json_mode is True
     """
+    if not reasoning_effort:
+        reasoning_effort = get_config("open ai", {}).get("reasoning effort") or "low"
+
     if not openai_base_url:
         openai_base_url = (
             get_config("open ai", {}).get("base url") or "https://api.openai.com/v1/"
@@ -242,22 +246,24 @@ def chat_completion(
 
     # Build completion parameters based on model type
     if is_thinking_model:
-        # Thinking models don't support temperature
+        # Thinking models don't support temperature but do support reasoning_effort
         if json_mode:
             response = openai_client.chat.completions.create(  # type: ignore[call-overload]
                 model=model,
                 messages=messages,  # type: ignore[arg-type]
                 response_format={"type": "json_object"},
                 max_completion_tokens=max_output_tokens,
+                reasoning_effort=reasoning_effort,
             )
         else:
             response = openai_client.chat.completions.create(  # type: ignore[call-overload]
                 model=model,
                 messages=messages,  # type: ignore[arg-type]
                 max_completion_tokens=max_output_tokens,
+                reasoning_effort=reasoning_effort,
             )
     else:
-        # Regular models support temperature
+        # Regular models support temperature but not reasoning_effort
         if json_mode:
             response = openai_client.chat.completions.create(  # type: ignore[call-overload]
                 model=model,
@@ -1050,6 +1056,8 @@ class GoalOrientedQuestionList(DAList):
         model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
         llm_assumed_role (str): The role for the LLM to assume. Defaults to "legal aid intake worker".
         user_assumed_role (str): The role for the user to assume. Defaults to "applicant for legal help".
+        skip_moderation (bool): If True, skips moderation checks when generating structured fields. Defaults to True.
+        reasoning_effort (str): The level of reasoning effort to use when generating responses. Defaults to "low"; use "minimal" for increased speed.
     """
 
     def init(self, *pargs, **kwargs):
@@ -1072,6 +1080,12 @@ class GoalOrientedQuestionList(DAList):
         if not hasattr(self, "use_structured_initial_question"):
             self.use_structured_initial_question = False
 
+        if not hasattr(self, "skip_moderation"):
+            self.skip_moderation = True
+
+        if not hasattr(self, "reasoning_effort"):
+            self.reasoning_effort = "low"
+
     def generate_initial_question_fields(self) -> Dict[str, Any]:
         """Generate structured fields for the initial question using the LLM.
 
@@ -1083,14 +1097,16 @@ class GoalOrientedQuestionList(DAList):
         """
         system_message = f"""You are a {self.llm_assumed_role} creating an intake form.
         
-        Based on this question, generate 1-5 structured fields to gather the initial information:
+        Based on this question, generate between 1 and 3 structured fields to gather the initial information:
         
         Question: {self.initial_question}
         
         Goal: {self.rubric}
         
-        Create structured fields that will help gather relevant information. Use structured question types
-        (yesnoradio, radio, checkboxes, date, currency, email) whenever possible.
+        Create structured fields that will help gather relevant information.
+
+        Whenever possible, use structured field types (yes/no, multiple choice, checkboxes, date, currency, etc.).
+        Only use open-ended text/area fields when a limited response format is insufficient.
         
         Respond with a JSON object in this format:
         {{
@@ -1107,13 +1123,18 @@ class GoalOrientedQuestionList(DAList):
         }}
         
         Guidelines:
-        - Generate 1-5 fields that capture the key information needed
+        - Generate 1-3 specific fields that help gather information relevant to the rubric
         - Use yesnoradio for yes/no questions
         - Use radio for single-choice questions (2-5 options)
         - Use checkboxes for multiple-choice questions
         - Use text for short text responses
-        - Use area for longer narrative responses
+        - Use area when longer narrative is needed
+        - Use date only when a precise date is likely to be known, or text when the date is likely to be approximate
+        - Use currency for dollar amounts
+        - Use email for email addresses
         - All fields must have required: false
+        - Write questions and field labels at about a 6th-grade reading level
+        - Ask one question per field, avoiding compound questions
         """
 
         results = chat_completion(
@@ -1122,6 +1143,8 @@ class GoalOrientedQuestionList(DAList):
             ],
             model=self.model,
             json_mode=True,
+            skip_moderation=self.skip_moderation,
+            reasoning_effort=self.reasoning_effort,
         )
         assert isinstance(results, dict)
         return results
@@ -1270,7 +1293,7 @@ class GoalOrientedQuestionList(DAList):
         If the goal or rubric is satisfied, respond with a JSON object containing only:
         {{"status": "satisfied"}}
 
-        If the goal or rubric is NOT satisfied, generate a follow-up question with 1-3 specific fields to gather missing information.
+        If the goal or rubric is NOT satisfied, generate a follow-up question with no more than 3 specific fields to gather missing information.
         The user will always have an opportunity to provide additional open-ended context in a text area field that you do not need to
         generate.
 
@@ -1283,8 +1306,6 @@ class GoalOrientedQuestionList(DAList):
         - If the user provides information that partially answers a question, DO NOT ask for the exact same information again
         - Only ask clarifying questions if critical details are genuinely missing AND the user hasn't already declined to provide them
         - If a question has been asked 2+ times without a satisfactory answer, STOP asking and move to different missing information
-
-        Use structured question types (yesnoradio, radio, checkboxes, date, currency, email) whenever possible instead of open-ended text.
         
         Respond with a JSON object in this format:
         {{
@@ -1313,6 +1334,11 @@ class GoalOrientedQuestionList(DAList):
         - Use email for email addresses
         - All fields must have required: false
         - Write questions and field labels at about a 6th-grade reading level
+
+        Use structured question types (yesnoradio, radio, checkboxes, date, currency, email)
+        as much as possible and whenever presenting multiple options. Only use an open-ended question when absolutely necessary.
+        You can direct the user to provide additional context in the open-ended text area that will always be present if an "other"
+        option is likely to be needed.
         """
 
         # Build message thread
@@ -1340,6 +1366,8 @@ IMPORTANT: Do not ask for any information listed above unless it is genuinely in
             messages=messages,
             model=self.model,
             json_mode=True,
+            skip_moderation=self.skip_moderation,
+            reasoning_effort=self.reasoning_effort,
         )
         assert isinstance(results, dict)
 
@@ -1470,6 +1498,8 @@ IMPORTANT: Do not ask for any information listed above unless it is genuinely in
         return chat_completion(
             messages=messages,
             model=self.model,
+            skip_moderation=self.skip_moderation,
+            reasoning_effort=self.reasoning_effort,
         )
 
 
@@ -1562,6 +1592,12 @@ class IntakeQuestionList(DAList):
                 "business": "problems with business law, such as forming a business, dealing with contracts, or getting help with a business dispute",
                 "tax": "problems with tax law, such as getting help with tax debt, dealing with the IRS, or getting help with tax preparation",
             }
+        
+        if not hasattr(self, "reasoning_effort"):
+            self.reasoning_effort = "low"
+
+        if not hasattr(self, "skip_moderation"):
+            self.skip_moderation = True
 
     def _classify_problem_type(self):
         """Classifies the problem type based on the user's initial description."""
@@ -1654,6 +1690,8 @@ class IntakeQuestionList(DAList):
             model=self.model,
             max_output_tokens=self.max_output_tokens,
             json_mode=True,
+            skip_moderation=self.skip_moderation,
+            reasoning_effort=self.reasoning_effort,
         )
 
         if isinstance(results, dict):
