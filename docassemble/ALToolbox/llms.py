@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Literal
 import keyword
 import os
 import json
@@ -126,7 +126,7 @@ def chat_completion(
     openai_base_url: Optional[str] = None,  # "https://api.openai.com/v1/",
     max_output_tokens: Optional[int] = None,
     max_input_tokens: Optional[int] = None,
-    reasoning_effort: Optional[str] = None,
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = None,
 ) -> Union[List[Any], Dict[str, Any], str]:
     """A light wrapper on the OpenAI chat endpoint.
 
@@ -145,6 +145,7 @@ def chat_completion(
         openai_base_url (Optional[str]): The base URL for the OpenAI API. Defaults to value provided in the configuration or "https://api.openai.com/v1/".
         max_output_tokens (Optional[int]): The maximum number of tokens to return from the API. Defaults to 16380.
         max_input_tokens (Optional[int]): The maximum number of tokens to send to the API. Defaults to 128000.
+        reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]) = None: The reasoning effort to use for thinking models. Defaults to value provided in the configuration or "low".
 
     Returns:
         A string with the response from the API endpoint or JSON data if json_mode is True
@@ -1057,7 +1058,7 @@ class GoalOrientedQuestionList(DAList):
         llm_assumed_role (str): The role for the LLM to assume. Defaults to "legal aid intake worker".
         user_assumed_role (str): The role for the user to assume. Defaults to "applicant for legal help".
         skip_moderation (bool): If True, skips moderation checks when generating structured fields. Defaults to True.
-        reasoning_effort (str): The level of reasoning effort to use when generating responses. Defaults to "low"; use "minimal" for increased speed.
+        reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The level of reasoning effort to use when generating responses. Defaults to "low"; use "minimal" for increased speed.
     """
 
     def init(self, *pargs, **kwargs):
@@ -1592,7 +1593,7 @@ class IntakeQuestionList(DAList):
                 "business": "problems with business law, such as forming a business, dealing with contracts, or getting help with a business dispute",
                 "tax": "problems with tax law, such as getting help with tax debt, dealing with the IRS, or getting help with tax preparation",
             }
-        
+
         if not hasattr(self, "reasoning_effort"):
             self.reasoning_effort = "low"
 
