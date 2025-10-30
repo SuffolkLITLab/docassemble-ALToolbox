@@ -4,26 +4,63 @@ modules:
 ---
 mandatory: True
 code: |
-  intro
+  if demo_type == "from_text":
+    initial_answer
+  else:
+    file_to_extract_from
   try_defining_fields
   ending_screen
 ---
 code: |
-  answers = extract_fields_from_text(
-    initial_answer,
-    field_list = [
-      'name',
-      'age',
-      'favorite_color',
-      'favorite_food',
-      'favorite_animal',
-      'favorite_movie'
-    ],
-  )
+  fields_to_extract = [
+    'name',
+    'age',
+    'favorite_color',
+    'favorite_food',
+    'favorite_animal',
+    'favorite_movie'
+  ]
+  if demo_type == "from_text":
+    answers = extract_fields_from_text(
+      initial_answer,
+      field_list = fields_to_extract,
+    )
+  else:
+    answers = extract_fields_from_file(
+      file_to_extract_from,
+      field_list = fields_to_extract,
+    )
   define_fields_from_dict(answers)
   try_defining_fields = True
 ---
-continue button field: intro
+question: |
+  Choose how you want to provide your information
+fields:
+  - How would you like to provide your information?: demo_type
+    datatype: radio
+    choices:
+      - From a document I upload: from_file
+      - By typing it in now: from_text
+---
+question: |
+  Upload a document that tells us about you
+subquestion: |
+  This is a demonstration of the `extract_fields_from_file` function.
+
+  We are looking for a document that tells us about your:
+
+  * name
+  * age
+  * favorite_color
+  * favorite_food
+  * favorite_animal
+  * favorite_movie
+
+  Or any subset of this information.
+fields:
+  - Upload your document here: file_to_extract_from
+    datatype: file
+---
 question: |
   Tell us why you are here
 subquestion: |
@@ -78,12 +115,6 @@ question: |
 fields:
   - Your favorite movie: favorite_movie
 ---
-question: |
-  Tell us a little bit about yourself
-fields:
-  - Your response: final_answer
-    datatype: area
----
 event: ending_screen
 question: |
   Here is what we learned about you
@@ -99,9 +130,5 @@ subquestion: |
   Your favorite animal is ${ favorite_animal }.
 
   Your favorite movie is ${ favorite_movie }.
-
-  You told us the following about yourself:
-
-  ${ final_answer }
 
   Thanks for participating!

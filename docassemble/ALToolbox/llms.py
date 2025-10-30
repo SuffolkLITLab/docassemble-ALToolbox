@@ -4,6 +4,9 @@ import os
 import json
 import tiktoken
 from openai import OpenAI
+from openai import NotFoundError
+from markitdown import MarkItDown
+
 import docassemble.base.util
 from docassemble.base.util import (
     get_config,
@@ -12,6 +15,8 @@ from docassemble.base.util import (
     DAList,
     DAObject,
     DADict,
+    DAFile,
+    DAFileList,
     DALazyTemplate,
     get_config,
     space_to_underscore,
@@ -27,6 +32,7 @@ __all__ = [
     "GoalSatisfactionList",
     "GoalOrientedQuestionList",
     "IntakeQuestionList",
+    "extract_fields_from_file",
 ]
 
 if os.getenv("OPENAI_API_KEY"):
@@ -158,24 +164,8 @@ def chat_completion(
             get_config("open ai", {}).get("base url") or "https://api.openai.com/v1/"
         )
 
-    if not openai_api:
-        openai_api = get_config("open ai", {}).get("key") or os.getenv("OPENAI_API_KEY")
-
-    if not messages and not system_message:
-        raise Exception(
-            "You must provide either a system message and user message or a list of messages to use this function."
-        )
-
-    if (
-        isinstance(system_message, str)
-        and system_message
-        and json_mode
-        and not "json" in system_message.lower()
-    ):
-        log(
-            f"Warning: { system_message } does not contain the word 'json' but json_mode is set to True. Adding 'json' silently"
-        )
-        system_message = f"{ system_message }\n\nRespond only with a JSON object"
+    elif openai_api:
+        openai_client = OpenAI(api_key=openai_api)
     elif (
         messages
         and json_mode
@@ -198,9 +188,13 @@ def chat_completion(
 
     if openai_base_url:
         openai_client = None  # Always override client in this circumstance
-    openai_client = (
-        openai_client or OpenAI(base_url=openai_base_url, api_key=openai_api) or client
-    )
+
+    if not openai_client:
+        if openai_api:
+            openai_base_url = openai_base_url or "https://api.openai.com/v1/"
+            openai_client = OpenAI(api_key=openai_api, base_url=openai_base_url)
+        else:
+            openai_client = client
 
     if not openai_client:
         raise Exception(
@@ -302,29 +296,32 @@ def extract_fields_from_text(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model="gpt-4o-mini",
+    model="gpt-5-nano",
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = "low",
 ) -> Dict[str, Any]:
-    """Extracts fields from text.
+    """
+    Extracts fields from text.
 
     Args:
         text (str): The text to extract fields from
-        field_list (Dict[str,str]): A list of fields to extract, with the key being the field name and the value being a description of the field
+        field_list (Dict[str, str]): A list of fields to extract, with the key being the field name and the value being a description of the field
         openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
         openai_api (Optional[str]): An OpenAI API key. Defaults to None.
         temperature (float): The temperature to use for the OpenAI API. Defaults to 0.
-        model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
+        model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
+        reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The reasoning effort to use for the LLM. Defaults to "low".
 
     Returns:
-        A dictionary of fields extracted from the text
+        dict: A dictionary of fields extracted from the text
     """
     system_message = f"""
-    The user message represents notes from an unstructured conversation. Review the notes and extract the following fields:
+    Extract the list of fields from the text supplied by the user.
     
     ```
     {repr(field_list)}
     ```
 
-    If a field cannot be defined from the notes, omit it from the JSON response.
+    If a field cannot be defined from the text, omit it from the JSON response.
     """
 
     result = chat_completion(
@@ -335,9 +332,116 @@ def extract_fields_from_text(
         openai_api=openai_api,
         temperature=temperature,
         json_mode=True,
+        reasoning_effort=reasoning_effort,
     )
     assert isinstance(result, dict)
     return result
+
+
+def extract_fields_from_file(
+    the_file: Union[DAFile, DAFileList],
+    field_list: Dict[str, str],
+    openai_client: Optional[OpenAI] = None,
+    openai_api: Optional[str] = None,
+    model: str = "gpt-5-nano",
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = "low",
+    process_pdfs_with_ai: bool = True,
+) -> Dict[str, Any]:
+    """
+    Extracts data (in the form of a list of expected fields) from a file using an LLM.
+
+    When the file is a PDF, relies on the OpenAI vision API to interpret the document.
+    Note that this may increase cost, but will also improve accuracy.
+
+    If it is another file type that is convertible by Markitdown, it uses Markitdown to
+    convert the file to text first.
+
+    Can be combined with define_fields_from_dict to populate Docassemble fields.
+
+    Args:
+        the_file (Union[DAFile, DAFileList]): The file to extract fields from
+        field_list (Dict[str, str]): A list of fields to extract, with the key being the field name and the value being a description of the field
+        openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
+        openai_api (Optional[str]): An OpenAI API key. Defaults to None.
+        model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
+        reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The reasoning effort to use for the LLM. Defaults to "low".
+        process_pdfs_with_ai (bool): Whether to process PDFs with the OpenAI API (True) or convert to text first (False). Defaults to True.
+
+    Returns:
+        dict: A dictionary of fields extracted from the file
+    """
+    system_message = 'You are a data extraction assistant. You return answers in JSON format, like: {"field_name": "value", "field_name2": "value2"}'
+
+    user_message = f"""
+    Extract only the list of fields below from the attached document. If the field is not present in the document, do not include it in the response.
+    ```
+    {repr(field_list)}
+    ```
+    """
+
+    if isinstance(the_file, DAFileList):
+        the_file = the_file[0]
+
+    if not the_file.mimetype == "application/pdf" or not process_pdfs_with_ai:
+        md = MarkItDown()
+        try:
+            conversion_result = md.convert(the_file.path())
+        except Exception as e:
+            log(f"Error converting file {the_file.path()}: {e}")
+            return {}
+
+        input_text = conversion_result.text_content
+
+        return extract_fields_from_text(
+            input_text,
+            field_list,
+            openai_client=openai_client,
+            openai_api=openai_api,
+            model=model,
+            reasoning_effort=reasoning_effort,
+        )
+
+    if openai_client:
+        pass
+    elif openai_api:
+        openai_client = OpenAI(api_key=openai_api)
+    else:
+        openai_client = client
+
+    assert openai_client is not None, "An OpenAI client or API key must be provided."
+
+    with open(the_file.path(), "rb") as f:
+        file_upload = openai_client.files.create(
+            file=f,
+            purpose="user_data",
+        )
+
+    result = openai_client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_message},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "file", "file": {"file_id": file_upload.id}},
+                    {"type": "text", "text": user_message},
+                ],
+            },
+        ],
+        response_format={"type": "json_object"},
+        reasoning_effort=reasoning_effort,
+    )
+
+    try:
+        openai_client.files.delete(file_upload.id)
+    except NotFoundError:
+        log(
+            f"Warning: Uploaded file not found when attempting to delete temporary file., OpenAI file id: { file_upload.id }"
+        )
+        pass
+
+    assert isinstance(result.choices[0].message.content, str)
+    return json.loads(result.choices[0].message.content)
 
 
 def match_goals_from_text(
@@ -1060,6 +1164,8 @@ class GoalOrientedQuestionList(DAList):
         skip_moderation (bool): If True, skips moderation checks when generating structured fields. Defaults to True.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The level of reasoning effort to use when generating responses. Defaults to "low"; use "minimal" for increased speed.
     """
+
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]]
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
