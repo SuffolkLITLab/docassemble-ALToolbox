@@ -299,18 +299,20 @@ def extract_fields_from_text(
     model="gpt-5-nano",
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = "low",
 ) -> Dict[str, Any]:
-    """Extracts fields from text.
+    """
+    Extracts fields from text.
 
     Args:
         text (str): The text to extract fields from
-        field_list (Dict[str,str]): A list of fields to extract, with the key being the field name and the value being a description of the field
+        field_list (Dict[str, str]): A list of fields to extract, with the key being the field name and the value being a description of the field
         openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
         openai_api (Optional[str]): An OpenAI API key. Defaults to None.
         temperature (float): The temperature to use for the OpenAI API. Defaults to 0.
-        model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
+        model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
+        reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The reasoning effort to use for the LLM. Defaults to "low".
 
     Returns:
-        A dictionary of fields extracted from the text
+        dict: A dictionary of fields extracted from the text
     """
     system_message = f"""
     Extract the list of fields from the text supplied by the user.
@@ -351,22 +353,24 @@ def extract_fields_from_file(
     When the file is a PDF, relies on the OpenAI vision API to interpret the document.
     Note that this may increase cost, but will also improve accuracy.
 
-    If it is another file type that is convertable by Markitdown, it uses Markitdown to
+    If it is another file type that is convertible by Markitdown, it uses Markitdown to
     convert the file to text first.
 
     Can be combined with define_fields_from_dict to populate Docassemble fields.
 
     Args:
-        the_file (DAFile): The file to extract fields from
-        field_list (Dict[str,str]): A list of fields to extract, with the key being the field name and the value being a description of the field
+        the_file (Union[DAFile, DAFileList]): The file to extract fields from
+        field_list (Dict[str, str]): A list of fields to extract, with the key being the field name and the value being a description of the field
         openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
         openai_api (Optional[str]): An OpenAI API key. Defaults to None.
         model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
+        reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The reasoning effort to use for the LLM. Defaults to "low".
+        process_pdfs_with_ai (bool): Whether to process PDFs with the OpenAI API (True) or convert to text first (False). Defaults to True.
 
     Returns:
-        A dictionary of fields extracted from the text
+        dict: A dictionary of fields extracted from the file
     """
-    system_message = "You are a data extraction assistant. You return answers in JSON format, like: {\"field_name\": \"value\", \"field_name2\": \"value2\"}"
+    system_message = 'You are a data extraction assistant. You return answers in JSON format, like: {"field_name": "value", "field_name2": "value2"}'
 
     user_message = f"""
     Extract only the list of fields below from the attached document. If the field is not present in the document, do not include it in the response.
@@ -381,12 +385,12 @@ def extract_fields_from_file(
     if not the_file.mimetype == "application/pdf" or not process_pdfs_with_ai:
         md = MarkItDown()
         try:
-            result = md.convert(the_file.path())
+            conversion_result = md.convert(the_file.path())
         except Exception as e:
             log(f"Error converting file {the_file.path()}: {e}")
             return {}
 
-        input_text = result.text_content
+        input_text = conversion_result.text_content
 
         return extract_fields_from_text(
             input_text,
@@ -1160,6 +1164,8 @@ class GoalOrientedQuestionList(DAList):
         skip_moderation (bool): If True, skips moderation checks when generating structured fields. Defaults to True.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The level of reasoning effort to use when generating responses. Defaults to "low"; use "minimal" for increased speed.
     """
+
+    reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]]
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
