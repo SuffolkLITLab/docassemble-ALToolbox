@@ -29,6 +29,7 @@ code: |
     answers = extract_fields_from_file(
       file_to_extract_from,
       field_list = fields_to_extract,
+      ocr_images_and_pdfs=ocr_images_and_pdfs
     )
   define_fields_from_dict(answers)
   try_defining_fields = True
@@ -41,6 +42,11 @@ fields:
     choices:
       - From a document I upload: from_file
       - By typing it in now: from_text
+  - Would you like to use OCR first?: ocr_images_and_pdfs
+    datatype: yesnoradio
+    show if:
+      variable: demo_type
+      is: from_file
 ---
 question: |
   Upload a document that tells us about you

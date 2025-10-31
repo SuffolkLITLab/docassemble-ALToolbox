@@ -345,7 +345,10 @@ def extract_fields_from_file(
     openai_api: Optional[str] = None,
     model: str = "gpt-5-nano",
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = "low",
+    llm_hint: Optional[str] = "",
     process_pdfs_with_ai: bool = True,
+    ocr_images_and_pdfs: bool = False,
+    ocr_use_google: Optional[bool] = False,
 ) -> Dict[str, Any]:
     """
     Extracts data (in the form of a list of expected fields) from a file using an LLM.
@@ -358,6 +361,12 @@ def extract_fields_from_file(
 
     Can be combined with define_fields_from_dict to populate Docassemble fields.
 
+    You can provide a hint to the LLM if it would help with data extraction. For example:
+    "the document ID is usually found near the top right of the first page."
+
+    You should normally call this function in the background as it may take some time to run,
+    especially when ocr_images_and_pdfs is True.
+
     Args:
         the_file (Union[DAFile, DAFileList]): The file to extract fields from
         field_list (Dict[str, str]): A list of fields to extract, with the key being the field name and the value being a description of the field
@@ -365,15 +374,25 @@ def extract_fields_from_file(
         openai_api (Optional[str]): An OpenAI API key. Defaults to None.
         model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The reasoning effort to use for the LLM. Defaults to "low".
+        llm_hint (Optional[str]): an optional hint to improve processing the text layer with the LLM.
         process_pdfs_with_ai (bool): Whether to process PDFs with the OpenAI API (True) or convert to text first (False). Defaults to True.
+        ocr_images_and_pdfs (bool): Whether to perform OCR on PDFs before processing with the OpenAI API. Defaults to False.
+                                May be useful if the PDF has a text layer that is incomplete.
+        ocr_use_google (Optional[bool]): whether to use Google Vision API instead of local OCR. Only applies if ocr_images_and_pdfs is True
+
 
     Returns:
         dict: A dictionary of fields extracted from the file
     """
     system_message = 'You are a data extraction assistant. You return answers in JSON format, like: {"field_name": "value", "field_name2": "value2"}'
 
+    if not llm_hint:
+        llm_hint = ""
+
     user_message = f"""
     Extract only the list of fields below from the attached document. If the field is not present in the document, do not include it in the response.
+    {llm_hint}
+
     ```
     {repr(field_list)}
     ```
@@ -382,6 +401,17 @@ def extract_fields_from_file(
     if isinstance(the_file, DAFileList):
         the_file = the_file[0]
 
+    # when ocr_images_and_pdfs, we can OCR image files, PDFs, and Word documents (which might have embedded images, too)
+    if (
+        the_file.mimetype == "application/pdf"
+        or "image" in the_file.mimetype
+        or the_file.mimetype
+        == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) and ocr_images_and_pdfs:
+        # rewrites the file in place to add a text layer using Docassemble's built-in tesseract functionality
+        the_file.make_ocr_pdf(use_google=ocr_use_google)
+
+    # If we used ocr_images_and_pdfs, the mimetype will be PDF at this point
     if not the_file.mimetype == "application/pdf" or not process_pdfs_with_ai:
         md = MarkItDown()
         try:
