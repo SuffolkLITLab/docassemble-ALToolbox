@@ -44,8 +44,10 @@ class Addup:
                 or contained no numeric values.
 
         Example:
+        ```python
             >>> addup = Addup(income_list, "monthly_amount")
             >>> # Returns sum of monthly_amount fields from all items in income_list
+        ```
         """
         self.sum = 0
         for w in listName:

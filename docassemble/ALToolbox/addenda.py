@@ -101,8 +101,10 @@ class myTextList:
             and self.txtList to contain addendum data if truncation occurred.
 
         Example:
+        ```python
             >>> text_handler = myTextList("Very long text...", 100, "Description")
             >>> # If text > 100 chars, text_cutoff will end with " (See Addendum.)"
+        ```
         """
         # 1. Adjust limit
         sLimit = (
@@ -152,10 +154,12 @@ def safe_json2(the_object, level=0, is_key=False) -> Any:
         limit is exceeded.
 
     Example:
+    ```python
         >>> import datetime
         >>> obj = {"date": datetime.datetime(2023, 12, 25)}
         >>> safe_json2(obj)
         {"date": "12/25/2023"}
+    ```
     """
     if level > 20:
         return "None" if is_key else None
@@ -236,10 +240,12 @@ def type_name(the_object) -> str:
         str: The class name of the object, or the full type string if parsing fails.
 
     Example:
+    ```python
         >>> type_name("hello")
         'str'
         >>> type_name([1, 2, 3])
         'list'
+    ```
     """
     name = str(type(the_object))
     m = re.search(r"\'(.*)\'", name)

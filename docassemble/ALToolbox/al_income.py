@@ -103,10 +103,12 @@ def times_per_year(
         description if not found in the list.
 
     Examples:
+    ```python
         >>> times_per_year([(12, "Monthly"), (1, "Annually")], 12)
         'monthly'
         >>> times_per_year([(12, "Monthly")], 5)
         'Five times per year'
+    ```
     """
     try:
         for row in times_per_year_list:
@@ -141,10 +143,12 @@ def recent_years(
         List[int]: List of years in the specified order.
 
     Examples:
+    ```python
         >>> recent_years(past=3, future=1)  # if current year is 2023
         [2024, 2023, 2022, 2021]
         >>> recent_years(past=2, order="ascending", future=0)
         [2022, 2023]
+    ```
     """
     now = datetime.datetime.now()
     if order == "ascending":
@@ -192,11 +196,13 @@ class ALPeriodicAmount(DAObject):
             Decimal: The calculated income amount for the specified frequency.
 
         Examples:
+        ```python
             >>> income = ALPeriodicAmount(value=1000, times_per_year=12)  # $1000/month
             >>> income.total(1)  # Annual total
             Decimal('12000')
             >>> income.total(12)  # Monthly total
             Decimal('1000')
+        ```
         """
         val = _currency_float_to_decimal(self.value)
         return (val * Decimal(self.times_per_year)) / Decimal(times_per_year)
@@ -353,6 +359,7 @@ class ALIncomeList(DAList):
             Set[str]: A set containing all unique source names from items in the list.
 
         Examples:
+        ```python
             >>> income_list = ALIncomeList([
             ...     ALIncome(source="wages"),
             ...     ALIncome(source="tips"),
@@ -360,6 +367,7 @@ class ALIncomeList(DAList):
             ... ])
             >>> income_list.sources()
             {'wages', 'tips'}
+        ```
         """
         sources = set()
         for item in self.elements:
@@ -385,6 +393,7 @@ class ALIncomeList(DAList):
             ALIncomeList: A new ALIncomeList containing only items with matching sources.
 
         Examples:
+        ```python
             >>> income_list = ALIncomeList([
             ...     ALIncome(source="wages", value=1000),
             ...     ALIncome(source="tips", value=200),
@@ -393,6 +402,7 @@ class ALIncomeList(DAList):
             >>> wages_only = income_list.matches("wages")
             >>> len(wages_only)
             2
+        ```
         """
         # Always make sure we're working with a set
         satifies_sources = _source_to_callable(source, exclude_source)
@@ -431,11 +441,13 @@ class ALIncomeList(DAList):
             Decimal: The total income amount for the specified frequency and filters.
 
         Examples:
+        ```python
             >>> income_list = ALIncomeList([wages_income, tips_income])
             >>> income_list.total(times_per_year=12)  # Monthly total
             Decimal('5000.00')
             >>> income_list.total(source="wages")  # Annual wages only
             Decimal('60000.00')
+        ```
         """
         self._trigger_gather()
         result: Decimal = Decimal(0)
@@ -1027,11 +1039,13 @@ class ALVehicle(ALAsset):
             str: A formatted string combining year, make, and model of the vehicle.
 
         Examples:
+        ```python
             >>> vehicle = ALVehicle(year=2020, make="Toyota", model="Camry")
             >>> vehicle.year_make_model()
             '2020 / Toyota / Camry'
             >>> vehicle.year_make_model(separator=", ")
             '2020, Toyota, Camry'
+        ```
         """
         return separator.join(map(str, [self.year, self.make, self.model]))
 
@@ -1202,12 +1216,14 @@ class ALItemizedValue(DAObject):
             or has no value.
 
         Examples:
+        ```python
             >>> item = ALItemizedValue(value=1500, exists=True)
             >>> item.total()
             Decimal('1500')
             >>> item_disabled = ALItemizedValue(exists=False)
             >>> item_disabled.total()
             Decimal('0')
+        ```
         """
         # If an item's value doesn't exist, use a value of 0
         # TODO: is this behavior correct, or should it force gathering the value?
@@ -1285,11 +1301,13 @@ class ALItemizedValueDict(DAOrderedDict):
             Decimal: The sum of all existing item values in the dictionary.
 
         Examples:
+        ```python
             >>> value_dict = ALItemizedValueDict()
             >>> value_dict['wages'] = ALItemizedValue(value=1000, exists=True)
             >>> value_dict['bonus'] = ALItemizedValue(value=500, exists=False)
             >>> value_dict.total()
             Decimal('1000')  # Only includes wages, not bonus
+        ```
         """
         val = Decimal(0)
         for key, value in self.elements.items():
