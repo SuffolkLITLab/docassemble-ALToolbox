@@ -48,8 +48,10 @@ def copy_button_html(
         str: Complete HTML string containing the copy button and associated elements.
 
     Example:
+    ```python
         >>> copy_button_html("Hello World", text_before="Message:", label="Copy Message")
         '<div class="al_copy">...<button class="btn btn-secondary al_copy_button">...</div>'
+    ```
     """
 
     button_str = '<div class="al_copy">\n'

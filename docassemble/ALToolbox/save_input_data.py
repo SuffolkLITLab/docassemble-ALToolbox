@@ -43,12 +43,14 @@ def save_input_data(
         - Data is stored with a random 32-character alphanumeric key
 
     Example:
+    ```python
         >>> survey_data = {
         ...     "age": 25,
         ...     "income": 50000.0,
         ...     "interests": my_checkbox_dict
         ... }
         >>> save_input_data("User Survey", survey_data, ["survey", "demographics"])
+    ```
     """
     type_dict: Dict[str, str] = {}
     field_dict: Dict[str, Any] = {}

@@ -909,12 +909,14 @@ def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Option
         a localized error message indicating which parts need to be entered.
 
     Example:
+    ```python
         >>> check_empty_parts("12//2023")
         "Enter a day"
         >>> check_empty_parts("//")
         "Enter a month, a day, and a year"
         >>> check_empty_parts("12/25/2023")
         None
+    ```
     """
     # This only handles US dates. How do we use a locale-specific date?
     parts = item.split("/")

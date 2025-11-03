@@ -39,8 +39,10 @@ def display_template(
         display options.
 
     Example:
+    ```python
         >>> display_template(my_template, scrollable=True, collapse=True)
         '<div id="..." class="al_display_template">...</div>'
+    ```
     """
     # 1. Initialize
     if scrollable:

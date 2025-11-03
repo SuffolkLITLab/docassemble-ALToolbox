@@ -79,10 +79,12 @@ def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
         with 2 decimal places.
 
     Example:
+    ```python
         >>> thousands(1234.56)
         '1,234'
         >>> thousands(1234.56, show_decimals=True)
         '1,234.56'
+    ```
     """
     try:
         if show_decimals:
@@ -107,8 +109,10 @@ def tel(phone_number) -> str:
         str: HTML anchor tag with tel: link containing the phone number.
 
     Example:
+    ```python
         >>> tel("555-123-4567")
         '<a href="tel:555-123-4567">555-123-4567</a>'
+    ```
     """
     return '<a href="tel:' + str(phone_number) + '">' + str(phone_number) + "</a>"
 
@@ -177,10 +181,12 @@ def space(var_name: str, prefix=" ", suffix="") -> str:
         and has a value, otherwise an empty string.
 
     Example:
+    ```python
         >>> space("user_middle_name", prefix=" ", suffix="")
         " John"  # if user_middle_name is defined as "John"
         >>> space("undefined_var")
         ""  # if variable is not defined
+    ```
     """
     if (
         var_name
@@ -216,12 +222,14 @@ def yes_no_unknown(
         condition is None, or the placeholder value if condition is False.
 
     Example:
+    ```python
         >>> yes_no_unknown("user_answer", True, "Unknown", 0)
         # Returns value of user_answer variable
         >>> yes_no_unknown("user_answer", None, "Unknown", 0)
         "Unknown"
         >>> yes_no_unknown("user_answer", False, "Unknown", 0)
         0
+    ```
     """
     if condition:
         return value(var_name)
@@ -245,12 +253,14 @@ def number_to_letter(n: Optional[int]) -> str:
         str: The letter representation of the number using Excel-style column naming.
 
     Example:
+    ```python
         >>> number_to_letter(1)
         'A'
         >>> number_to_letter(26)
         'Z'
         >>> number_to_letter(27)
         'AA'
+    ```
     """
     string = ""
     if n is None:
@@ -293,8 +303,10 @@ def collapse_template(
         string if template has no content.
 
     Example:
+    ```python
         >>> collapse_template(my_template, classname="bg-primary", collapsed=False)
         '<div id="..." class="al_collapse_template">...</div>'
+    ```
     """
     if not template.subject_as_html(trim=True) and not template.content_as_html():
         return ""
@@ -339,8 +351,10 @@ def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
         panels.
 
     Example:
+    ```python
         >>> tabbed_templates_html("my_tabs", template1, template2, template3)
         '<ul class="nav nav-tabs" id="my_tabs">...</ul><div class="tab-content">...</div>'
+    ```
     """
     if isinstance(tab_group_name, str):
         tab_group_name = space_to_underscore(tab_group_name)
@@ -446,8 +460,10 @@ def sum_if_defined(*pargs) -> Union[int, float, Decimal]:
         are treated as 0 (skipped).
 
     Example:
+    ```python
         >>> sum_if_defined("income1", "income2", "income3")
         # Returns sum of defined income variables, skipping any undefined ones
+    ```
     """
     total = 0
     for source in pargs:
@@ -472,9 +488,11 @@ def add_records(obj, labels) -> Any:
         The populated obj (DAList) with interview records added.
 
     Example:
+    ```python
         >>> interviews = {"intake": ["Intake Interview", "intake.yml"]}
         >>> add_records(my_list, interviews)
         # my_list[0].name = "intake", description = "Intake Interview", etc.
+    ```
     """
     index = 0
     for key, val in labels.items():
@@ -507,10 +525,12 @@ def output_checkbox(
         The checked_value if value_to_check is True, otherwise unchecked_value.
 
     Example:
+    ```python
         >>> output_checkbox(True)
         '[X]'
         >>> output_checkbox(False, checked_value="YES", unchecked_value="NO")
         'NO'
+    ```
     """
     if value_to_check:
         return checked_value
@@ -533,10 +553,12 @@ def nice_county_name(address: Address) -> str:
         the address has no county attribute.
 
     Example:
+    ```python
         >>> nice_county_name(address_with_county)
         'Suffolk'  # if address.county was "Suffolk County"
         >>> nice_county_name(address_without_county)
         ''
+    ```
     """
     if not hasattr(address, "county"):
         return ""
@@ -694,9 +716,11 @@ def include_a_year(text: str, field: Optional[str] = None) -> bool:
         DAValidationError: If no valid year pattern is found in the text.
 
     Example:
+    ```python
         >>> include_a_year("Born in 1985")
         True
         >>> include_a_year("Born long ago")  # raises DAValidationError
+    ```
     """
     # Match a 4-digit sequence
     if re.search(r"\b(18|19|20|21)\d{2}\b", text):
@@ -773,13 +797,16 @@ def format_date_if_defined(
     Returns:
         A formatted date string if `date_object_name` is defined, otherwise an empty string.
 
-    Example:
-
+    Examples:
+    ```python
         >>> format_date_if_defined("users[0].birthdate", format='yyyy-MM-dd')
+    ```
 
         Returns a formatted date string if "users[0].birthdate" is defined, otherwise returns an empty string.
 
+    ```python
         >>> format_date_if_defined("users[0].birthdate", default="No date provided", format='yyyy-MM-dd ')
+    ```
 
         Returns a formatted date string followed by one space if "users[0].birthdate" is defined, otherwise returns "No date provided". (Note space is added to the format="..." parameter)
     """
