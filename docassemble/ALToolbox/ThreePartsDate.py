@@ -1,6 +1,7 @@
 from docassemble.base.util import (
     CustomDataType,
     DAValidationError,
+    DADateTime,
     word,
     as_datetime,
     today,
@@ -997,7 +998,7 @@ class ThreePartsDate(CustomDataType):
                 return True
 
     @classmethod
-    def transform(cls, item) -> Optional[datetime]:
+    def transform(cls, item) -> Optional[DADateTime]:
         """
         Transform a date string into a datetime object.
 
@@ -1022,9 +1023,9 @@ class ThreePartsDate(CustomDataType):
         Returns:
             str or None: The formatted date string, or None if empty.
         """
-        if item:
+        if isinstance(item, DADateTime):
             return item.format("MM/dd/yyyy")
-        return None
+        return str(item)
 
 
 class BirthDate(ThreePartsDate):
