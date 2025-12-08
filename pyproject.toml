@@ -1,3 +1,38 @@
+[build-system]
+requires = [
+    "setuptools==80.9.0",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docassemble.ALToolbox"
+version = "0.13.1"
+description= "Collection of small utility functions, classes, and web components for Docassemble interviews"
+readme = "README.md"
+authors = [
+    { name="Suffolk Legal Innovation and Technology Lab", email="litlab@suffolk.edu" },
+]
+dependencies = [
+    'holidays>=0.38',
+    'pandas>=2.0.3',
+    'tiktoken>=0.8.0',
+    'openai>=1.99.1',
+    'markitdown[all]>=0.1.3'
+]
+license="MIT"
+license-files = [
+    "LICENSE"
+]
+
+[project.urls]
+Homepage = "https://courtformsonline.org"
+
+[tool.setuptools.packages.find]
+where = [
+    ".",
+]
+
+
 [tool.black]
 extend-exclude = '(__init__.py|setup.py)'
 
