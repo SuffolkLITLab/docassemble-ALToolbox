@@ -19,6 +19,8 @@ subquestion: |
   
   You can give your dates custom min and max values using the attributes `alMin:` and `alMax:` instead of the usual docassemble min and max attributes. Give the value as a US date - mm/dd/yyyy. For example, `alMax: 12/31/2040`. The value you give can also use Mako. For example, `alMax: ${ "${" } today() }`.
 
+  To translate the labels for the parts of the date, use the `alMonthLabel`, `alDayLabel`, and `alYearLabel` parameters.
+
   This custom datatype only supports the US date format at the moment - mm/dd/yyyy.
 fields:
   - note: |
@@ -29,11 +31,17 @@ fields:
     alMin: ${ today(format='MM/dd/yyyy') }
     alMax: 12/31/2040
     default: 02/3/2040
+    alMonthLabel: ${ word('Month') }
+    alDayLabel: ${ word('Day') }
+    alYearLabel: ${ word('Year') }
   - note: |
       The `BirthDate` datatype is like `ThreePartsDate`, but it stops users entering dates in the future.
   - Birth date (today is valid): date_of_birth
     datatype: BirthDate
     required: True
+    alMonthLabel: ${ word('Month') }
+    alDayLabel: ${ word('Day') }
+    alYearLabel: ${ word('Year') }
     validation messages:
       required: This is a custom 'required' message.
   - note: |
@@ -72,6 +80,9 @@ fields:
     alMin: ${ today() }
     alMax: 12/31/2080
     alDefaultMessage: ${ word('Custom alDefaultMessage.') }
+    alMonthLabel: ${ word('Month') }
+    alDayLabel: ${ word('Day') }
+    alYearLabel: ${ word('Year') }
   - note: |
       This field has a different custom message for every kind of invalid input.
   - When do you hope to retire?: retirement_date
@@ -84,6 +95,9 @@ fields:
     alMaxMessage: ${ word('Custom alMaxMessage.') }
     alInvalidDayMessage: ${ word('Custom alInvalidDayMessage.') }
     alInvalidYearMessage: ${ word('Custom alInvalidYearMessage.') }
+    alMonthLabel: ${ word('Month') }
+    alDayLabel: ${ word('Day') }
+    alYearLabel: ${ word('Year') }
 ---
 event: end
 question: |
