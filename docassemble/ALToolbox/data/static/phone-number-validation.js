@@ -38,8 +38,11 @@ $(document).on('daPageLoad', function(){
       // Once the user puts in the phone number of another country, though,
       // it will remember that country
       initialCountry: 'us',
-      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.15/js/utils.min.js",
+      loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/js/utils.js"),
       autoPlaceholder: "off",
+      formatAsYouType: false,
+      // This defaults to MOBILE, which we might not want? https://github.com/jackocnr/intl-tel-input?tab=readme-ov-file#:~:text=validationNumberTypes,-Type%3A%20String
+      validationNumberTypes: null,
     });
     
     // If the user already entered a number and comes back to the page,
