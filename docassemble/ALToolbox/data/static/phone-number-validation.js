@@ -41,7 +41,7 @@ $(document).on('daPageLoad', function(){
       loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/js/utils.js"),
       autoPlaceholder: "off",
       formatAsYouType: false,
-      // This defaults to MOBILE, which we might not want? https://github.com/jackocnr/intl-tel-input?tab=readme-ov-file#:~:text=validationNumberTypes,-Type%3A%20String
+      // Avoid default of MOBILE (https://github.com/jackocnr/intl-tel-input?tab=readme-ov-file#:~:text=validationNumberTypes,-Type%3A%20String)
       validationNumberTypes: null,
     });
     
