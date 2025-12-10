@@ -1,6 +1,21 @@
 /*
 Fixes CSS for dropdown height being affected by DA error message
 */
+.iti__country-container {
+  bottom: initial;
+}
+
+.iti__selected-country {
+  padding-top: .75em;
+  padding-bottom: .75em;
+}
+
+.al_international_phone {
+  width: unset;
+}
+
+/* Older versions of intl-tel-input (v19) used these CSS classes. */
+
 .iti__flag-container {
   bottom: initial;
 }
@@ -8,8 +23,4 @@ Fixes CSS for dropdown height being affected by DA error message
 .iti__selected-flag {
   padding-top: .75em;
   padding-bottom: .75em;
-}
-
-.al_international_phone {
-  width: unset;
 }

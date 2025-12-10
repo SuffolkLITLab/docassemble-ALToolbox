@@ -11,14 +11,13 @@ comment: |
 ---
 features:
   javascript:
-    - "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/intlTelInput-jquery.js"
-    - "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/intlTelInput.js"
+    - "https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/js/intlTelInput.min.js"
     - phone-number-validation.js
   css:
-    - "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/css/intlTelInput.min.css"
+    - "https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/css/intlTelInput.min.css"
     - phone-number-validator.css
     
-# In phone-number-validation.js: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/utils.min.js"
+# In phone-number-validation.js: "https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/js/utils.js"
 ---
 modules:
   - .PhoneNumberDataType

@@ -21,7 +21,7 @@ subquestion: |
 fields:
   - Phone number 1: phone_number_1
     datatype: al_international_phone
-  - Phone number 2 with `hint` attribute: phone_number_2
+  - Phone number 2, not required: phone_number_2
     datatype: al_international_phone
     required: false
 ---

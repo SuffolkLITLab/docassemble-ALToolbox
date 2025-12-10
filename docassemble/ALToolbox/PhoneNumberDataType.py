@@ -35,9 +35,9 @@ var validatePhoneNumber = function( value, element, params ) {
     // The user hits 'Back'. After that, the numbers are seen as invalid.
     
     // Get the special field that has already been created during page load
-    var telLibObj = window.intlTelInputGlobals.getInstance( element );
+    var telLibObj = window.intlTelInput.getInstance( element );
     // Validate its value when the form is submitted
-    return telLibObj.isValidNumber();
+    return telLibObj.isValidNumberPrecise();
   }
   // If it's an empty field, then it's valid as far as this is concerned.
   return true;
