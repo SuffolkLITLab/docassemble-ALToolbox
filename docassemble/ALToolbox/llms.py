@@ -19,6 +19,7 @@ from docassemble.base.util import (
     DAFileList,
     DALazyTemplate,
     get_config,
+    language_name,
     space_to_underscore,
 )
 
@@ -33,6 +34,7 @@ __all__ = [
     "GoalOrientedQuestionList",
     "IntakeQuestionList",
     "extract_fields_from_file",
+    "translate_text",
 ]
 
 if os.getenv("OPENAI_API_KEY"):
@@ -584,6 +586,7 @@ def synthesize_user_responses(
     openai_api: Optional[str] = None,
     temperature: float = 0,
     model: str = "gpt-4o-mini",
+    user_language: str = "en",
 ) -> str:
     """Given a first draft and a series of follow-up questions and answers, use an LLM to synthesize the user's responses
     into a single, coherent reply.
@@ -595,6 +598,7 @@ def synthesize_user_responses(
         openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
         temperature (float): The temperature to use for GPT. Defaults to 0.
         model (str): The model to use for the GPT API
+        user_language (str): The language of the user that the response should be written in, in addition to English. Uses ISO 639-1 two-letter codes or ISO 639-3 three-letter codes. Defaults to "en".
 
     Returns:
         A synthesized response from the user.
@@ -613,6 +617,20 @@ def synthesize_user_responses(
     such as "I" and as many of the user's words as possible. It will be addressed to a third party
     reading the conversation and in the voice and style of the user.
     """
+
+    if user_language != "en":
+        target_language = language_name(user_language)
+        ending_message += f"""
+        Then translate the synthesized response into {target_language}.
+
+        Output format rules (critical):
+        - Output plain text only.
+        - If you are confident in the translation: output ONLY {target_language} (do not include English).
+        - If you are NOT confident in the translation: output ONLY English (do not include a translation).
+        - Do NOT include language names or headings (do not write 'English:', or '{target_language}:' anywhere).
+        - Do not add parentheses or extra notes (no '(English)' etc.).
+    """
+
     results = chat_completion(
         messages=[
             {"role": "system", "content": system_message},
@@ -658,6 +676,67 @@ def define_fields_from_dict(
         ):
             continue
         define(field, field_dict[field])
+
+
+def translate_text(
+    text: str,
+    input_language: str = "",
+    output_language: str = "en",
+    include_original: bool = False,
+    custom_instructions: Optional[str] = "",
+    openai_client: Optional[OpenAI] = None,
+    openai_api: Optional[str] = None,
+    temperature: float = 0,
+    model: str = "gpt-4o-mini",
+) -> str:
+    """Given some text, translate it into another language.
+
+    Args:
+        text (str): The text to translate.
+        input_language (str): Optional source language code (ISO 639-1 or ISO 639-3). If blank, the model will infer it.
+        output_language (str): Target language code (ISO 639-1 or ISO 639-3). Defaults to "en".
+        include_original (bool): If True, includes the original text after the translation. If False, returns only the translated text. Defaults to False.
+        custom_instructions (str): Optional extra instructions for translation style/constraints.
+        openai_client (Optional[OpenAI]): An OpenAI client object, optional.
+        openai_api (Optional[str]): An OpenAI API key, optional. If provided, a new OpenAI client will be created.
+        temperature (float): The temperature to use for GPT. Defaults to 0.
+        model (str): The model to use for the GPT API.
+
+    Returns:
+        The translated text.
+    """
+    if not text or not str(text).strip():
+        return ""
+
+    if input_language and output_language and input_language.strip() == output_language.strip():
+        return text
+
+    system_message = f"""You are a translation assistant.
+
+    Please translate the user_message from {language_name(input_language) if input_language else "unknown language (detect from the text)"} into {language_name(output_language)}.
+
+    Rules:
+    - Output ONLY the translated text.
+    - Do NOT include headings or labels (no 'English:', 'Spanish:', 'Translation:', etc.).
+    - Preserve the original meaning.
+    - Preserve basic formatting (line breaks, bullet points) when reasonable.
+
+    {custom_instructions}
+    """
+
+    results = chat_completion(
+        system_message=system_message,
+        user_message=text,
+        model=model,
+        openai_client=openai_client,
+        openai_api=openai_api,
+        temperature=temperature,
+        json_mode=False,
+    )
+    assert isinstance(results, str)
+    if include_original:
+        return str(results + "\n\n" + text).strip()
+    return results.strip()
 
 
 class Goal(DAObject):
@@ -1191,6 +1270,7 @@ class GoalOrientedQuestionList(DAList):
         model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
         llm_assumed_role (str): The role for the LLM to assume. Defaults to "legal aid intake worker".
         user_assumed_role (str): The role for the user to assume. Defaults to "applicant for legal help".
+        user_language (str): The language of the user that the questions should be written in, in addition to English. Uses ISO 639-1 two-letter codes or ISO 639-3 three-letter codes. Defaults to "en".
         skip_moderation (bool): If True, skips moderation checks when generating structured fields. Defaults to True.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The level of reasoning effort to use when generating responses. Defaults to "low"; use "minimal" for increased speed.
     """
@@ -1214,6 +1294,9 @@ class GoalOrientedQuestionList(DAList):
         if not hasattr(self, "user_assumed_role"):
             self.user_assumed_role = "applicant for legal help"
 
+        if not hasattr(self, "user_language"):
+            self.user_language = "en"
+
         if not hasattr(self, "use_structured_initial_question"):
             self.use_structured_initial_question = False
 
@@ -1222,6 +1305,20 @@ class GoalOrientedQuestionList(DAList):
 
         if not hasattr(self, "reasoning_effort"):
             self.reasoning_effort = "low"
+
+    def bilingual_rule(self) -> str:
+        if self.user_language == "en":
+            return "- Write questions, field labels, and choice text in English.".rstrip()
+
+        target_language = language_name(self.user_language)
+        return f"""
+            - For EVERY user-visible string (question_text, each field label, and each choice string), write it bilingually as: <English text> / <{target_language} translation>.
+            - Use EXACTLY this separator format with spaces: 'English text / Translated text'. English must come first.
+            - Do NOT include language names (do not write 'English / {target_language}:' or similar).
+            - Do not add parentheses or extra notes (no '(English)' etc.).
+            - If you are unsure of the translation, repeat the English text after the slash.
+            - Example: 'What is your name? / ¿Cómo te llamas?'
+            """.rstrip()
 
     def generate_initial_question_fields(self) -> Dict[str, Any]:
         """Generate structured fields for the initial question using the LLM.
@@ -1270,6 +1367,7 @@ class GoalOrientedQuestionList(DAList):
         - Use currency for dollar amounts
         - Use email for email addresses
         - All fields must have required: false
+        {self.bilingual_rule()}
         - Write questions and field labels at about a 6th-grade reading level
         - Ask one question per field, avoiding compound questions
         """
@@ -1470,6 +1568,7 @@ class GoalOrientedQuestionList(DAList):
         - Use currency for dollar amounts
         - Use email for email addresses
         - All fields must have required: false
+        {self.bilingual_rule()}
         - Write questions and field labels at about a 6th-grade reading level
 
         Use structured question types (yesnoradio, radio, checkboxes, date, currency, email)
@@ -1491,9 +1590,9 @@ class GoalOrientedQuestionList(DAList):
 
             if collected_info:
                 summary_message = f"""INFORMATION ALREADY COLLECTED:
-{chr(10).join(['- ' + info.replace(chr(10), ' ') for info in collected_info])}
+                {chr(10).join(['- ' + info.replace(chr(10), ' ') for info in collected_info])}
 
-IMPORTANT: Do not ask for any information listed above unless it is genuinely incomplete or unclear."""
+                IMPORTANT: Do not ask for any information listed above unless it is genuinely incomplete or unclear."""
                 messages.append({"role": "user", "content": summary_message})
 
         # Add the conversation thread
@@ -1588,6 +1687,7 @@ IMPORTANT: Do not ask for any information listed above unless it is genuinely in
             custom_instructions="",
             messages=messages,
             model=self.model,
+            user_language=self.user_language,
         )
 
     def provide_feedback(
