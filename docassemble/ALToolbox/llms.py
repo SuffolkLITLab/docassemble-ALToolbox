@@ -1542,10 +1542,13 @@ class GoalOrientedQuestionList(DAList):
         AI tool and the user may not be comfortable sharing certain information.
 
         CRITICAL: Before generating any follow-up question, carefully review ALL previous responses in the conversation thread.
-        - DO NOT ask for information that has already been provided, even if the format was different than expected
+        - DO NOT ask for information that has already been provided anywhere in the thread, even if the format was different than expected
+        - Do NOT re-ask the same thing with slightly different wording.
         - If the user says "I already answered" or similar, ACCEPT their previous answer and mark that topic as satisfied
         - If the user provides information that partially answers a question, DO NOT ask for the exact same information again
         - Only ask clarifying questions if critical details are genuinely missing AND the user hasn't already declined to provide them
+        - Only ask a clarification about an already-mentioned topic if you can name a specific missing detail (who/what/when/where/which document/which deadline) and your prompt is materially different.
+            - In that case, label it as a clarification (e.g., "Clarify: ...") and keep it narrowly scoped.
         - If a question has been asked 2+ times without a satisfactory answer, STOP asking and move to different missing information
         
         Respond with a JSON object in this format:
