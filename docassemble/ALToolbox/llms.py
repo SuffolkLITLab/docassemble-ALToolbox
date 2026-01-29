@@ -708,7 +708,11 @@ def translate_text(
     if not text or not str(text).strip():
         return ""
 
-    if input_language and output_language and input_language.strip() == output_language.strip():
+    if (
+        input_language
+        and output_language
+        and input_language.strip() == output_language.strip()
+    ):
         return text
 
     system_message = f"""You are a translation assistant.
@@ -1308,7 +1312,9 @@ class GoalOrientedQuestionList(DAList):
 
     def bilingual_rule(self) -> str:
         if self.user_language == "en":
-            return "- Write questions, field labels, and choice text in English.".rstrip()
+            return (
+                "- Write questions, field labels, and choice text in English.".rstrip()
+            )
 
         target_language = language_name(self.user_language)
         return f"""
