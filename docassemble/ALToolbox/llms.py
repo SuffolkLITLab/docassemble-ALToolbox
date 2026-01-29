@@ -318,7 +318,7 @@ def extract_fields_from_text(
     """
     system_message = f"""
     Extract the list of fields from the text supplied by the user.
-    
+
     ```
     {repr(field_list)}
     ```
@@ -505,16 +505,16 @@ def match_goals_from_text(
     ```
     { question }
     ```
-    
+
     Review the answer to determine if it meets the
     following goals:
-    
+
     ```
     {repr(goals)}
     ```
 
     Reply with a JSON object that includes only the satisfied goals in the following format:
-    
+
     ```
     {{
         "goal_name": true,
@@ -612,7 +612,7 @@ def synthesize_user_responses(
 
     ending_message = """
     Now that you have helped the user add more details, synthesize the response into a single coherent answer
-    to the first question. It will rephrase and incorporate the follow-up questions if needed to add context 
+    to the first question. It will rephrase and incorporate the follow-up questions if needed to add context
     and clarity to the final response. You will write a reply in the user's voice. It will use the same pronouns,
     such as "I" and as many of the user's words as possible. It will be addressed to a third party
     reading the conversation and in the voice and style of the user.
@@ -781,12 +781,12 @@ class Goal(DAObject):
             to encourage the {user_assumed_role} to dig deeper if the answer is shallow and lacks detail,
             but if the answer is complete you will not need to ask a follow-up.
 
-            Read the entire exchange with the {user_assumed_role}, in light of this goal: 
+            Read the entire exchange with the {user_assumed_role}, in light of this goal:
             ```{ self.description }```
 
-            Respond with the exact text "satisfied" (and no other text) if the goal is satisfied. If the goal is not satisfied, 
-            respond with a brief follow-up question that directs the {user_assumed_role} toward the goal. If they have already provided a partial 
-            response, encourage them to provide more information with an appropriate follow-up question. Your follow-up should be short, and 
+            Respond with the exact text "satisfied" (and no other text) if the goal is satisfied. If the goal is not satisfied,
+            respond with a brief follow-up question that directs the {user_assumed_role} toward the goal. If they have already provided a partial
+            response, encourage them to provide more information with an appropriate follow-up question. Your follow-up should be short, and
             organized as a narrative sentence.
             """
 
@@ -1117,10 +1117,10 @@ class GoalSatisfactionList(DAList):
             You are a helpful instructor who is providing feedback to a student
             based on their reflection and response to any questions you asked.
 
-            Review the student's response and provide helpful and growth-encouraging 
-            feedback on how well they addressed the goals you set out for them. 
-            If they met the goals but could dig deeper, offer specific feedback on 
-            how they could do so in their next reflection, which may have a different topic. 
+            Review the student's response and provide helpful and growth-encouraging
+            feedback on how well they addressed the goals you set out for them.
+            If they met the goals but could dig deeper, offer specific feedback on
+            how they could do so in their next reflection, which may have a different topic.
             Keep your feedback short and actionable without getting wordy or overly verbose.
             """
         messages = [
@@ -1336,18 +1336,18 @@ class GoalOrientedQuestionList(DAList):
             A dict with the structure for the initial question fields.
         """
         system_message = f"""You are a {self.llm_assumed_role} creating an intake form.
-        
+
         Based on this question, generate between 1 and 3 structured fields to gather the initial information:
-        
+
         Question: {self.initial_question}
-        
+
         Goal: {self.rubric}
-        
+
         Create structured fields that will help gather relevant information.
 
         Whenever possible, use structured field types (yes/no, multiple choice, checkboxes, date, currency, etc.).
         Only use open-ended text/area fields when a limited response format is insufficient.
-        
+
         Respond with a JSON object in this format:
         {{
           "question_text": "Brief intro text for the question screen",
@@ -1361,7 +1361,7 @@ class GoalOrientedQuestionList(DAList):
             }}
           ]
         }}
-        
+
         Guidelines:
         - Generate 1-3 specific fields that help gather information relevant to the rubric
         - Use yesnoradio for yes/no questions
@@ -1528,7 +1528,7 @@ class GoalOrientedQuestionList(DAList):
         You will be ready to encourage the {self.user_assumed_role} to provide more information if it is helpful at this stage,
         but if the answer is complete you will not need to ask a follow-up.
 
-        Read the entire exchange with the {self.user_assumed_role}, in light of this goal: 
+        Read the entire exchange with the {self.user_assumed_role}, in light of this goal:
         ```{self.rubric}```
 
         If the goal or rubric is satisfied, respond with a JSON object containing only:
@@ -1550,7 +1550,7 @@ class GoalOrientedQuestionList(DAList):
         - Only ask a clarification about an already-mentioned topic if you can name a specific missing detail (who/what/when/where/which document/which deadline) and your prompt is materially different.
             - In that case, label it as a clarification (e.g., "Clarify: ...") and keep it narrowly scoped.
         - If a question has been asked 2+ times without a satisfactory answer, STOP asking and move to different missing information
-        
+
         Respond with a JSON object in this format:
         {{
           "status": "continue",
@@ -1718,9 +1718,9 @@ class GoalOrientedQuestionList(DAList):
             Review the student's response in light of this rubric:
             ```{self.rubric}```
 
-            Provide helpful and growth-encouraging feedback on how well they addressed the rubric. 
-            If they met the rubric but could dig deeper, offer specific feedback on 
-            how they could do so in their next reflection, which may have a different topic. 
+            Provide helpful and growth-encouraging feedback on how well they addressed the rubric.
+            If they met the rubric but could dig deeper, offer specific feedback on
+            how they could do so in their next reflection, which may have a different topic.
             Keep your feedback short and actionable without getting wordy or overly verbose.
             """
         messages = [
