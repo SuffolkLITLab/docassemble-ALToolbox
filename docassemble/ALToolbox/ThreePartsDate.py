@@ -77,9 +77,14 @@ function replace_date(original_date) {{
   var date_id = $original_date.attr('id');
   
   // -- Construct the input components --
-  let $month = create_month(date_id);
-  let $day = create_date_part({{date_id, type: 'day'}});
-  let $year = create_date_part({{date_id, type: 'year'}});
+  let display_names = new Intl.DisplayNames(document.documentElement.lang, {{ type: "dateTimeField" }});
+  let is_en = document.documentElement.lang.startsWith('en');
+  var default_month = is_en ? 'Month' : display_names.of('month');
+  var default_day = is_en ? 'Day' : display_names.of('day');
+  var default_year = is_en ? 'Year' : display_names.of('year');
+  let $month = create_month(date_id, $original_date.attr('data-almonthlabel') || default_month );
+  let $day = create_date_part({{date_id, type: 'day', part_label: $original_date.attr('data-aldaylabel') || default_day }});
+  let $year = create_date_part({{date_id, type: 'year', part_label: $original_date.attr('data-alyearlabel') || default_year}});
       
   // -- Add them to the DOM --
   $al_date.append($month.closest('.col'));
@@ -122,7 +127,7 @@ function replace_date(original_date) {{
 }};  // Ends replace_date()
   
 
-function create_date_part({{type, date_id}}) {{
+function create_date_part({{type, date_id, part_label}}) {{
   /** Return one date part with a label and input inside a container.
   *   TODO: Should we use the original dates's `name` instead of `id`?
   *   They've been the same so far. Will they always be?
@@ -139,11 +144,7 @@ function create_date_part({{type, date_id}}) {{
   
   // For python formatting, need to have {{day}} and {{year}}
   let $label = '';
-  if (type === 'day') {{
-    $label = $('<label for="' + id + '">{day}</label>');
-  }} else {{
-    $label = $('<label for="' + id + '">{year}</label>');
-  }}
+  $label = $('<label for="' + id + '">' + part_label + '</label>');
   $col.append($label);
   
   // Reconsider type `number`, `inputmode` ("numeric") not fully supported yet
@@ -167,7 +168,7 @@ function create_date_part({{type, date_id}}) {{
 }};  // Ends create_date_part()
 
   
-function create_month(date_id) {{
+function create_month(date_id, month_label) {{
   /** Return one month type date part given the original date node id.
   *   TODO: Should we use the original dates's `name` instead of `id`?
   *   They've been the same so far. Will they always be?
@@ -182,7 +183,7 @@ function create_month(date_id) {{
   // '_ignore' in the name prevents the field from being submitted, avoiding a da error
   let name =  id;
   
-  let $label = $('<label for="' + id + '">{month}</label>');
+  let $label = $('<label for="' + id + '">' + month_label + '</label>');
   $col.append($label);
   
   // aria-describedby is ok to have, even when the date-part error is
@@ -227,7 +228,7 @@ function add_month_options(select) {{
 
     // Convert the month number to a month name for the option text
     var date = new Date(1970, month, 1);
-    $opt.text(date.toLocaleString('default', {{ month: 'long' }}));
+    $opt.text(date.toLocaleString(document.documentElement.lang || 'default', {{ month: 'long' }}));
 
     $select.append($opt);
   }}  // ends for every month
@@ -949,7 +950,7 @@ def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Option
 class ThreePartsDate(CustomDataType):
     name = "ThreePartsDate"
     input_type = "ThreePartsDate"
-    javascript = js_text.format(month=word("Month"), day=word("Day"), year=word("Year"))
+    javascript = js_text.format()
     jq_message = word("Answer with a valid date")
     is_object = True
     # Unable to get messages for plain `min`/`max` attributes
@@ -963,6 +964,9 @@ class ThreePartsDate(CustomDataType):
         "alInvalidDayMessage",
         "alInvalidYearMessage",
         "alDefaultMessage",
+        "alMonthLabel",
+        "alDayLabel",
+        "alYearLabel",
     ]
 
     @classmethod
@@ -1033,9 +1037,7 @@ class ThreePartsDate(CustomDataType):
 class BirthDate(ThreePartsDate):
     name = "BirthDate"
     input_type = "BirthDate"
-    javascript = js_text.format(
-        month=word("Month"), day=word("Day"), year=word("Year")
-    ).replace("ThreePartsDate", "BirthDate")
+    javascript = js_text.format().replace("ThreePartsDate", "BirthDate")
     jq_message = word("Answer with a valid date of birth")
     is_object = True
     # Unable to get messages for plain `min`/`max` attributes
@@ -1049,6 +1051,9 @@ class BirthDate(ThreePartsDate):
         "alInvalidDayMessage",
         "alInvalidYearMessage",
         "alDefaultMessage",
+        "alMonthLabel",
+        "alDayLabel",
+        "alYearLabel",
     ]
 
     @classmethod
