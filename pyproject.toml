@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docassemble.ALToolbox"
-version = "0.15.1"
+version = "0.15.2"
 description= "Collection of small utility functions, classes, and web components for Docassemble interviews"
 readme = "README.md"
 authors = [
