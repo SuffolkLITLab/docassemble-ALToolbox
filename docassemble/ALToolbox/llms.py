@@ -39,9 +39,10 @@ __all__ = [
 
 if os.getenv("OPENAI_API_KEY"):
     client: Optional[OpenAI] = OpenAI()
-elif get_config("open ai"):
-    api_key = get_config("open ai", {}).get("key")
-    client = OpenAI(api_key=api_key)
+elif get_config("open ai") or get_config("openai api key"):
+    api_key = get_config("open ai", {}).get("key") or get_config("openai api key")
+    base_url = get_config("open ai", {}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"
+    client = OpenAI(api_key=api_key, base_url=base_url)
 else:
     client = None
 
@@ -163,12 +164,10 @@ def chat_completion(
 
     if not openai_base_url:
         openai_base_url = (
-            get_config("open ai", {}).get("base url") or "https://api.openai.com/v1/"
+            get_config("open ai", {}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"
         )
 
-    elif openai_api:
-        openai_client = OpenAI(api_key=openai_api)
-    elif (
+    if (
         messages
         and json_mode
         and not any("json" in message["content"].lower() for message in messages)
@@ -196,7 +195,15 @@ def chat_completion(
             openai_base_url = openai_base_url or "https://api.openai.com/v1/"
             openai_client = OpenAI(api_key=openai_api, base_url=openai_base_url)
         else:
-            openai_client = client
+            # If a custom base_url is provided but no api_key, try to get api_key from environment or config
+            if openai_base_url and openai_base_url != "https://api.openai.com/v1/":
+                api_key = os.getenv("OPENAI_API_KEY") or get_config("open ai", {}).get("key")
+                if api_key:
+                    openai_client = OpenAI(api_key=api_key, base_url=openai_base_url)
+                else:
+                    openai_client = client
+            else:
+                openai_client = client
 
     if not openai_client:
         raise Exception(
