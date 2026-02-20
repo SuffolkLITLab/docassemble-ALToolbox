@@ -197,7 +197,11 @@ def chat_completion(
         else:
             # If a custom base_url is provided but no api_key, try to get api_key from environment or config
             if openai_base_url and openai_base_url != "https://api.openai.com/v1/":
-                api_key = os.getenv("OPENAI_API_KEY") or get_config("open ai", {}).get("key")
+                api_key = (
+                    os.getenv("OPENAI_API_KEY")
+                    or get_config("open ai", {}).get("key")
+                    or get_config("openai api key")
+                )
                 if api_key:
                     openai_client = OpenAI(api_key=api_key, base_url=openai_base_url)
                 else:
