@@ -49,28 +49,27 @@ fields:
   - Provider: provider
     datatype: radio
     choices:
-      - OpenAI: "https://api.openai.com/v1/"
+      - OpenAI: ${get_config("open ai",{}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"}
       - Google Gemini: "https://generativelanguage.googleapis.com/v1beta/openai/"
   - Model: model
     datatype: combobox
     choices:
-      - gpt-4o-mini
-      - gpt-4o
       - gpt-4.1-mini
-      - gpt-4.1
-    default: gpt-4o-mini
+      - gpt-5-nano
+      - gpt-5
+    default: gpt-5-nano
     help: |
       The model to use for the chat completion. The default is the smallest model, which is the fastest and cheapest.
     show if:
       variable: provider
-      is: "https://api.openai.com/v1/"
+      is: ${get_config("open ai",{}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"}
   - Model: model
     datatype: combobox
     choices:
-      - "gemini-2.0-flash"
-      - "gemini-2.5-flash-preview-04-17"
-      - "gemini-2.5-pro-preview-05-06"
-    default: gemini-2.0-flash
+      - "gemini-2.5-flash"
+      - "gemini-2.5-flash-lite"
+      - "gemini-2.5-pro"
+    default: gemini-2.5-flash
     show if:
       variable: provider
       is: "https://generativelanguage.googleapis.com/v1beta/openai/"
@@ -84,6 +83,7 @@ code: |
     model=model,
     json_mode=False,
     openai_base_url=provider,
+    # default comes from config otherwise
     openai_api = get_config("google gemini api key") if provider == "https://generativelanguage.googleapis.com/v1beta/openai/" else None,
   )
   process_input = True
