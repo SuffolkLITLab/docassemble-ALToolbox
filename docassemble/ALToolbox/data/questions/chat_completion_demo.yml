@@ -33,8 +33,6 @@ subquestion: |
 
   It may help to include an instruction like "reply only with the changed text" in your system
   instruction to avoid extraneous information in the response.
-
-  ${get_config("open ai",{}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"}
 fields:
   - System instructions: system_message
     datatype: area

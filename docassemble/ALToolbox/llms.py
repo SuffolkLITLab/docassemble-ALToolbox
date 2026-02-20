@@ -38,10 +38,21 @@ __all__ = [
 ]
 
 if os.getenv("OPENAI_API_KEY"):
-    client: Optional[OpenAI] = OpenAI()
+    # Allow custom base_url from configuration even when using OPENAI_API_KEY from the environment
+    base_url = get_config("open ai", {}).get("base url") or get_config(
+        "openai base url"
+    )
+    if base_url:
+        client: Optional[OpenAI] = OpenAI(base_url=base_url)
+    else:
+        client = OpenAI()
 elif get_config("open ai") or get_config("openai api key"):
     api_key = get_config("open ai", {}).get("key") or get_config("openai api key")
-    base_url = get_config("open ai", {}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"
+    base_url = (
+        get_config("open ai", {}).get("base url")
+        or get_config("openai base url")
+        or "https://api.openai.com/v1/"
+    )
     client = OpenAI(api_key=api_key, base_url=base_url)
 else:
     client = None
@@ -164,7 +175,9 @@ def chat_completion(
 
     if not openai_base_url:
         openai_base_url = (
-            get_config("open ai", {}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"
+            get_config("open ai", {}).get("base url")
+            or get_config("openai base url")
+            or "https://api.openai.com/v1/"
         )
 
     if (
@@ -362,6 +375,7 @@ def extract_fields_from_file(
     process_pdfs_with_ai: bool = True,
     ocr_images_and_pdfs: bool = False,
     ocr_use_google: Optional[bool] = False,
+    openai_base_url: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Extracts data (in the form of a list of expected fields) from a file using an LLM.
@@ -392,6 +406,7 @@ def extract_fields_from_file(
         ocr_images_and_pdfs (bool): Whether to perform OCR on PDFs before processing with the OpenAI API. Defaults to False.
                                 May be useful if the PDF has a text layer that is incomplete.
         ocr_use_google (Optional[bool]): whether to use Google Vision API instead of local OCR. Only applies if ocr_images_and_pdfs is True
+        openai_base_url (Optional[str]): The base URL for the OpenAI API. Defaults to value provided in the configuration or "https://api.openai.com/v1/".
 
 
     Returns:
@@ -447,7 +462,13 @@ def extract_fields_from_file(
     if openai_client:
         pass
     elif openai_api:
-        openai_client = OpenAI(api_key=openai_api)
+        if not openai_base_url:
+            openai_base_url = (
+                get_config("open ai", {}).get("base url")
+                or get_config("openai base url")
+                or "https://api.openai.com/v1/"
+            )
+        openai_client = OpenAI(api_key=openai_api, base_url=openai_base_url)
     else:
         openai_client = client
 
