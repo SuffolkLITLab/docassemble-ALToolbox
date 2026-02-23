@@ -55,9 +55,9 @@ fields:
     datatype: combobox
     choices:
       - gpt-4.1-mini
-      - gpt-5-nano
       - gpt-5
-    default: gpt-5-nano
+      - ${ get_first_small_model() }
+    default: ${ get_first_small_model() }
     help: |
       The model to use for the chat completion. The default is the smallest model, which is the fastest and cheapest.
     show if:

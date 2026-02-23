@@ -35,6 +35,8 @@ __all__ = [
     "IntakeQuestionList",
     "extract_fields_from_file",
     "translate_text",
+    "get_first_small_model",
+    "get_default_model",
 ]
 
 if os.getenv("OPENAI_API_KEY"):
@@ -133,6 +135,107 @@ always_reserved_names = set(
 )
 
 
+def get_first_small_model(
+    openai_client: Optional[OpenAI] = None,
+    keywords: Optional[List[str]] = None,
+) -> Optional[str]:
+    """Get the first available small/lite model from an OpenAI-compatible endpoint.
+
+    Queries the models endpoint and returns the first model whose name contains
+    any of the provided keywords. This is useful for finding cost-effective models
+    for tasks that don't require full capability.
+
+    Common keywords for small models: "nano", "mini", "small", "lite", "haiku", "turbo", "fast"
+
+    Args:
+        openai_client (Optional[OpenAI]): An OpenAI client object. If None, uses the global client.
+        keywords (Optional[List[str]]): Keywords to filter model names. If None (recommended),
+            defaults to ["nano", "mini", "small", "lite", "haiku", "turbo", "fast"].
+            Matching is case-insensitive.
+
+    Returns:
+        str: The ID of the first matching small model, or None if no models match or no client is available.
+
+    Example:
+        >>> model = get_first_small_model()
+        >>> if model:
+        ...     response = chat_completion(system_message="...", user_message="...", model=model)
+    """
+    if keywords is None:
+        keywords = ["nano", "mini", "small", "lite", "haiku", "turbo", "fast"]
+
+    if not openai_client:
+        openai_client = client
+
+    if not openai_client:
+        log("Warning: No OpenAI client available to fetch models list.")
+        return None
+
+    try:
+        models_list = openai_client.models.list()
+        keywords_lower = [k.lower() for k in keywords]
+
+        for model in models_list:
+            model_id = model.id.lower()
+            if any(keyword in model_id for keyword in keywords_lower):
+                return model.id
+        return None
+    except Exception as e:
+        log(f"Error retrieving models list from OpenAI endpoint: {e}")
+        return None
+
+
+def get_default_model(model_type: str = "small") -> str:
+    """Get the default model to use for LLM operations.
+
+    Checks the Docassemble configuration for a default model in this order:
+    1. open ai -> default model
+    2. openai default model
+
+    If no configuration is found, returns the first small model from the endpoint,
+    falling back to a sensible hardcoded default if that's also unavailable.
+
+    This allows users to override model selection globally in their config:
+
+    ```yaml
+    open ai:
+        default model: gpt-5-nano
+    ```
+
+    or alternatively:
+
+    ```yaml
+    openai default model: gpt-5-nano
+    ```
+
+    Args:
+        model_type (str): Type of model to retrieve. Currently only "small" is supported.
+            Reserved for future use to support different model types.
+
+    Returns:
+        str: The model ID to use for LLM operations.
+    """
+    # Check configuration first
+    config_model = (
+        get_config("open ai", {}).get("default model")
+        or get_config("openai default model")
+    )
+
+    if config_model:
+        return config_model
+
+    # Try to get first small model from endpoint
+    small_model = get_first_small_model()
+    if small_model:
+        return small_model
+
+    # Fallback defaults based on what we typically see
+    if model_type == "small":
+        return "gpt-5-nano"
+
+    return "gpt-5-nano"  # ultimate fallback
+
+
 def chat_completion(
     system_message: Optional[str] = None,
     user_message: Optional[str] = None,
@@ -140,7 +243,7 @@ def chat_completion(
     openai_api: Optional[str] = None,
     temperature: float = 0.5,
     json_mode=False,
-    model: str = "gpt-4o",
+    model: Optional[str] = None,
     messages: Optional[List[Dict[str, str]]] = None,
     skip_moderation: bool = True,
     openai_base_url: Optional[str] = None,  # "https://api.openai.com/v1/",
@@ -159,7 +262,7 @@ def chat_completion(
         openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
         temperature (float): The temperature to use for the GPT API
         json_mode (bool): Whether to use JSON mode for the GPT API. Requires the word `json` in the system message, but will add if you omit it.
-        model (str): The model to use for the GPT API
+        model (str): The model to use for the GPT API. If not provided, uses the configured default model or the first available small model.
         messages (Optional[List[Dict[str, str]]]): A list of messages to send to the chat engine. If provided, system_message and user_message will be ignored.
         skip_moderation (bool): Whether to skip the OpenAI moderation step, which may save seconds but risks banning your account. Only enable when you have full control over the inputs.
         openai_base_url (Optional[str]): The base URL for the OpenAI API. Defaults to value provided in the configuration or "https://api.openai.com/v1/".
@@ -170,6 +273,9 @@ def chat_completion(
     Returns:
         A string with the response from the API endpoint or JSON data if json_mode is True
     """
+    if not model:
+        model = get_default_model()
+
     if not reasoning_effort:
         reasoning_effort = get_config("open ai", {}).get("reasoning effort") or "low"
 
@@ -322,7 +428,7 @@ def extract_fields_from_text(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model="gpt-5-nano",
+    model: Optional[str] = None,
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = "low",
 ) -> Dict[str, Any]:
     """
@@ -334,12 +440,15 @@ def extract_fields_from_text(
         openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
         openai_api (Optional[str]): An OpenAI API key. Defaults to None.
         temperature (float): The temperature to use for the OpenAI API. Defaults to 0.
-        model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
+        model (str): The model to use for the OpenAI API. If not provided, uses the configured default model or the first available small model.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The reasoning effort to use for the LLM. Defaults to "low".
 
     Returns:
         dict: A dictionary of fields extracted from the text
     """
+    if not model:
+        model = get_default_model()
+
     system_message = f"""
     Extract the list of fields from the text supplied by the user.
 
@@ -369,7 +478,7 @@ def extract_fields_from_file(
     field_list: Dict[str, str],
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
-    model: str = "gpt-5-nano",
+    model: Optional[str] = None,
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = "low",
     llm_hint: Optional[str] = "",
     process_pdfs_with_ai: bool = True,
@@ -399,7 +508,7 @@ def extract_fields_from_file(
         field_list (Dict[str, str]): A list of fields to extract, with the key being the field name and the value being a description of the field
         openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
         openai_api (Optional[str]): An OpenAI API key. Defaults to None.
-        model (str): The model to use for the OpenAI API. Defaults to "gpt-5-nano".
+        model (str): The model to use for the OpenAI API. If not provided, uses the configured default model or the first available small model.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The reasoning effort to use for the LLM. Defaults to "low".
         llm_hint (Optional[str]): an optional hint to improve processing the text layer with the LLM.
         process_pdfs_with_ai (bool): Whether to process PDFs with the OpenAI API (True) or convert to text first (False). Defaults to True.
@@ -412,6 +521,9 @@ def extract_fields_from_file(
     Returns:
         dict: A dictionary of fields extracted from the file
     """
+    if not model:
+        model = get_default_model()
+
     system_message = 'You are a data extraction assistant. You return answers in JSON format, like: {"field_name": "value", "field_name2": "value2"}'
 
     if not llm_hint:
@@ -515,7 +627,7 @@ def match_goals_from_text(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model="gpt-4o-mini",
+    model: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Reads a user's message and determines whether it meets a set of goals, with the help of an LLM.
 
@@ -526,11 +638,14 @@ def match_goals_from_text(
         openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
         openai_api (Optional[str]): An OpenAI API key. Defaults to None.
         temperature (float): The temperature to use for the OpenAI API. Defaults to 0.
-        model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
+        model (str): The model to use for the OpenAI API. If not provided, uses the configured default model or the first available small model.
 
     Returns:
         A dictionary of fields extracted from the text
     """
+    if not model:
+        model = get_default_model()
+
     system_message = f"""
     The user message represents an answer to the following question:
 
@@ -575,7 +690,7 @@ def classify_text(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model="gpt-4o-mini",
+    model: Optional[str] = None,
 ) -> str:
     """Given a text, classify it into one of the provided choices with the assistance of a large language model.
 
@@ -586,11 +701,14 @@ def classify_text(
         openai_client (Optional[OpenAI]): An OpenAI client object, optional. If omitted, will fall back to creating a new OpenAI client with the API key provided as an environment variable
         openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
         temperature (float): The temperature to use for GPT. Defaults to 0.
-        model (str): The model to use for the GPT API
+        model (str): The model to use for the GPT API. If not provided, uses the configured default model or the first available small model.
 
     Returns:
         The classification of the text.
     """
+    if not model:
+        model = get_default_model()
+
     system_prompt = f"""You are an expert annotator. Given a user's message, respond with the classification into one of the following categories:
     ```
     { repr(choices) }
@@ -617,7 +735,7 @@ def synthesize_user_responses(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model: str = "gpt-4o-mini",
+    model: Optional[str] = None,
     user_language: str = "en",
 ) -> str:
     """Given a first draft and a series of follow-up questions and answers, use an LLM to synthesize the user's responses
@@ -629,12 +747,15 @@ def synthesize_user_responses(
         openai_client (Optional[OpenAI]): An OpenAI client object, optional. If omitted, will fall back to creating a new OpenAI client with the API key provided as an environment variable
         openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
         temperature (float): The temperature to use for GPT. Defaults to 0.
-        model (str): The model to use for the GPT API
+        model (str): The model to use for the GPT API. If not provided, uses the configured default model or the first available small model.
         user_language (str): The language of the user that the response should be written in, in addition to English. Uses ISO 639-1 two-letter codes or ISO 639-3 three-letter codes. Defaults to "en".
 
     Returns:
         A synthesized response from the user.
     """
+    if not model:
+        model = get_default_model()
+
     system_message = f"""You are a helpful editor engaging in a conversation with the user. You are helping a user write a response to an open-ended question.
     You will see the user's initial draft, followed by a series of questions and answers that clarified additional content to include
     in the response.
@@ -719,7 +840,7 @@ def translate_text(
     openai_client: Optional[OpenAI] = None,
     openai_api: Optional[str] = None,
     temperature: float = 0,
-    model: str = "gpt-4o-mini",
+    model: Optional[str] = None,
 ) -> str:
     """Given some text, translate it into another language.
 
@@ -732,11 +853,14 @@ def translate_text(
         openai_client (Optional[OpenAI]): An OpenAI client object, optional.
         openai_api (Optional[str]): An OpenAI API key, optional. If provided, a new OpenAI client will be created.
         temperature (float): The temperature to use for GPT. Defaults to 0.
-        model (str): The model to use for the GPT API.
+        model (str): The model to use for the GPT API. If not provided, uses the configured default model or the first available small model.
 
     Returns:
         The translated text.
     """
+    if not model:
+        model = get_default_model()
+
     if not text or not str(text).strip():
         return ""
 
@@ -788,7 +912,7 @@ class Goal(DAObject):
         self,
         messages: List[Dict[str, str]],
         openai_client: Optional[OpenAI] = None,
-        model="gpt-4o-mini",
+        model: Optional[str] = None,
         system_message: Optional[str] = None,
         llm_assumed_role: Optional[str] = "teacher",
         user_assumed_role: Optional[str] = "student",
@@ -799,7 +923,7 @@ class Goal(DAObject):
         Args:
             messages (List[Dict[str, str]]): The messages to check
             openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
-            model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
+            model (str): The model to use for the OpenAI API. If not provided, uses the configured default model or the first available small model.
             system_message (Optional[str]): The system message to use for the OpenAI API. Defaults to None.
             llm_assumed_role (Optional[str]): The role for the LLM to assume. Defaults to "teacher".
             user_assumed_role (Optional[str]): The role for the user to assume. Defaults to "student".
@@ -807,6 +931,9 @@ class Goal(DAObject):
         Returns:
             The text of the next question to ask the user or the string "satisfied"
         """
+        if not model:
+            model = get_default_model()
+
         if not system_message:
             system_message = f"""You are a {llm_assumed_role} who is helping to improve and get relevant and thoughtful information from a {user_assumed_role}.
             You will be ready
@@ -837,18 +964,20 @@ class Goal(DAObject):
         self,
         thread_so_far: List[Dict[str, str]],
         openai_client: Optional[OpenAI] = None,
-        model="gpt-4o-mini",
+        model: Optional[str] = None,
     ) -> str:
         """Returns the text of the next question to ask the user.
 
         Args:
             thread_so_far (List[Dict[str, str]]): The thread of the conversation so far
             openai_client (Optional[OpenAI]): An OpenAI client object. Defaults to None.
-            model (str): The model to use for the OpenAI API. Defaults to "gpt-4o-mini".
+            model (str): The model to use for the OpenAI API. If not provided, uses the configured default model or the first available small model.
 
         Returns:
             The text of the next question to ask the user.
         """
+        if not model:
+            model = get_default_model()
 
         system_instructions = f"""You are helping the user to satisfy this goal with their response: "{ self.description }". Ask a brief appropriate follow-up question that directs the user toward the goal. If they have already provided a partial response, explain why and how they should expand on it."""
 
@@ -969,7 +1098,7 @@ class GoalSatisfactionList(DAList):
             self.goal_dict.gathered = True
 
         if not hasattr(self, "model"):
-            self.model = "gpt-4o-mini"
+            self.model = get_default_model()
 
         if not hasattr(self, "question_per_goal_limit"):
             self.question_per_goal_limit = 3
@@ -1322,7 +1451,7 @@ class GoalOrientedQuestionList(DAList):
             self.question_limit = 6
 
         if not hasattr(self, "model"):
-            self.model = "gpt-5-nano"
+            self.model = get_default_model()
 
         if not hasattr(self, "llm_assumed_role"):
             self.llm_assumed_role = "legal aid intake worker"
@@ -1833,7 +1962,7 @@ class IntakeQuestionList(DAList):
         self.qualifies = None
 
         if not hasattr(self, "model"):
-            self.model = "gpt-4.1"
+            self.model = get_default_model()
             self.max_output_tokens = 4096
 
         if not hasattr(self, "max_output_tokens"):
