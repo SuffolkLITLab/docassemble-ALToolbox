@@ -227,13 +227,16 @@ def list_available_models(openai_client: Optional[OpenAI] = None) -> List[str]:
 def get_available_models(
     candidate_models: List[str],
     openai_client: Optional[OpenAI] = None,
+    available_models: Optional[List[str]] = None,
 ) -> List[str]:
     """Return candidate model names that exist on the configured provider.
 
     Matching is case-insensitive, and results preserve the order from
     ``candidate_models``.
     """
-    available_models = list_available_models(openai_client=openai_client)
+    if available_models is None:
+        available_models = list_available_models(openai_client=openai_client)
+
     normalized_map = {model_id.lower(): model_id for model_id in available_models}
     matched_models: List[str] = []
     for model_name in candidate_models:
@@ -280,9 +283,10 @@ def get_first_available_model_set(
             ``[get_first_small_model(...)]`` when available.
     """
     normalized_sets = _normalize_model_sets(preferred_model_sets)
+    available_models = list_available_models(openai_client=openai_client)
     first_partial_match: List[str] = []
     for model_set in normalized_sets:
-        available = get_available_models(model_set, openai_client=openai_client)
+        available = get_available_models(model_set, available_models=available_models)
         if require_full_set and len(available) == len(model_set):
             return available
         if not require_full_set and available:
@@ -364,7 +368,10 @@ def get_first_small_model(
     return None
 
 
-def get_default_model(model_type: str = "small") -> str:
+def get_default_model(
+    model_type: str = "small",
+    openai_client: Optional[OpenAI] = None,
+) -> str:
     """Get the default model to use for LLM operations.
 
     Checks the Docassemble configuration for a default model in this order:
@@ -388,8 +395,11 @@ def get_default_model(model_type: str = "small") -> str:
     ```
 
     Args:
-        model_type (str): Type of model to retrieve. Currently only "small" is supported.
-            Reserved for future use to support different model types.
+        model_type (str): Type of model to retrieve, such as "small", "medium", or "large".
+            Other values may be supported via configuration; unknown types fall back
+            to the "small" model-type fallback.
+        openai_client (Optional[OpenAI]): Client to use for model discovery.
+            If omitted, uses the configured global client.
 
     Returns:
         str: The model ID to use for LLM operations.
@@ -409,13 +419,19 @@ def get_default_model(model_type: str = "small") -> str:
         return config_model
 
     # Try configured model sets first, then built-in fallbacks.
-    configured_model_sets = _normalize_model_sets(
-        open_ai_config.get("model sets", {}).get(normalized_model_type, [])
-    )
+    model_sets_config = open_ai_config.get("model sets")
+    if isinstance(model_sets_config, dict):
+        raw_model_sets = model_sets_config.get(normalized_model_type, [])
+    elif isinstance(model_sets_config, list):
+        raw_model_sets = model_sets_config
+    else:
+        raw_model_sets = []
+    configured_model_sets = _normalize_model_sets(raw_model_sets)
     default_model_sets = DEFAULT_MODEL_SETS.get(normalized_model_type, [])
 
     selected_set = get_first_available_model_set(
         configured_model_sets + default_model_sets,
+        openai_client=openai_client,
         require_full_set=True,
     )
     if selected_set:
@@ -423,7 +439,7 @@ def get_default_model(model_type: str = "small") -> str:
 
     # For "small", keep keyword-based fallback for backward compatibility.
     if normalized_model_type == "small":
-        small_model = get_first_small_model()
+        small_model = get_first_small_model(openai_client=openai_client)
         if small_model:
             return small_model
 
@@ -469,9 +485,6 @@ def chat_completion(
     Returns:
         A string with the response from the API endpoint or JSON data if json_mode is True
     """
-    if not model:
-        model = get_default_model()
-
     if not reasoning_effort:
         reasoning_effort = get_config("open ai", {}).get("reasoning effort") or "low"
 
@@ -528,6 +541,9 @@ def chat_completion(
         raise Exception(
             "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment or Docassemble configuration. Try adding a new section in your global config that looks like this:\n\nopen ai:\n    key: sk-..."
         )
+
+    if not model:
+        model = get_default_model(openai_client=openai_client)
 
     try:
         encoding = tiktoken.encoding_for_model(model)
@@ -642,9 +658,6 @@ def extract_fields_from_text(
     Returns:
         dict: A dictionary of fields extracted from the text
     """
-    if not model:
-        model = get_default_model()
-
     system_message = f"""
     Extract the list of fields from the text supplied by the user.
 
@@ -717,9 +730,6 @@ def extract_fields_from_file(
     Returns:
         dict: A dictionary of fields extracted from the file
     """
-    if not model:
-        model = get_default_model()
-
     system_message = 'You are a data extraction assistant. You return answers in JSON format, like: {"field_name": "value", "field_name2": "value2"}'
 
     if not llm_hint:
@@ -782,6 +792,9 @@ def extract_fields_from_file(
 
     assert openai_client is not None, "An OpenAI client or API key must be provided."
 
+    if not model:
+        model = get_default_model(openai_client=openai_client)
+
     with open(the_file.path(), "rb") as f:
         file_upload = openai_client.files.create(
             file=f,
@@ -839,9 +852,6 @@ def match_goals_from_text(
     Returns:
         A dictionary of fields extracted from the text
     """
-    if not model:
-        model = get_default_model()
-
     system_message = f"""
     The user message represents an answer to the following question:
 
@@ -902,9 +912,6 @@ def classify_text(
     Returns:
         The classification of the text.
     """
-    if not model:
-        model = get_default_model()
-
     system_prompt = f"""You are an expert annotator. Given a user's message, respond with the classification into one of the following categories:
     ```
     { repr(choices) }
@@ -949,9 +956,6 @@ def synthesize_user_responses(
     Returns:
         A synthesized response from the user.
     """
-    if not model:
-        model = get_default_model()
-
     system_message = f"""You are a helpful editor engaging in a conversation with the user. You are helping a user write a response to an open-ended question.
     You will see the user's initial draft, followed by a series of questions and answers that clarified additional content to include
     in the response.
@@ -1054,9 +1058,6 @@ def translate_text(
     Returns:
         The translated text.
     """
-    if not model:
-        model = get_default_model()
-
     if not text or not str(text).strip():
         return ""
 
@@ -1128,7 +1129,7 @@ class Goal(DAObject):
             The text of the next question to ask the user or the string "satisfied"
         """
         if not model:
-            model = get_default_model()
+            model = get_default_model(openai_client=openai_client)
 
         if not system_message:
             system_message = f"""You are a {llm_assumed_role} who is helping to improve and get relevant and thoughtful information from a {user_assumed_role}.
@@ -1173,7 +1174,7 @@ class Goal(DAObject):
             The text of the next question to ask the user.
         """
         if not model:
-            model = get_default_model()
+            model = get_default_model(openai_client=openai_client)
 
         system_instructions = f"""You are helping the user to satisfy this goal with their response: "{ self.description }". Ask a brief appropriate follow-up question that directs the user toward the goal. If they have already provided a partial response, explain why and how they should expand on it."""
 
