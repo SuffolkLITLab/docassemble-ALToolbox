@@ -12,7 +12,7 @@ If you want to add a small function to this project, consider adding it to the e
 
 ## Documentation
 
-Read the [documentation for the functions and components](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/framework/altoolbox) to learn
+Read the [documentation for the functions and components](https://assemblyline.suffolklitlab.org/docs/components/ALToolbox/overview) to learn
 how to use these components in your own [Docassemble](https://github.com/jhpyle/docassemble) projects.
 
 ## Suffolk LIT Lab Document Assembly Line
