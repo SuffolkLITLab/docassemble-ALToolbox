@@ -18,7 +18,7 @@ question: |
 subquestion: |
   This project is used to host custom-built modules, javascript files etc. The purpose is to provide a toolbox so that other coders can use these tools in their interviews. 
   
-  To learn more, visit the [ALDocumentation website - ALtoolbox](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/framework/altoolbox) page.
+  To learn more, visit the [ALDocumentation website - ALtoolbox](https://assemblyline.suffolklitlab.org/docs/components/ALToolbox/overview) page.
     
   ####For contributors:
 
