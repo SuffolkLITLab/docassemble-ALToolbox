@@ -5,8 +5,34 @@ modules:
 id: interview order
 mandatory: True
 code: |
-  first_small_model = get_first_small_model()
-  if first_small_model:
+  openai_base_url = get_config("open ai",{}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"
+  is_azure_openai = "openai.azure.com" in str(openai_base_url).lower()
+  open_ai_config = get_config("open ai", {}) or {}
+  configured_default_model = (
+    open_ai_config.get("default small model")
+    or get_config("openai default small model")
+    or open_ai_config.get("default model")
+    or get_config("openai default model")
+  )
+
+  if is_azure_openai:
+    # Azure OpenAI model listing can include catalog models that are not deployed.
+    # Prefer configured deployment names for demo choices.
+    openai_model_choices = [configured_default_model] if configured_default_model else []
+    first_small_model = configured_default_model
+  else:
+    openai_model_choices = [
+      "gpt-5-nano",
+      "gpt-5-mini",
+      "gpt-5",
+      "gpt-4o-mini",
+      "gpt-4o",
+    ]
+    if configured_default_model and configured_default_model not in openai_model_choices:
+      openai_model_choices = [configured_default_model] + openai_model_choices
+    first_small_model = configured_default_model or "gpt-5-nano"
+
+  if openai_model_choices:
     system_message
     process_input
     show_results
@@ -53,17 +79,16 @@ fields:
   - Provider: provider
     datatype: radio
     choices:
-      - OpenAI: ${get_config("open ai",{}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"}
+      - OpenAI: ${ openai_base_url }
       - Google Gemini: "https://generativelanguage.googleapis.com/v1beta/openai/"
   - Model: model
     datatype: combobox
-    choices:
-      - gpt-4.1-mini
-      - gpt-5
-      - ${ first_small_model }
+    code: |
+      openai_model_choices
     default: ${ first_small_model }
     help: |
-      The model to use for the chat completion. The default is the smallest model, which is the fastest and cheapest.
+      The model to use for the chat completion. On Azure OpenAI, this should be your deployment name.
+      The default is the smallest available model when discovery is supported.
     show if:
       variable: provider
       is: ${get_config("open ai",{}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"}
