@@ -307,7 +307,10 @@ function update_original_date($al_date) {{
   
   let val_date = US_date;
   
-  get_$original_date($al_date).val(val_date);
+  $original_date = get_$original_date($al_date)
+  $original_date.val(val_date);
+  $original_date.trigger(`change`);
+  
 }};  // Ends update_original_date()
   
   
