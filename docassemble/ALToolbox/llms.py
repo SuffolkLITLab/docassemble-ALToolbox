@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional, Union, Literal
 import keyword
 import os
 import json
+import re
 import tiktoken
 from openai import OpenAI
 from openai import NotFoundError
@@ -35,6 +36,11 @@ __all__ = [
     "IntakeQuestionList",
     "extract_fields_from_file",
     "translate_text",
+    "list_available_models",
+    "get_available_models",
+    "get_first_available_model_set",
+    "detect_model_family",
+    "get_available_model_families",
     "get_first_small_model",
     "get_default_model",
 ]
@@ -134,6 +140,193 @@ always_reserved_names = set(
     ]
 )
 
+DEFAULT_MODEL_SETS: Dict[str, List[List[str]]] = {
+    "small": [
+        ["gpt-5-nano", "gpt-4.1-nano", "gpt-4o-mini"],
+        ["o4-mini", "o3-mini", "gpt-4o-mini"],
+        ["claude-3-5-haiku", "claude-3-haiku"],
+        ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    ],
+    "medium": [
+        ["gpt-5-mini", "gpt-4.1-mini", "gpt-4o"],
+        ["o3", "gpt-4o"],
+        ["claude-3-7-sonnet", "claude-3-5-sonnet"],
+        ["gemini-2.5-flash"],
+    ],
+    "large": [
+        ["gpt-5", "gpt-4.1", "gpt-4o"],
+        ["o1", "o1-preview", "gpt-4o"],
+        ["claude-3-7-sonnet", "claude-3-opus"],
+        ["gemini-2.5-pro"],
+    ],
+}
+
+MODEL_TYPE_FALLBACKS = {"small": "gpt-5-nano", "medium": "gpt-5-mini", "large": "gpt-5"}
+
+MODEL_FAMILY_PATTERNS: Dict[str, List[str]] = {
+    # Provider-first grouping so users can reason across mixed endpoints.
+    "openai": [
+        r"^gpt",
+        r"^o[0-9]",
+        r"^chatgpt",
+        r"^codex",
+        r"^text-embedding",
+        r"^whisper",
+        r"^tts",
+        r"^omni",
+    ],
+    "google": [r"gemini", r"^models/gemini", r"google"],
+    "anthropic": [r"claude", r"anthropic"],
+    "mistral": [r"mistral", r"mixtral", r"codestral", r"ministral"],
+    "qwen": [r"qwen"],
+    "deepseek": [r"deepseek"],
+    "meta": [r"llama", r"meta-llama", r"\bl[0-9]{1,2}m?a?\b"],
+}
+
+
+def _extract_model_id(model: Any) -> Optional[str]:
+    """Extract a model ID from OpenAI model objects or dictionaries."""
+    model_id = getattr(model, "id", None)
+    if isinstance(model_id, str):
+        return model_id
+    if isinstance(model, dict):
+        dict_id = model.get("id")
+        if isinstance(dict_id, str):
+            return dict_id
+    return None
+
+
+def list_available_models(openai_client: Optional[OpenAI] = None) -> List[str]:
+    """Return model IDs available on the configured OpenAI-compatible provider."""
+    if not openai_client:
+        openai_client = client
+
+    if not openai_client:
+        log("Warning: No OpenAI client available to fetch models list.")
+        return []
+
+    try:
+        models_list = openai_client.models.list()
+        available_models: List[str] = []
+        seen: set = set()
+        for model in models_list:
+            model_id = _extract_model_id(model)
+            if not model_id:
+                continue
+            normalized = model_id.lower()
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            available_models.append(model_id)
+        return available_models
+    except Exception as e:
+        log(f"Error retrieving models list from OpenAI endpoint: {e}")
+        return []
+
+
+def get_available_models(
+    candidate_models: List[str],
+    openai_client: Optional[OpenAI] = None,
+) -> List[str]:
+    """Return candidate model names that exist on the configured provider.
+
+    Matching is case-insensitive, and results preserve the order from
+    ``candidate_models``.
+    """
+    available_models = list_available_models(openai_client=openai_client)
+    normalized_map = {model_id.lower(): model_id for model_id in available_models}
+    matched_models: List[str] = []
+    for model_name in candidate_models:
+        match = normalized_map.get(model_name.lower())
+        if match:
+            matched_models.append(match)
+    return matched_models
+
+
+def _normalize_model_sets(model_sets: Any) -> List[List[str]]:
+    """Normalize input into a list of model-name lists."""
+    if not isinstance(model_sets, list):
+        return []
+    if model_sets and all(isinstance(item, str) for item in model_sets):
+        return [model_sets]
+
+    normalized: List[List[str]] = []
+    for entry in model_sets:
+        if isinstance(entry, list):
+            filtered = [model for model in entry if isinstance(model, str)]
+            if filtered:
+                normalized.append(filtered)
+    return normalized
+
+
+def get_first_available_model_set(
+    preferred_model_sets: List[List[str]],
+    openai_client: Optional[OpenAI] = None,
+    require_full_set: bool = True,
+    return_partial_if_needed: bool = True,
+    fallback_to_first_small_model: bool = True,
+) -> List[str]:
+    """Return the first usable model set from a prioritized list.
+
+    Args:
+        preferred_model_sets: Ordered fallback list of model sets. Each inner list
+            is a preferred set for a family or provider.
+        openai_client: Optional client override.
+        require_full_set: If True, a set is selected only when every model in that
+            set is available; if False, any non-empty intersection is accepted.
+        return_partial_if_needed: If True and no full set is found, returns the
+            first non-empty subset encountered.
+        fallback_to_first_small_model: If True and no subset is found, returns
+            ``[get_first_small_model(...)]`` when available.
+    """
+    normalized_sets = _normalize_model_sets(preferred_model_sets)
+    first_partial_match: List[str] = []
+    for model_set in normalized_sets:
+        available = get_available_models(model_set, openai_client=openai_client)
+        if require_full_set and len(available) == len(model_set):
+            return available
+        if not require_full_set and available:
+            return available
+        if return_partial_if_needed and not first_partial_match and available:
+            first_partial_match = available
+
+    if return_partial_if_needed and first_partial_match:
+        return first_partial_match
+
+    if fallback_to_first_small_model:
+        small_model = get_first_small_model(openai_client=openai_client)
+        if small_model:
+            return [small_model]
+
+    return []
+
+
+def detect_model_family(model_name: str) -> str:
+    """Infer provider family from a model name.
+
+    Returns values like ``openai``, ``google``, ``anthropic``, ``mistral``,
+    ``qwen``, ``deepseek``, or ``meta`` when patterns match.
+    """
+    lowered = model_name.lower()
+    for family, patterns in MODEL_FAMILY_PATTERNS.items():
+        if any(re.search(pattern, lowered) for pattern in patterns):
+            return family
+
+    # Fallback to first token for unknown provider families.
+    match = re.split(r"[-_.:/]", lowered, maxsplit=1)
+    return match[0] if match and match[0] else "unknown"
+
+
+def get_available_model_families(
+    openai_client: Optional[OpenAI] = None,
+) -> Dict[str, List[str]]:
+    """Group available models by detected family."""
+    families: Dict[str, List[str]] = {}
+    for model_name in list_available_models(openai_client=openai_client):
+        family = detect_model_family(model_name)
+        families.setdefault(family, []).append(model_name)
+    return families
+
 
 def get_first_small_model(
     openai_client: Optional[OpenAI] = None,
@@ -164,25 +357,11 @@ def get_first_small_model(
     if keywords is None:
         keywords = ["nano", "mini", "small", "lite", "haiku", "turbo", "fast"]
 
-    if not openai_client:
-        openai_client = client
-
-    if not openai_client:
-        log("Warning: No OpenAI client available to fetch models list.")
-        return None
-
-    try:
-        models_list = openai_client.models.list()
-        keywords_lower = [k.lower() for k in keywords]
-
-        for model in models_list:
-            model_id = model.id.lower()
-            if any(keyword in model_id for keyword in keywords_lower):
-                return model.id
-        return None
-    except Exception as e:
-        log(f"Error retrieving models list from OpenAI endpoint: {e}")
-        return None
+    keywords_lower = [k.lower() for k in keywords]
+    for model_id in list_available_models(openai_client=openai_client):
+        if any(keyword in model_id.lower() for keyword in keywords_lower):
+            return model_id
+    return None
 
 
 def get_default_model(model_type: str = "small") -> str:
@@ -215,25 +394,42 @@ def get_default_model(model_type: str = "small") -> str:
     Returns:
         str: The model ID to use for LLM operations.
     """
+    open_ai_config = get_config("open ai", {}) or {}
+    normalized_model_type = (model_type or "small").lower()
+
     # Check configuration first
     config_model = (
-        get_config("open ai", {}).get("default model")
+        open_ai_config.get(f"default {normalized_model_type} model")
+        or get_config(f"openai default {normalized_model_type} model")
+        or open_ai_config.get("default model")
         or get_config("openai default model")
     )
 
     if config_model:
         return config_model
 
-    # Try to get first small model from endpoint
-    small_model = get_first_small_model()
-    if small_model:
-        return small_model
+    # Try configured model sets first, then built-in fallbacks.
+    configured_model_sets = _normalize_model_sets(
+        open_ai_config.get("model sets", {}).get(normalized_model_type, [])
+    )
+    default_model_sets = DEFAULT_MODEL_SETS.get(normalized_model_type, [])
 
-    # Fallback defaults based on what we typically see
-    if model_type == "small":
-        return "gpt-5-nano"
+    selected_set = get_first_available_model_set(
+        configured_model_sets + default_model_sets,
+        require_full_set=True,
+    )
+    if selected_set:
+        return selected_set[0]
 
-    return "gpt-5-nano"  # ultimate fallback
+    # For "small", keep keyword-based fallback for backward compatibility.
+    if normalized_model_type == "small":
+        small_model = get_first_small_model()
+        if small_model:
+            return small_model
+
+    return MODEL_TYPE_FALLBACKS.get(
+        normalized_model_type, MODEL_TYPE_FALLBACKS["small"]
+    )
 
 
 def chat_completion(
