@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import patch
 from .misc import button_array, ButtonDict, true_values_with_other, fa_icon
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 
 
 class TestButtonArray(unittest.TestCase):
