@@ -10,7 +10,7 @@ question: |
 subquestion: |
   Sometimes you may need to display a URL in your interview, but it is very long and doesn't look neat. This interview calls a function to shorten a URL while still keeps the correct link.
 fields:
-  Enter a URL: my_url  
+  - Enter a URL: my_url  
 ---
 mandatory: true
 question: |
