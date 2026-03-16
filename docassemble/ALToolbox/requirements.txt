@@ -6,3 +6,5 @@ pandas-stubs
 mypy
 openai>=1.0
 tiktoken
+defusedxml
+types-defusedxml
