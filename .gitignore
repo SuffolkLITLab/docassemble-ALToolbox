@@ -12,3 +12,4 @@ docassemble.ALToolbox.egg-info/**
 .coverage
 coverage_html
 .env
+dist/**
