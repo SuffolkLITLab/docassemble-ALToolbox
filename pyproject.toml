@@ -54,3 +54,19 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "pycountry"
 ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "docassemble.base>=1.4",
+    "docassemble.webapp",
+    "holidays>=0.13",
+    "pandas>=1.4.2",
+    "pandas-stubs",
+    "mypy",
+    "openai>=1.0",
+    "tiktoken",
+    "defusedxml",
+    "types-defusedxml",
+]
+
+
