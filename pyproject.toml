@@ -57,8 +57,8 @@ ignore_missing_imports = true
 
 [dependency-groups]
 dev = [
-    "docassemble.base>=1.4",
-    "docassemble.webapp",
+    "docassemble.base>=1.8.0",
+    "docassemble.webapp>=1.8.0",
     "holidays>=0.13",
     "pandas>=1.4.2",
     "pandas-stubs",
