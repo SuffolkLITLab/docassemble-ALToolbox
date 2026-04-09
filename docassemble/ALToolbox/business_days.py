@@ -81,8 +81,12 @@ def standard_holidays(
     )
 
     # 2. Remove known obsolete holidays
-    if country == "US" and subdiv == "MA":
-        countr_holidays.pop_named("Evacuation Day")
+    try:
+        if country == "US" and subdiv == "MA":
+            countr_holidays.pop_named("Evacuation Day")
+    except KeyError:
+        # Starting with v0.94, holidays has removed Evacuation Day and throws an error. Can ignore it.
+        pass
 
     # 3. Remove user specified holidays
     if remove_holidays:
