@@ -1,14 +1,16 @@
-from docassemble.webapp.jsonstore import (
-    read_answer_json,
-    write_answer_json,
-    JsonStorage,
-    JsonDb,
-)
 from docassemble.base.generate_key import random_alphanumeric
 from docassemble.base.functions import get_current_info
-from docassemble.base.util import variables_snapshot_connection, user_info, DADict
-import random
+from docassemble.base.util import DADict
 from typing import Dict, List, Any, Optional
+from docassemble.webapp.jsonstore import JsonStorage
+
+try:
+    from docassemble.webapp.jsonstore import JsonDb
+except ImportError:
+    from docassemble.webapp.jsonstore import db
+
+    JsonDb = db.session
+
 
 __all__ = ["save_input_data"]
 
