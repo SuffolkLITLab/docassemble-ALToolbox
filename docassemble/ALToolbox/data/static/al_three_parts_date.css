@@ -31,3 +31,16 @@
 .al_three_parts_date .col > * {
   width: 100%;
 }
+
+/* Keeps the legend off of the page but still accessible to screen readers.
+ * Necessary because legends don't display correctly / the same as labels.
+ */
+legend.da-form-label:not(:focus):not(:active) {
+  position: absolute;
+  overflow: hidden;
+  clip: rect(0 0 0 0); 
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  white-space: nowrap; 
+}
