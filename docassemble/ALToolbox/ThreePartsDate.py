@@ -53,10 +53,10 @@ try {{
 $(document).on('daPageLoad', function(){{
   // Replace the div with a fieldset for accessibility.
   $('div.da-field-container-datatype-ThreePartsDate').each(function() {{
-    var $container = $(this);
-    var $fieldset = $('<fieldset class="da-container da-form-group row da-field-container da-field-container-datatype-ThreePartsDate">');
-    for (let c of $container.children()) {{
-      $fieldset.append($(c).detach());
+    const $container = $(this);
+    const $fieldset = $(`<fieldset>`).addClass($container.attr(`class`));
+    for (let child of $container.children()) {{
+      $fieldset.append($(child).detach());
     }}
     $container.after($fieldset);
     $container.remove();
