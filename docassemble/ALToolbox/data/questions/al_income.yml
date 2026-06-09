@@ -982,9 +982,9 @@ fields:
     code: |
       recent_years()
   - Make: x[i].make
-    hint: e.g, Ford, Honda
+    under text: "e.g, Ford, Honda"
   - Model: x[i].model
-    hint: e.g., Fusion, Civic
+    under text: "e.g., Fusion, Civic"
   - Current value: x[i].market_value
     datatype: currency
   - Loan balance: x[i].balance
