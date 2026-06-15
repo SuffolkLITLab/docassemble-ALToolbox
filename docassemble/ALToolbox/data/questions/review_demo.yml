@@ -2,14 +2,21 @@
 include:
   - review_widget.yml
 ---
+---
 mandatory: True
+code: |
+  goto_next
+  final_results
+---
+id: block_at_line_6
 question: |
   Review Widget
 subquestion: |
   ${ review_widget(up_action='up_action', down_action='down_action', review_action='review_action') }
 continue button field: goto_next
 ---
-mandatory: True
+event: final_results
+id: Results
 question: Results
 subquestion: |
   Thumbs?: ${ thumbs_value }

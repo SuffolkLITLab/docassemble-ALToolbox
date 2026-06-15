@@ -5,6 +5,7 @@ metadata:
 include: 
   phone-number-validation.yml
 ---
+id: block_at_line_8
 question: |
   International phone number input validation 
 subquestion: |
@@ -26,6 +27,7 @@ fields:
     required: false
 ---
 mandatory: True
+id: block_at_line_29
 question: |
   Your phone numbers
 subquestion: |

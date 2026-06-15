@@ -4,6 +4,7 @@ metadata:
 features:
   javascript: TextCounter.js    
 ---
+id: block_at_line_7
 question: |
   Text fields with a character counter
 subquestion: |

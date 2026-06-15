@@ -29,6 +29,7 @@ code: |
   x._initial_structured_complete = True
 ---
 generic object: GoalOrientedQuestionList
+id: block_at_line_32
 question: |
   % if hasattr(x, 'initial_question_structure'):
   ${ x.initial_question_structure.get('question_text', x.initial_question) }

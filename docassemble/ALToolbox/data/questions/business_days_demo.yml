@@ -4,7 +4,13 @@ metadata:
 modules: 
   - .business_days
 ---
+---
 mandatory: True
+code: |
+  intro
+  final_screen
+---
+id: block_at_line_8
 question: |
   Introduction to the business_days module
 subquestion: |
@@ -73,6 +79,7 @@ css: |
     .blue {color: #18aff9;}
   </style>  
 ---
+id: block_at_line_76
 question: |
   Pick a start date and a waiting period
 fields: 
@@ -83,7 +90,8 @@ fields:
     datatype: integer
     default: 4
 ---
-mandatory: True
+event: final_screen
+id: block_at_line_87
 question: |  
   How to call the 4 functions
 subquestion: |

@@ -15,6 +15,7 @@ code: |
   x[i].question = x.get_next_question()
 ---
 generic object: GoalOrientedQuestionList
+id: block_at_line_18
 question: |
   % if isinstance(x[i].question, dict):
   ${ x[i].question.get('question_text', 'Please provide more information') }

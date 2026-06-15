@@ -25,6 +25,7 @@ code: |
   else:
     final_draft_default = student_reflections.initial_draft
 ---
+id: block_at_line_28
 question: |
   Reflect on the readings for today
 subquestion: |
@@ -35,6 +36,7 @@ fields:
   - Your response: student_reflections.initial_draft
     datatype: area
 ---
+id: block_at_line_38
 question: |
   Review your draft
 subquestion: |
@@ -52,6 +54,7 @@ fields:
       ${ final_draft_default }
 ---
 event: final_response
+id: block_at_line_55
 question: |
   Your response
 subquestion: |
