@@ -118,12 +118,14 @@ code: |
   process_input = True
 ---
 event: show_results
+id: block_at_line_121
 question: |
   Here are your results
 subquestion: |
   ${ single_to_double_newlines(results) }
 ---
 event: show_ai_not_configured
+id: block_at_line_127
 question: |
   AI is not configured
 subquestion: |

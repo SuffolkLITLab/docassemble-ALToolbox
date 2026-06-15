@@ -110,6 +110,7 @@ objects:
 ---
 generic object: ALIncomeList
 continue button field: x.revisit
+id: block_at_line_113
 question: |
   Edit incomes
 subquestion: |
@@ -160,6 +161,7 @@ edit:
 ---
 generic object: ALItemizedValueDict
 continue button field: x.revisit
+id: block_at_line_163
 question: |
   Edit values
 subquestion: |
@@ -269,9 +271,9 @@ question: |
 fields:
     - label: |
         % if x.is_hourly:
-        What is your hourly pay for this job?
+        What is your hourly pay for this full-time job?
         % else:
-        What are your wages for this job?
+        What are your wages for this full-time job?
         % endif
       field: x.to_add['full time'].value
       datatype: currency
@@ -279,9 +281,9 @@ fields:
         code: x.is_part_time is False
     - label: |
         % if x.is_hourly:
-        What is your hourly pay for this job?
+        What is your hourly pay for this part-time job?
         % else:
-        What are your wages for this job?
+        What are your wages for this part-time job?
         % endif
       field: x.to_add['part time'].value
       datatype: currency
@@ -324,7 +326,7 @@ fields:
       number: |
         Enter a number, like 40. If you don't know, enter your best guess.
 ---
-id: itemized job period
+id: itemized job period 327
 generic object: Individual
 question: |
   Tell us about ${ x }'s hours when working as a ${ x.jobs[i].source }
@@ -348,7 +350,7 @@ fields:
       number: |
         Enter a number, like 40. If you don't know, enter your best guess.
 ---
-id: itemized job period
+id: itemized job period 351
 question: |
   Tell us about your hours when working as a ${ users[0].jobs[i].source }
 fields:
@@ -373,6 +375,7 @@ fields:
 ---
 #id: other itemized job income name
 generic object: ALItemizedJob
+id: block_at_line_376
 question: |
   Other incomes
 subquestion: |
@@ -433,6 +436,7 @@ fields:
     datatype: yesnoradio
 ---
 generic object: ALItemizedJob
+id: block_at_line_436
 question: |
   Do you have any other deductions from your paycheck from being a ${ x.source }?
 fields:
@@ -455,6 +459,7 @@ code: |
 ---
 generic object: ALItemizedJob
 continue button field: x.to_add.revisit
+id: block_at_line_458
 question: |
   Edit incomes from ${ x.source }
 subquestion: |
@@ -464,6 +469,7 @@ subquestion: |
 ---
 generic object: ALItemizedJob
 continue button field: x.to_subtract.revisit
+id: block_at_line_467
 question: |
   Edit deductions from ${ x.source }
 subquestion: |
@@ -495,6 +501,7 @@ fields:
 ---
 generic object: ALItemizedJobList
 continue button field: x.revisit
+id: block_at_line_498
 question: |
   Edit jobs
 subquestion: |
@@ -816,6 +823,7 @@ fields:
 ---
 generic object: ALJobList
 continue button field: x.revisit
+id: block_at_line_819
 question: |
   Edit jobs
 subquestion: |

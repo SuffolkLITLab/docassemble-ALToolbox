@@ -9,7 +9,13 @@ objects:
   - debts: DAList.using(object_type=Thing, complete_attribute='complete', ask_number=True) 
   - children: ChildList.using(ask_number=True) 
 ---
-mandatory: true
+---
+mandatory: True
+code: |
+  intro
+  final_screen
+---
+id: block_at_line_13
 question: | 
   Add overflow table records as an addendum
 subquestion: |
@@ -72,7 +78,7 @@ fields:
     default: 'Lincoln Elementary School'
     
 ---
-mandatory: true
+event: final_screen
 question: |
 subquestion: |
   You entered the flollowing:<br/>

@@ -4,6 +4,7 @@ metadata:
 modules:
   - .misc
 ---
+id: block_at_line_7
 question: |
   Function output_checkbox() generates a conditional checkbox
 subquestion: |
@@ -14,6 +15,7 @@ fields:
     default: true  
 ---
 mandatory: true
+id: block_at_line_17
 question: |
   Checkbox as an output
 subquestion: |   

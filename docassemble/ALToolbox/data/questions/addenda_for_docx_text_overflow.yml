@@ -5,7 +5,13 @@ metadata:
 modules:  
   - .addenda
 ---
-mandatory: true
+---
+mandatory: True
+code: |
+  intro
+  final_screen
+---
+id: block_at_line_9
 question: |  
   Add overflow text as an addendum for a DOCX main form
 subquestion: |
@@ -26,7 +32,7 @@ fields:
   - Describe losses caused by defendant: losses
     input type: area
 ---
-mandatory: true
+event: final_screen
 question: |
 subquestion: |
   You entered the flollowing:
