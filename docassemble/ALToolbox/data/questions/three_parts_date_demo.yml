@@ -10,6 +10,7 @@ code: |
   anniversary_date
   end
 ---
+id: block_at_line_13
 question: |
   ThreePartsDate and BirthDate datatypes
 subquestion: | 
@@ -36,7 +37,7 @@ fields:
     alYearLabel: ${ word('Year') }
   - note: |
       The `BirthDate` datatype is like `ThreePartsDate`, but it stops users entering dates in the future.
-  - Birth date (today is valid): date_of_birth
+  - "What is your birth date? (today is valid)": date_of_birth
     datatype: BirthDate
     required: True
     alMonthLabel: ${ word('Month') }
@@ -48,7 +49,7 @@ fields:
       These fields can be hidden just like any docassemble field.
   - Show hidden date fields: show_fields
     datatype: yesno
-  - Court date: court_date
+  - "What is your court date?": court_date
     datatype: ThreePartsDate
     default: ${ today(format='MM/dd/yyyy') }
     required: True
@@ -58,6 +59,7 @@ fields:
     required: False
     show if: show_fields
 ---
+id: block_at_line_61
 question: |
   Custom validation messages
 subquestion: |
@@ -100,6 +102,7 @@ fields:
     alYearLabel: ${ word('Year') }
 ---
 event: end
+id: block_at_line_103
 question: |
   Your dates
 subquestion: |

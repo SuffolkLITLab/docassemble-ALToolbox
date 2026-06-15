@@ -14,6 +14,7 @@ code: |
   del response
 ---
 generic object: GoalSatisfactionList
+id: block_at_line_17
 question: |
   ${ x[i].question }
 subquestion: |

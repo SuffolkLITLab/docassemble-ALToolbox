@@ -15,6 +15,7 @@ code: |
   x[i].question = x.next_question
 ---
 generic object: IntakeQuestionList
+id: block_at_line_18
 question: |
   ${ x[i].question }
 fields:
@@ -30,6 +31,7 @@ code: |
   x.initial_question = "What is the problem you are trying to solve?"
 ---
 generic object: IntakeQuestionList
+id: block_at_line_33
 question: |
   What is the problem you are trying to solve?
 subquestion: |
@@ -41,6 +43,7 @@ fields:
 ---
 generic object: IntakeQuestionList
 continue button field: x.intake_results
+id: block_at_line_44
 question: |
   % if x.qualifies:
   You may qualify for help

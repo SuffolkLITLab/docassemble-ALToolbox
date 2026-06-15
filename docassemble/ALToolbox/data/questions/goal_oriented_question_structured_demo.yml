@@ -3,6 +3,7 @@ include:
   - goal_oriented_question_structured.yml
 ---
 metadata:
+
   title: Legal Aid Intake - Goal-Oriented Questions Demo (Structured or Unstructured)
   short title: Flexible Intake Demo
   description: |
@@ -52,6 +53,7 @@ code: |
   question_format_choice = True
 ---
 continue button field: intro_screen
+id: block_at_line_55
 question: |
   Welcome to Housing Legal Aid Intake
 subquestion: |
@@ -75,6 +77,7 @@ subquestion: |
   
   This approach allows you to choose the most appropriate format for data collection.
 ---
+id: block_at_line_78
 question: |
   Choose your initial question format
 subquestion: |
@@ -102,6 +105,7 @@ fields:
       - gpt-5-nano
       - gpt-5-mini
 ---
+id: block_at_line_105
 question: |
   Tell us about your housing situation
 subquestion: |
@@ -122,6 +126,7 @@ fields:
     datatype: area
     rows: 8
 ---
+id: block_at_line_125
 question: |
   Review your intake information
 subquestion: |
@@ -143,6 +148,7 @@ fields:
       ${ final_response_default }
 ---
 event: intake_summary
+id: block_at_line_146
 question: |
   Intake completed
 subquestion: |

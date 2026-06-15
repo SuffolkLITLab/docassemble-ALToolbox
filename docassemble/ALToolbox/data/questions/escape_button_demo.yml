@@ -3,6 +3,7 @@ include:
   - escape_button.yml
 ---
 mandatory: True
+id: block_at_line_6
 question: |
   Escape button demo
 subquestion: |

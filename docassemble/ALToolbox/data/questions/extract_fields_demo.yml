@@ -34,6 +34,7 @@ code: |
   define_fields_from_dict(answers)
   try_defining_fields = True
 ---
+id: block_at_line_37
 question: |
   Choose how you want to provide your information
 fields:
@@ -48,6 +49,7 @@ fields:
       variable: demo_type
       is: from_file
 ---
+id: block_at_line_51
 question: |
   Upload a document that tells us about you
 subquestion: |
@@ -67,6 +69,7 @@ fields:
   - Upload your document here: file_to_extract_from
     datatype: file
 ---
+id: block_at_line_70
 question: |
   Tell us why you are here
 subquestion: |
@@ -90,38 +93,45 @@ fields:
   - Go ahead and give us a long narrative response: initial_answer
     datatype: area
 ---
+id: block_at_line_93
 question: |
   How old are you?
 fields:
   - Your age: age
     datatype: integer
 ---
+id: block_at_line_99
 question: |
   What is your name?
 fields:
   - Your name: name
 ---
+id: block_at_line_104
 question: |
   What is your favorite color?
 fields:
   - Your favorite color: favorite_color
 ---
+id: block_at_line_109
 question: |
   What is your favorite food?
 fields:
   - Your favorite food: favorite_food
 ---
+id: block_at_line_114
 question: |
   What is your favorite animal?
 fields:
   - Your favorite animal: favorite_animal
 ---
+id: block_at_line_119
 question: |
   What is your favorite movie?
 fields:
   - Your favorite movie: favorite_movie
 ---
 event: ending_screen
+id: block_at_line_125
 question: |
   Here is what we learned about you
 subquestion: |
