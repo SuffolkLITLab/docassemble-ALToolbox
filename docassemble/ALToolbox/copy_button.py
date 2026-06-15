@@ -1,3 +1,5 @@
+from html import escape
+
 from docassemble.base.functions import word
 
 __all__ = ["copy_button_html"]
@@ -19,15 +21,15 @@ def copy_button_html(
     Return the HTML for a button that will let a user copy the given text.
 
     Creates a copy-to-clipboard button with customizable styling and tooltip text.
-    The button can be configured to display as a simple input field or as a styled
-    template block suitable for displaying longer content.
+    The button can be configured to display as plain text or as a styled template
+    block suitable for displaying longer content.
 
     To use, include `docassemble.ALToolbox:copy_button.yml` in your DA interview.
 
     Args:
         text_to_copy (str): Text you want the user to be able to copy to clipboard.
         text_before (str, optional): The prompt that will appear to the left of the
-            HTML input. Defaults to "".
+            displayed text. Defaults to "".
         label (str, optional): The label text displayed on the copy button.
             Defaults to "Copy".
         tooltip_inert_text (str, optional): Tooltip text shown when hovering over
@@ -35,8 +37,8 @@ def copy_button_html(
         tooltip_copied_text (str, optional): Tooltip text shown when hovering over
             the button after the text is placed on the clipboard. Defaults to "Copied!".
         copy_template_block (bool, optional): If True, displays the content in a
-            textarea with template block styling. If False, uses a simple input field.
-            Defaults to False.
+            textarea with template block styling. If False, uses a simple inline text
+            container. Defaults to False.
         scroll_class (str, optional): CSS class for scroll behavior when using
             template block mode. Defaults to "".
         style_class (str, optional): Additional CSS classes for styling the container.
@@ -64,9 +66,9 @@ def copy_button_html(
     if copy_template_block:
         button_str += f'<textarea readonly class="card card-body {style_class} bg-light pb-1 al_copy_value {scroll_class}" {adjust_height}>{ text_to_copy }</textarea>\n'
 
-    # Add input tag if copy_template_block is False
+    # Add inline text container if copy_template_block is False
     else:
-        button_str += f'<input readonly class="al_copy_value" type="text" value="{ text_to_copy }">\n'
+        button_str += f'<span class="al_copy_value al_copy_value_text">{escape(text_to_copy)}</span>\n'
 
     # Add the copy button
     if copy_template_block:
