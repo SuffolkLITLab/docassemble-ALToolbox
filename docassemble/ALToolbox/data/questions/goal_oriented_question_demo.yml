@@ -3,6 +3,7 @@ include:
   - goal_oriented_question.yml
 ---
 metadata:
+
   title: Legal Aid Intake - Goal-Oriented Questions Demo
   short title: Intake Questions Demo
   description: |
@@ -28,6 +29,7 @@ code: |
     final_response_default = divorce_intake.initial_draft
 ---
 continue button field: intro_screen
+id: block_at_line_31
 question: |
   Welcome to Legal Aid Intake
 subquestion: |
@@ -51,6 +53,7 @@ subquestion: |
   This approach allows for a more natural conversation while ensuring the intake
   worker gets all the essential information before your first meeting.
 ---
+id: block_at_line_54
 question: |
   Tell us about your divorce situation
 subquestion: |
@@ -74,6 +77,7 @@ fields:
     datatype: area
     rows: 8
 ---
+id: block_at_line_77
 question: |
   Review your intake information
 subquestion: |
@@ -95,6 +99,7 @@ fields:
       ${ final_response_default }
 ---
 event: intake_summary
+id: block_at_line_98
 question: |
   Intake completed
 subquestion: |

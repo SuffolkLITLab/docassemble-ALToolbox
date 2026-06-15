@@ -5,6 +5,7 @@ metadata:
 modules:  
   - .misc
 ---
+id: block_at_line_8
 question: |
   Shorten a URL
 subquestion: |
@@ -13,6 +14,7 @@ fields:
   - Enter a URL: my_url  
 ---
 mandatory: true
+id: block_at_line_16
 question: |
   The output includes two sets of URLs for comparison:
   

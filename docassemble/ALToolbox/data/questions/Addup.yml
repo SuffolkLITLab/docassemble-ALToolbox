@@ -8,6 +8,7 @@ modules:
 objects:  
   - renters: DAList.using(object_type=Individual, ask_number=True) 
 ---
+id: block_at_line_11
 question: |  
   Add up numeric values from a DAList object
 subquestion: |

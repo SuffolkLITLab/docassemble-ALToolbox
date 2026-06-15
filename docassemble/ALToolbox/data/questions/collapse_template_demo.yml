@@ -28,6 +28,7 @@ content: |
   you like other things of a similar
   nature.
 ---
+id: block_at_line_31
 question: |
   Progressive disclosure of template content  
 subquestion: |
@@ -55,6 +56,7 @@ css: |
   </style>
 ---
 mandatory: True
+id: block_at_line_58
 question: |
   Your favorite fruit is
   ${ favorite_fruit }.
