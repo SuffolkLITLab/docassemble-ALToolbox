@@ -91,8 +91,6 @@ $.validator.addMethod( `phoneValidInput`, validatePhoneNumber );
   console.error(`This won't log to the console. If you see this, though, it's coming from PhoneNumberDataType.py`, phoneNumberFieldError );
 }
 """
-    mako_parameters = [
-      "alInvalidInputMessage"
-    ]
+    mako_parameters = ["alInvalidInputMessage"]
     # No server-side validation. The field just tries to help users avoid their own errors.
     # If you want to discuss that decision, make an issue on the repository.
