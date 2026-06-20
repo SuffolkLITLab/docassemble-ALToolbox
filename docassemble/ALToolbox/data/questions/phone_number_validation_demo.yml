@@ -24,6 +24,7 @@ fields:
     datatype: al_international_phone
   - Phone number 2, not required: phone_number_2
     datatype: al_international_phone
+    alInvalidInputMessage: ${ word( 'This number is just wrong...' )}
     required: false
 ---
 mandatory: True

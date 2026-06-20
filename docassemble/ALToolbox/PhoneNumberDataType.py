@@ -17,6 +17,8 @@ class PhoneNumber(CustomDataType):
 * This docassemble CustomDataType will be installed on your server along
 *    with the ALToolbox package. Like all docassemble CustomDataTypes, it
 *    will always be active on your server as long as it's there.
+* 
+* A lot of code for validation was adapted from AL's ThreePartsDate fields.
 *    
 * ## More Resources
 *    1. What we're using: https://github.com/jackocnr/intl-tel-input
@@ -24,10 +26,31 @@ class PhoneNumber(CustomDataType):
 *    1. https://github.com/google/libphonenumber/blob/master/FALSEHOODS.md
 *    1. https://github.com/google/libphonenumber/blob/master/FAQ.md
 */
-var validatePhoneNumber = function( value, element, params ) {
+try {
+
+/** Uses jQuery validation plugin to set up validation functionality */
+$(document).on(`daPageLoad`, function(){
+ $('input.al_international_phone').each(function( field_i, field ){
+    let rules = {
+      phoneValidInput: true,
+      messages: {
+        phoneValidInput: showInvalidInputMessage
+      }
+    };
+    $(field).rules(`add`, rules);
+  });
+});  // ends on da page load
+
+function validatePhoneNumber( value, element, params ) {
   /** Returns true if the international phone number is valid or if the field
-  *    is empty. Otherwise returns false.
-  */
+   *    is empty. Otherwise returns false.
+   * 
+   * @param value {string} - value of the input field
+   * @param element {HTML node} - HTML node of the field
+   * @param params {*} - An object (presumably containing field properties)
+   * 
+   * @returns {bool} - True if the field value is valid, otherwise `false`
+   */
   // When a field is empty, this value will be '', which counts as `false` here
   if ( value.trim() ) {
     // We can't use window.intlTelInputGlobals.loadUtils. It lets us
@@ -43,11 +66,33 @@ var validatePhoneNumber = function( value, element, params ) {
   return true;
 };
 
-$.validator.addMethod( 'al_international_phone', validatePhoneNumber );
-"""
-    jq_rule = "al_international_phone"
-    # People that have just entered an invalid US phone number could find this confusing
-    jq_message = 'This phone number doesn\'t look right. Note that a non-US number needs a "+" before the number.'
 
-    # No server-side validation. Just avoiding user error here.
+/**
+ * If the input is invalid, show the correct message for the type of invalidity.
+ * 
+ * Custom validation message: https://stackoverflow.com/a/75202524
+ * 
+ * @param {*} params - Parameters we would pass in via the DOM if we had control.
+ * @param {HTML node} field - HTML node for field that is being validated.
+ * 
+ * @returns {string} - Message to show if the field is invalid
+ */
+function showInvalidInputMessage( params, field ) {
+  return (
+    $(field).attr('data-alInvalidInputMessage')
+    // The default message could be confusing for invalid US phone numbers
+    || `This phone number doesn't look right. Note that a non-US number needs a "+" before the number.`
+  )
+};
+
+$.validator.addMethod( `phoneValidInput`, validatePhoneNumber );
+  
+} catch ( phoneNumberFieldError ) {
+  console.error(`This won't log to the console. If you see this, though, it's coming from PhoneNumberDataType.py`, phoneNumberFieldError );
+}
+"""
+    mako_parameters = [
+      "alInvalidInputMessage"
+    ]
+    # No server-side validation. The field just tries to help users avoid their own errors.
     # If you want to discuss that decision, make an issue on the repository.
