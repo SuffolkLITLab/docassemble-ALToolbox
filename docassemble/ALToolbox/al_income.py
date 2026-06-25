@@ -113,7 +113,9 @@ def times_per_year(
     try:
         for row in times_per_year_list:
             if float(times_per_year) == float(row[0]):
-                return row[1].lower()
+                return str(row[1]).lower()
+            if float(times_per_year) == float(row[1]):
+                return str(row[0]).lower()
         return (
             docassemble.base.functions.nice_number(int(times_per_year), capitalize=True)
             + " "
