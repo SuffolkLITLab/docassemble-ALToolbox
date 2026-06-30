@@ -12,11 +12,11 @@ except ImportError:
     from docassemble.webapp.jsonstore import JsonStorage
 
     try:
-        from docassemble.webapp.jsonstore import JsonDb
+        from docassemble.webapp.jsonstore import JsonDb  # type: ignore[no-redef]
     except ImportError:
         from docassemble.webapp.jsonstore import db
 
-        JsonDb = db.session
+        JsonDb = db.session  # type: ignore[no-redef]
 
 
 __all__ = ["save_input_data"]
