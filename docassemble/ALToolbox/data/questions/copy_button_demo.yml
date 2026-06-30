@@ -15,7 +15,7 @@ id: copy button demo
 question: |
   Button to copy text
 subquestion: |
-  This demo calls the **copy_button_html()** function to add a copy button to any text you specified. The text is displayed as a readonly **text input field**.
+  This demo calls the **copy_button_html()** function to add a copy button to any text you specified. The text is displayed as non-editable inline text styled to match a form control.
   
   This function is intended to provide a convenient way for mobile users to copy that text.  
   
