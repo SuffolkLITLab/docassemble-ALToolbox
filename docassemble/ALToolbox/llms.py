@@ -761,7 +761,7 @@ def extract_fields_from_file(
     if not the_file.mimetype == "application/pdf" or not process_pdfs_with_ai:
         md = MarkItDown()
         try:
-            conversion_result = md.convert(the_file.path())
+            conversion_result = md.convert_local(the_file.path())
         except Exception as e:
             log(f"Error converting file {the_file.path()}: {e}")
             return {}
