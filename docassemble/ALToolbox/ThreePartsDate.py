@@ -51,6 +51,17 @@ js_text = """\
 try {{
 
 $(document).on('daPageLoad', function(){{
+  // Replace the div with a fieldset for accessibility.
+  $('div.da-field-container-datatype-ThreePartsDate').each(function() {{
+    const $container = $(this);
+    const $fieldset = $(`<fieldset>`).addClass($container.attr(`class`));
+    for (let child of $container.children()) {{
+      $fieldset.append($(child).detach());
+    }}
+    $container.after($fieldset);
+    $container.remove();
+  }});
+
   $('input[type="ThreePartsDate"]').each(function(){{
     let $al_date = replace_date(this);
     set_up_validation($al_date);
@@ -71,10 +82,20 @@ function replace_date(original_date) {{
   $original_date.attr('type', 'hidden');
   $original_date.attr('aria-hidden', 'true');
   
+  var date_id = $original_date.attr('id');
+
+  // Add a legend for accessibily (off the page with CSS), keeping the original date label for better visual display.
+  $('label[for="' + date_id + '"]').each(function() {{
+    var $label = $(this);
+    var $legend = $('<legend class="col-md-4 col-form-label da-form-label datext-right">' + $label.text() + '</legend>');
+    $label.after($legend);
+    $label.attr('aria-hidden', 'true');
+    $label.attr('old-for', $label.attr('for'));
+    $label.removeAttr('for');
+  }});
+
   var $al_date = $('<div class="al_three_parts_date form-row row">');
   $original_date.before($al_date);
-
-  var date_id = $original_date.attr('id');
   
   // -- Construct the input components --
   let display_names = new Intl.DisplayNames(document.documentElement.lang, {{ type: "dateTimeField" }});
