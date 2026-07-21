@@ -82,13 +82,14 @@ def display_template(
     focus_attr = ' tabindex="0"' if scrollable else ""
     # aria-labelledby requires a naming-capable role: a plain <div> has the
     # implicit ARIA role "generic", which ARIA 1.2 forbids from being named.
-    # Only add role="region" (and the label) when there's both a real
-    # subject and something scrollable to name as a region.
-    region_attr = (
-        f' role="region" aria-labelledby="{subject_id}"'
-        if scrollable and has_subject
-        else ""
-    )
+    # Use role="region" for scrollable panels so they can have an accessible name.
+    # Prefer a visible subject via aria-labelledby; otherwise fall back to aria-label.
+    if scrollable and has_subject:
+        region_attr = f' role="region" aria-labelledby="{subject_id}"'
+    elif scrollable:
+        region_attr = ' role="region" aria-label="Scrollable content"'
+    else:
+        region_attr = ""
 
     subject_html = ""
     subject_span = '<span class="subject"></span>'
