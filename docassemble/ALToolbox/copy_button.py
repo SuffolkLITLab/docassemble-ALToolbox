@@ -16,6 +16,7 @@ def copy_button_html(
     scroll_class: str = "",
     style_class: str = "",
     adjust_height: str = "",
+    aria_labelledby: str = "",
 ) -> str:
     """
     Return the HTML for a button that will let a user copy the given text.
@@ -45,6 +46,9 @@ def copy_button_html(
             Defaults to "".
         adjust_height (str, optional): HTML attributes for height adjustment behavior.
             Defaults to "".
+        aria_labelledby (str, optional): The `id` of an element (such as a subject
+            heading) that provides an accessible name for the scrollable template
+            block. Only used when `copy_template_block` is True. Defaults to "".
 
     Returns:
         str: Complete HTML string containing the copy button and associated elements.
@@ -64,7 +68,8 @@ def copy_button_html(
 
     # Add textarea tag if copy_template_block is True, along with docassemble template block class names
     if copy_template_block:
-        button_str += f'<textarea readonly class="card card-body {style_class} bg-light pb-1 al_copy_value {scroll_class}" {adjust_height}>{ text_to_copy }</textarea>\n'
+        labelledby_attr = f' aria-labelledby="{aria_labelledby}"' if aria_labelledby else ""
+        button_str += f'<textarea readonly tabindex="0"{labelledby_attr} class="card card-body {style_class} bg-light pb-1 al_copy_value {scroll_class}" {adjust_height}>{ text_to_copy }</textarea>\n'
 
     # Add inline text container if copy_template_block is False
     else:
