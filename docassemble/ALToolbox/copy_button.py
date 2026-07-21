@@ -68,8 +68,10 @@ def copy_button_html(
 
     # Add textarea tag if copy_template_block is True, along with docassemble template block class names
     if copy_template_block:
-        labelledby_attr = f' aria-labelledby="{aria_labelledby}"' if aria_labelledby else ""
-        button_str += f'<textarea readonly tabindex="0"{labelledby_attr} class="card card-body {style_class} bg-light pb-1 al_copy_value {scroll_class}" {adjust_height}>{ text_to_copy }</textarea>\n'
+        labelledby_attr = (
+            f' aria-labelledby="{aria_labelledby}"' if aria_labelledby else ""
+        )
+        button_str += f'<textarea readonly{labelledby_attr} class="card card-body {style_class} bg-light pb-1 al_copy_value {scroll_class}" {adjust_height}>{ text_to_copy }</textarea>\n'
 
     # Add inline text container if copy_template_block is False
     else:

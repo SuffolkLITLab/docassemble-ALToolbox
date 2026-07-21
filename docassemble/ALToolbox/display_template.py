@@ -70,14 +70,33 @@ def display_template(
     # A template with a subject gives us a visible heading we can point
     # screen readers at with aria-labelledby, so the scrollable region has
     # an accessible name instead of just being an unlabeled tab stop.
-    has_subject = template.subject != ""
-    aria_labelledby_attr = f' aria-labelledby="{subject_id}"' if has_subject else ""
+    if template.subject and template.subject.strip():
+        subject_content = template.subject_as_html(trim=True)
+        has_subject = bool(subject_content.strip())
+    else:
+        subject_content = ""
+        has_subject = False
+
+    # tabindex="0" is only needed so keyboard/Safari users can scroll the
+    # panel; a non-scrollable panel has nothing to scroll into focus.
+    focus_attr = ' tabindex="0"' if scrollable else ""
+    # aria-labelledby requires a naming-capable role: a plain <div> has the
+    # implicit ARIA role "generic", which ARIA 1.2 forbids from being named.
+    # Only add role="region" (and the label) when there's both a real
+    # subject and something scrollable to name as a region.
+    region_attr = (
+        f' role="region" aria-labelledby="{subject_id}"'
+        if scrollable and has_subject
+        else ""
+    )
 
     subject_html = ""
     subject_span = '<span class="subject"></span>'
     if has_subject:
-        subject_html = f'<div class="panel-heading"><h3 class="subject" id="{subject_id}">{template.subject_as_html(trim=True)}</h3></div>'
-        subject_span = f'<span class="subject" id="{subject_id}">{template.subject_as_html(trim=True)}</span>'
+        subject_html = f'<div class="panel-heading"><h3 class="subject" id="{subject_id}">{subject_content}</h3></div>'
+        subject_span = (
+            f'<span class="subject" id="{subject_id}">{subject_content}</span>'
+        )
 
     # 2. If copiable, call copy_button_html() to generate the template content along with a copy button
     if copy:
@@ -106,7 +125,7 @@ def display_template(
     # 3. If not copiable, generate the whole output
     else:
         if collapse:
-            return f'<div id="{container_id}" class="{container_classname}"><a class="collapsed al_toggle" data-bs-toggle="collapse" href="#{contents_id}" role="button" aria-expanded="false" aria-controls="{contents_id}"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span>{subject_span}</a><div class="collapse" id="{contents_id}"><div tabindex="0"{aria_labelledby_attr} class="{scroll_class} card card-body {class_name} pb-1">{template.content_as_html()}</div></div></div>'
+            return f'<div id="{container_id}" class="{container_classname}"><a class="collapsed al_toggle" data-bs-toggle="collapse" href="#{contents_id}" role="button" aria-expanded="false" aria-controls="{contents_id}"><span class="toggle-icon pdcaretopen"><i class="fas fa-caret-down"></i></span><span class="toggle-icon pdcaretclosed"><i class="fas fa-caret-right"></i></span>{subject_span}</a><div class="collapse" id="{contents_id}"><div{focus_attr}{region_attr} class="{scroll_class} card card-body {class_name} pb-1">{template.content_as_html()}</div></div></div>'
 
         else:
-            return f'<div id="{container_id}" class="{container_classname} {scroll_class} card card-body {class_name} pb-1" tabindex="0"{aria_labelledby_attr}>{subject_html}<div>{template.content_as_html()}</div></div>'
+            return f'<div id="{container_id}" class="{container_classname} {scroll_class} card card-body {class_name} pb-1"{focus_attr}{region_attr}>{subject_html}<div>{template.content_as_html()}</div></div>'
