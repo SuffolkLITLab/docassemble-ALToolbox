@@ -51,7 +51,7 @@ def _normalize(text: str) -> str:
     so that "Copied!" and "copied" find the same translation.
     """
     collapsed = re.sub(r"\s+", " ", text).strip()
-    return collapsed.rstrip(_TRAILING_PUNCTUATION).casefold()
+    return collapsed.rstrip(_TRAILING_PUNCTUATION).lower()
 
 
 def _match_shape(source: str, translated: str) -> str:
