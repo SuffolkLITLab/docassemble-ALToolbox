@@ -184,8 +184,8 @@ try:
 
         Unauthenticated and session-independent on purpose: the response is the
         same for every user of a given language, which is what makes it worth
-        caching in the browser. It exposes nothing but the server's own
-        interface vocabulary.
+        caching in the browser. It serves the server's configured ``word()``
+        catalog for that language.
         """
         language = request.args.get("lang") or get_language()
         body = _catalog_response_body(language)
