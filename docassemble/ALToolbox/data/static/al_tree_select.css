@@ -1,0 +1,218 @@
+/* Styles for the al_tree_select custom datatype.
+ *
+ * These are injected into the page by al_tree_select.js so that a developer
+ * only needs `datatype: al_tree_select` and does not have to remember to
+ * include a CSS file.
+ *
+ * Everything is written in terms of Bootstrap 5 CSS custom properties so the
+ * widget follows the interview's theme (including dark mode) automatically.
+ */
+
+.al-tree-select {
+  --al-tree-indent: 1.15rem;
+}
+
+.al-tree-select .al-tree-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.al-tree-select .al-tree-body {
+  max-height: var(--al-tree-max-height, 28rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius, 0.375rem);
+}
+
+.al-tree-select .al-tree-body:focus-within {
+  border-color: var(--bs-primary, #0d6efd);
+}
+
+/* --- Groups (details/summary) --- */
+
+.al-tree-select details.al-tree-group {
+  margin-bottom: 0.15rem;
+}
+
+.al-tree-select summary.al-tree-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  padding: 0.3rem 0.35rem;
+  border-radius: var(--bs-border-radius-sm, 0.25rem);
+  font-weight: 600;
+  list-style: none;
+  user-select: none;
+}
+
+/* Hide the platform disclosure triangle; we draw our own so that the
+   summary can use flex layout and hold a count badge. */
+.al-tree-select summary.al-tree-summary::-webkit-details-marker {
+  display: none;
+}
+.al-tree-select summary.al-tree-summary::marker {
+  content: "";
+}
+
+.al-tree-select summary.al-tree-summary:hover {
+  background-color: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.05));
+}
+
+.al-tree-select summary.al-tree-summary:focus-visible {
+  outline: 2px solid var(--bs-primary, #0d6efd);
+  outline-offset: 1px;
+}
+
+.al-tree-select .al-tree-chevron {
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  border-left: 0.42em solid currentColor;
+  transition: transform 0.15s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .al-tree-select .al-tree-chevron {
+    transition: none;
+  }
+}
+
+.al-tree-select details[open] > summary .al-tree-chevron {
+  transform: rotate(90deg);
+}
+
+.al-tree-select .al-tree-summary-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.al-tree-select .al-tree-count {
+  flex: 0 0 auto;
+  font-size: 0.75em;
+}
+
+.al-tree-select .al-tree-count[hidden] {
+  display: none;
+}
+
+/* --- Children / indentation --- */
+
+.al-tree-select .al-tree-children {
+  margin-left: var(--al-tree-indent);
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--bs-border-color, #dee2e6);
+}
+
+/* Only the vertical padding: the horizontal padding is Bootstrap's
+   `.form-check { padding-left: 1.5em }`, which the checkbox's negative margin
+   depends on. Overriding it with the `padding` shorthand pulls every checkbox
+   out past the group's indent line. */
+.al-tree-select .al-tree-item {
+  padding-top: 0.12rem;
+  padding-bottom: 0.12rem;
+}
+
+.al-tree-select .al-tree-item .form-check-label {
+  cursor: pointer;
+}
+
+.al-tree-select .al-tree-item-key {
+  opacity: 0.7;
+  font-size: 0.85em;
+}
+
+.al-tree-select .al-tree-item-help {
+  margin-top: 0;
+  margin-left: 0.1rem;
+}
+
+.al-tree-select .al-tree-select-all {
+  border-bottom: 1px dotted var(--bs-border-color, #dee2e6);
+  padding-bottom: 0.2rem;
+  margin-bottom: 0.2rem;
+}
+
+/* --- Filtering --- */
+
+.al-tree-select .al-tree-hidden {
+  display: none !important;
+}
+
+.al-tree-select mark.al-tree-match {
+  padding: 0;
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+  color: inherit;
+}
+
+.al-tree-select .al-tree-no-results {
+  padding: 0.5rem 0.25rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* --- Selected summary --- */
+
+.al-tree-select .al-tree-selected {
+  margin-top: 0.5rem;
+}
+
+.al-tree-select .al-tree-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 0.25rem 0.25rem 0;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.85em;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 10rem;
+  background-color: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.03));
+  color: inherit;
+}
+
+.al-tree-select .al-tree-chip:hover,
+.al-tree-select .al-tree-chip:focus-visible {
+  border-color: var(--bs-danger, #dc3545);
+}
+
+.al-tree-select .al-tree-chip-x {
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Screen-reader-only live region. Bootstrap ships .visually-hidden, but we
+   define our own so the widget does not depend on a particular Bootstrap
+   build being present. */
+.al-tree-select .al-tree-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* The original docassemble <input> keeps the field's value; it is never shown. */
+input.al_tree_select {
+  display: none !important;
+}
+
+/* Print: show everything, since collapsed groups would otherwise be lost. */
+@media print {
+  .al-tree-select .al-tree-body {
+    max-height: none;
+    overflow: visible;
+  }
+  .al-tree-select .al-tree-toolbar,
+  .al-tree-select .al-tree-search {
+    display: none;
+  }
+}

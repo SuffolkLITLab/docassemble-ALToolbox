@@ -55,6 +55,7 @@ code: |
   samples_list.clear()  
   labels = {}
   labels = {
+    "al_tree_select_demo": ['Hierarchical, searchable set of checkboxes that saves to a DADict', 'al_tree_select.py'],
     "addenda_for_table_ records_overflow": ['Add attachment output for overflow table records', 'addenda.py'],
     "addenda_for_docx_text_overflow": ['Add attachment output for overflow text, if your template is docx', 'addenda.py'],
     "addenda_for_pdf_text_overflow": ['Add attachment output for overflow text, if your template is pdf', 'addenda.py'],

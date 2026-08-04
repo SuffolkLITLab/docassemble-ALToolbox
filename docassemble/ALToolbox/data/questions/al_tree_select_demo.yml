@@ -1,0 +1,303 @@
+---
+metadata:
+  title: ALToolbox al_tree_select demo
+  short title: Tree select
+---
+# `datatype: al_tree_select` needs no `include:` and no `features:` block. The
+# custom datatype is registered as soon as ALToolbox is installed, and it
+# injects its own CSS. This demo only needs the module for the taxonomy the
+# `code:` example builds.
+modules:
+  - .al_tree_select
+---
+mandatory: True
+code: |
+  intro_shown
+  simple_issues
+  taxonomy_issues
+  grouped_courts
+  translated_topics
+  results_shown
+---
+id: intro
+continue button field: intro_shown
+question: |
+  `datatype: al_tree_select`
+subquestion: |
+  A hierarchical set of checkboxes, grouped into `<details>` disclosures. The
+  answer is a `DADict`, just like `datatype: checkboxes`.
+
+  Nothing needs to be included. Write the field and it works:
+
+  ```yaml
+  fields:
+    - Legal issues: legal_issues
+      datatype: al_tree_select
+      choices:
+        - label: Housing
+          children:
+            - label: Eviction
+              key: HO-01
+  ```
+
+  ### Writing the choices
+
+  A choice may be:
+
+  * `label:` plus `key:`, optionally with `help:` and `children:`
+  * `- HO-01: Eviction`, the docassemble key/label shorthand
+  * `- Housing: [ ... ]`, a group labeled with the mapping key
+  * a plain string, which becomes both the key and the label
+
+  A group is selectable only if you give it a `key:` of its own; otherwise it is
+  just a heading. Set `selectable: False` on a keyed group to make it a heading
+  anyway. A flat list can nest itself with `group:`, which may be one name or a
+  list of names. Use `code:` (or `choices: {code: ...}`) to build the tree in
+  Python, which is what you want when the labels need `word()`.
+
+  ### Options
+
+  | Field key | What it does |
+  | --- | --- |
+  | `required:` | Standard docassemble; at least one choice must be picked |
+  | `min:` / `max:` | Fewest and most choices allowed |
+  | `alSearch:` | Show the filter box. Defaults to yes above 10 choices |
+  | `alToolbar:` | Show expand/collapse/clear. Defaults to yes when there are groups |
+  | `alExpand:` | `True`, `False`, or how many levels to open. Defaults to open below 13 choices |
+  | `alSelectAll:` | Add a "select all" checkbox to each group |
+  | `alShowKeys:` | Show each choice's key next to its label |
+  | `alShowSelected:` | Show the running list of selections. Defaults to yes |
+  | `alMaxHeight:` | Height of the scrolling area, e.g. `20rem` |
+
+  Everything the widget says for itself can be replaced, so it can be
+  translated: `alSearchLabel`, `alSearchPlaceholder`, `alExpandAll`,
+  `alCollapseAll`, `alClearAll`, `alSelectAllLabel`, `alNoResults`,
+  `alResultsFound`, `alFilterCleared`, `alSelectedCount`, `alNothingSelected`,
+  `alRemoveSelection`, `alGroupSelectedCount`, `alMinMessage` and
+  `alMaxMessage`. Each takes Mako, so `${ "${" } word("Filter choices") }` works.
+  `%d` and `%s` in a message are filled in by the widget.
+
+  To translate every tree on a site at once, set `window.alTreeSelectStrings` in
+  a `script:` block instead of repeating the parameters on each field.
+---
+id: simple tree
+question: |
+  What kind of help do you need?
+subquestion: |
+  A small tree. With this few choices every group starts expanded and there is
+  no filter box, because neither would earn its keep.
+fields:
+  - Legal issues: simple_issues
+    datatype: al_tree_select
+    choices:
+      - label: Housing
+        children:
+          - label: I am being evicted
+            key: HO-01
+          - label: My landlord will not make repairs
+            key: HO-02
+          - label: My security deposit was not returned
+            key: HO-03
+      - label: Family
+        children:
+          - label: Divorce or separation
+            key: FA-01
+          - label: Child custody
+            key: FA-02
+      - label: Something else
+        key: OTHER
+---
+id: taxonomy tree
+question: |
+  Which legal issues describe your situation?
+subquestion: |
+  A bigger taxonomy. Once there are more than ten choices the filter box and the
+  toolbar appear on their own, and the groups start collapsed.
+
+  This one turns on the taxonomy codes (`alShowKeys`) and the per-group
+  "select all" checkboxes (`alSelectAll`).
+fields:
+  - Legal issues: taxonomy_issues
+    datatype: al_tree_select
+    alShowKeys: True
+    alSelectAll: True
+    max: 5
+    choices:
+      - label: Housing
+        children:
+          - label: Eviction and tenant rights
+            children:
+              - label: Notice to quit
+                key: HO-01-01
+              - label: Unlawful detainer
+                key: HO-01-02
+              - label: Retaliatory eviction
+                key: HO-01-03
+                help: |
+                  Your landlord is evicting you because you complained or joined
+                  a tenants' union.
+              - label: Sublease disputes
+                key: HO-01-04
+          - label: Rent and lease agreements
+            children:
+              - label: Rent control
+                key: HO-02-01
+              - label: Security deposit return
+                key: HO-02-02
+              - label: Lease renewal terms
+                key: HO-02-03
+          - label: Housing quality and repairs
+            children:
+              - label: Substandard living conditions
+                key: HO-03-01
+              - label: Code violations
+                key: HO-03-02
+              - label: Lack of heat or utilities
+                key: HO-03-03
+              - label: Mold
+                key: HO-03-04
+      - label: Family and children
+        # A group can carry a `key:` of its own, so the category is a valid
+        # answer alongside anything nested under it.
+        key: FA-00
+        children:
+          - label: Divorce and separation
+            children:
+              - label: Contested divorce
+                key: FA-01-01
+              - label: Property division
+                key: FA-01-02
+              - label: Alimony
+                key: FA-01-03
+          - label: Child custody and support
+            children:
+              - label: Parenting time schedules
+                key: FA-02-01
+              - label: Child support modification
+                key: FA-02-02
+              - label: Establishing paternity
+                key: FA-02-03
+      - label: Employment
+        children:
+          - label: Wages and hours
+            children:
+              - label: Unpaid overtime
+                key: EM-01-01
+              - label: Minimum wage violations
+                key: EM-01-02
+              - label: Misclassification as a contractor
+                key: EM-01-03
+          - label: Workplace discrimination
+            children:
+              - label: Racial harassment
+                key: EM-02-01
+              - label: Disability accommodation
+                key: EM-02-02
+              - label: Age discrimination
+                key: EM-02-03
+---
+id: grouped
+question: |
+  Which courts have you been to?
+subquestion: |
+  A flat list that nests itself with `group:`, which is how the older
+  `bootstrap-multiselect` hierarchical select expressed nesting. A `group:` can
+  also be a list of names, for more than one level.
+fields:
+  - Courts: grouped_courts
+    datatype: al_tree_select
+    choices:
+      - label: Boston Municipal Court
+        key: bmc
+        group: Massachusetts
+      - label: Suffolk Probate and Family Court
+        key: suffolk-probate
+        group: Massachusetts
+      - label: Housing Court, Eastern Division
+        key: eastern-housing
+        group: Massachusetts
+      - label: Providence County Superior Court
+        key: providence-superior
+        group: Rhode Island
+      - label: Providence County District Court
+        key: providence-district
+        group: Rhode Island
+---
+# When the labels themselves need translating, build the tree with `code:` so
+# you can call `word()`. Everything the widget says for itself is translated
+# through the `al...` parameters below.
+id: translated
+question: |
+  ${ word("What would you like to read about?") }
+fields:
+  - ${ word("Topics") }: translated_topics
+    datatype: al_tree_select
+    alSearchLabel: ${ word("Filter topics") }
+    alSearchPlaceholder: ${ word("Type to filter") }
+    alExpandAll: ${ word("Expand all") }
+    alCollapseAll: ${ word("Collapse all") }
+    alClearAll: ${ word("Clear all") }
+    alNoResults: ${ word("No topics match your filter.") }
+    alSelectedCount: ${ word("%d selected") }
+    alNothingSelected: ${ word("Nothing selected yet") }
+    code: |
+      topic_tree
+---
+code: |
+  topic_tree = [
+    {
+      "label": word("Your rights"),
+      "children": [
+        {"label": word("Rights at work"), "key": "work"},
+        {"label": word("Rights as a tenant"), "key": "tenant"},
+      ],
+    },
+    {
+      "label": word("Going to court"),
+      "children": [
+        {"label": word("Filling out forms"), "key": "forms"},
+        {"label": word("What to expect at a hearing"), "key": "hearing"},
+      ],
+    },
+  ]
+---
+id: results
+event: results_shown
+question: |
+  What you chose
+subquestion: |
+  Each answer is a `DADict`, the same thing `datatype: checkboxes` produces, so
+  `.true_values()`, `.any_true()` and `answer["some-key"]` all work.
+
+  **Help you need** (`simple_issues`)
+
+  % if simple_issues.any_true():
+  ${ simple_issues.true_values() }
+  % else:
+  Nothing selected.
+  % endif
+
+  **Legal issues** (`taxonomy_issues`)
+
+  % if taxonomy_issues.any_true():
+  ${ taxonomy_issues.true_values() }
+  % else:
+  Nothing selected.
+  % endif
+
+  **Courts** (`grouped_courts`)
+
+  ${ grouped_courts.true_values() }
+
+  **Topics** (`translated_topics`)
+
+  ${ translated_topics.true_values() }
+
+  ---
+
+  Every key in the tree is present in the dict, whether or not it was chosen, so
+  you can ask about one without a `KeyError`. For example
+  `taxonomy_issues["HO-01-01"]` is
+  **${ taxonomy_issues["HO-01-01"] }**.
+buttons:
+  - Restart: restart
