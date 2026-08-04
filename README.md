@@ -92,8 +92,8 @@ document.addEventListener("DOMContentLoaded", function () {
 ```
 
 The endpoint is unauthenticated and identical for every user of a language — it exposes
-nothing but the server's own interface vocabulary. `translation_strings.translate()` is
-the server-side twin of `_()`, for when Python and JavaScript need to agree.
+the server's configured `word()` catalog for that language (which may include arbitrary
+phrases from installed packages). `translation_strings.translate()` is
 
 Run `translation_strings_demo.yml` to see it working.
 
