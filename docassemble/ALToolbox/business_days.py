@@ -3,7 +3,7 @@ import pandas as pd
 import datetime
 from datetime import date as dt
 from docassemble.base.util import as_datetime, DADateTime
-from typing import Union, Dict, Iterable, Mapping, Optional
+from typing import Union, Dict, Iterable, Mapping, Optional, cast
 
 """
   External docs: 
@@ -266,7 +266,7 @@ def is_business_day(
         ```
     """
     if not isinstance(date, DADateTime):
-        date = as_datetime(date)
+        date = cast(DADateTime, as_datetime(date))
     if date.dow in [
         6,
         7,
@@ -340,7 +340,7 @@ def get_next_business_day(
         ```
     """
     if not isinstance(start_date, DADateTime):
-        start_date = as_datetime(start_date)
+        start_date = cast(DADateTime, as_datetime(start_date))
     date_to_check = start_date.plus(days=wait_n_days)
 
     while not is_business_day(
@@ -406,7 +406,7 @@ def get_date_after_n_business_days(
         ```
     """
     if not isinstance(start_date, DADateTime):
-        start_date = as_datetime(start_date)
+        start_date = cast(DADateTime, as_datetime(start_date))
     date_to_check = start_date
 
     for _ in range(wait_n_days):

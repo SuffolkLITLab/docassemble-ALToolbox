@@ -399,7 +399,7 @@ class ALTreeSelect(CustomDataType):
     ]
 
     @classmethod
-    def validate(cls, item: Any, variable_name: str, data: Dict[str, Any]) -> bool:
+    def validate(cls, item: Any, variable_name: str, data: Dict[str, Any]) -> bool:  # type: ignore[override]
         """Check that the posted keys exist in the tree and honor `min`/`max`."""
         selected = _selected_from(item)
         choices = _choices_from_field_data(data)
@@ -425,7 +425,7 @@ class ALTreeSelect(CustomDataType):
         return True
 
     @classmethod
-    def transform(cls, item: Any, variable_name: str, data: Dict[str, Any]) -> DADict:
+    def transform(cls, item: Any, variable_name: str, data: Dict[str, Any]) -> DADict:  # type: ignore[override]
         """Build the `DADict` the interview will see.
 
         Every selectable key in the tree gets an entry, so code can ask about a
@@ -446,7 +446,7 @@ class ALTreeSelect(CustomDataType):
         return result
 
     @classmethod
-    def default_for(
+    def default_for(  # type: ignore[override]
         cls, item: Any, variable_name: str, data: Dict[str, Any]
     ) -> Optional[str]:
         """Put an existing answer back into the input so it can be re-shown."""
