@@ -465,7 +465,7 @@
       if (!path.length) {
         return out;
       }
-      var joined = path.join(" ");
+      var joined = path.join("\x00");
       if (byPath[joined]) {
         return byPath[joined].children;
       }
