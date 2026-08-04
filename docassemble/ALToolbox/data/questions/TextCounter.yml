@@ -1,8 +1,11 @@
 metadata:
   title: ALToolbox - Text fields with a character counter
 ---
+include:
+  - translation_strings.yml
+---
 features:
-  javascript: TextCounter.js    
+  javascript: TextCounter.js
 ---
 id: block_at_line_7
 question: |

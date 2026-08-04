@@ -1,0 +1,89 @@
+---
+metadata:
+  title: ALToolbox - Translate strings inside JavaScript
+  short title: JavaScript translation
+---
+include:
+  - translation_strings.yml
+---
+mandatory: True
+code: |
+  register_demo_words
+  chosen_language
+  set_language(chosen_language)
+  translation_demo
+---
+# Normally you would ship a word translation file and list it under `words:` in
+# the server configuration. This demo adds the same translations at runtime so
+# that it runs anywhere without a configuration change.
+code: |
+  add_translations(
+    "es",
+    {
+      "Copied!": "¡Copiado!",
+      "Thank you for your feedback.": "Gracias por sus comentarios.",
+      "You have entered %d characters.": "Ha escrito %d caracteres.",
+    },
+  )
+  register_demo_words = True
+---
+id: choose language
+question: |
+  Translating strings inside JavaScript
+subquestion: |
+  ALToolbox serves docassemble's `word()` catalog to the browser, so JavaScript
+  can call `_("Copied!")` and get the phrase in the user's language.
+
+  Pick a language and the next screen will show the same JavaScript strings
+  translated.
+fields:
+  - Language: chosen_language
+    datatype: radio
+    choices:
+      - English: en
+      - Spanish (español): es
+---
+id: translation demo
+event: translation_demo
+question: |
+  The same strings, from Python and from JavaScript
+subquestion: |
+  The page language is **${ chosen_language }**.
+
+  Python called `word("Copied!")` and got **${ word("Copied!") }**.
+
+  Below, JavaScript called `_()` for the same strings. The two should agree.
+
+  <ul id="al-translation-demo"></ul>
+
+  <script>
+    (function () {
+      function render() {
+        document.getElementById("al-translation-demo").innerHTML = [
+          _("Copied!"),
+          _("Thank you for your feedback."),
+          _("You have entered %d characters.", 42),
+        ]
+          .map(function (line) { return "<li>" + line + "</li>"; })
+          .join("");
+      }
+      function start() {
+        render();
+        // The first visit to a language fetches the catalog in the background,
+        // so redraw once it lands.
+        window.addEventListener("alTranslationsLoaded", render);
+      }
+      // Docassemble puts every script at the end of the body, so an inline
+      // script like this one runs before _() exists. Wait for the parser.
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", start);
+      } else {
+        start();
+      }
+    })();
+  </script>
+
+  You can see the raw catalog that the browser fetched at
+  [al_translations.json?lang=${ chosen_language }](${ url_of("root") }al_translations.json?lang=${ chosen_language }).
+buttons:
+  - Start over: restart
