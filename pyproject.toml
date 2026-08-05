@@ -63,6 +63,7 @@ dev = [
     "pandas>=1.4.2",
     "pandas-stubs",
     "mypy",
+    "pytest",
     "openai>=1.0",
     "tiktoken",
     "defusedxml",
