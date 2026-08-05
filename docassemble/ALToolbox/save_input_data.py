@@ -9,12 +9,12 @@ try:
 
     JsonDb = db.session
 except ImportError:
-    from docassemble.webapp.jsonstore import JsonStorage
+    from docassemble.webapp.jsonstore import JsonStorage  # type: ignore[no-redef]
 
     try:
         from docassemble.webapp.jsonstore import JsonDb  # type: ignore[no-redef]
     except ImportError:
-        from docassemble.webapp.jsonstore import db
+        from docassemble.webapp.jsonstore import db  # type: ignore[no-redef]
 
         JsonDb = db.session  # type: ignore[no-redef]
 

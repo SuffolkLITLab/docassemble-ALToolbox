@@ -67,7 +67,7 @@ else:
 
 always_reserved_names = set(
     docassemble.base.util.__all__
-    + keyword.kwlist
+    + list(keyword.kwlist)
     + list(dir(__builtins__))
     + [
         "_attachment_email_address",
