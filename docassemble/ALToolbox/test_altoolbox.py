@@ -8,6 +8,30 @@ from .business_days import (
 )
 from docassemble.base.util import today, as_datetime
 
+_thread_context = None
+
+
+def setUpModule() -> None:
+    """Initialize docassemble thread context for tests.
+
+    Outside a request, docassemble's `this_thread` resolves to None and
+    `as_datetime` blows up when it tries to look up the timezone. Newer
+    docassemble exposes a context manager for exactly this; on older versions
+    `this_thread` is an ordinary thread local that is already usable.
+    """
+    global _thread_context
+    try:
+        from docassemble.base.thread_context import empty_globals, global_context
+    except ImportError:
+        return
+    _thread_context = global_context(empty_globals())
+    _thread_context.__enter__()
+
+
+def tearDownModule() -> None:
+    if _thread_context is not None:
+        _thread_context.__exit__(None, None, None)
+
 
 class TestBusinessDays(unittest.TestCase):
     def test_is_business_day(self) -> None:

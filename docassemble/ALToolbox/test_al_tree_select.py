@@ -218,9 +218,7 @@ class TestValidate(unittest.TestCase):
 
     def test_al_minlength_is_enforced_including_for_an_empty_answer(self) -> None:
         with self.assertRaises(Exception):
-            ALTreeSelect.validate(
-                "", "issues", {"choices": CHOICES, "alMinlength": 2}
-            )
+            ALTreeSelect.validate("", "issues", {"choices": CHOICES, "alMinlength": 2})
         with self.assertRaises(Exception):
             ALTreeSelect.validate(
                 '["HO-01"]', "issues", {"choices": CHOICES, "alMinlength": 2}
