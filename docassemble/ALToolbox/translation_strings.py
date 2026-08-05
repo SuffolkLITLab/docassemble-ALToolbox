@@ -173,7 +173,7 @@ try:
     try:
         from docassemble.webapp.app_object import flaskapp as app  # 1.10 and later
     except ImportError:
-        from docassemble.webapp.app_object import app  # type: ignore[no-redef]  # 1.9.x
+        from docassemble.webapp.app_object import app  # type: ignore[no-redef, attr-defined]  # 1.9.x
 
     from flask import Response, request
     from werkzeug.wrappers import Response as BaseResponse
