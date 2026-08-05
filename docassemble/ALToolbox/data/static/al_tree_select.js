@@ -465,7 +465,7 @@
       if (!path.length) {
         return out;
       }
-      var joined = path.join(" ");
+      var joined = path.join("\x00");
       if (byPath[joined]) {
         return byPath[joined].children;
       }
@@ -911,9 +911,11 @@
    * ------------------------------------------------------------------ */
 
   function selectedKeys(ctx) {
+    var seen = {};
     var keys = [];
     ctx.leaves.forEach(function (leaf) {
-      if (leaf.$input.prop("checked")) {
+      if (leaf.$input.prop("checked") && !seen[leaf.key]) {
+        seen[leaf.key] = true;
         keys.push(leaf.key);
       }
     });
