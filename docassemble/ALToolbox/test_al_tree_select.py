@@ -211,15 +211,23 @@ class TestValidate(unittest.TestCase):
     def test_max_is_enforced(self) -> None:
         with self.assertRaises(Exception):
             ALTreeSelect.validate(
-                '["HO-01", "HO-02"]', "issues", {"choices": CHOICES, "max": 1}
+                '["HO-01", "HO-02"]',
+                "issues",
+                {"choices": CHOICES, "alMaxlength": 1},
             )
 
-    def test_min_is_enforced_only_once_something_is_chosen(self) -> None:
-        self.assertTrue(
-            ALTreeSelect.validate("", "issues", {"choices": CHOICES, "min": 2})
-        )
+    def test_al_minlength_is_enforced_including_for_an_empty_answer(self) -> None:
         with self.assertRaises(Exception):
-            ALTreeSelect.validate('["HO-01"]', "issues", {"choices": CHOICES, "min": 2})
+            ALTreeSelect.validate(
+                "", "issues", {"choices": CHOICES, "alMinlength": 2}
+            )
+        with self.assertRaises(Exception):
+            ALTreeSelect.validate(
+                '["HO-01"]', "issues", {"choices": CHOICES, "alMinlength": 2}
+            )
+
+    def test_empty_is_optional_without_al_minlength(self) -> None:
+        self.assertTrue(ALTreeSelect.validate("", "issues", {"choices": CHOICES}))
 
     def test_validate_without_choices_does_not_raise(self) -> None:
         self.assertTrue(ALTreeSelect.validate('["anything"]', "issues", {}))
@@ -288,6 +296,10 @@ class TestJavaScriptAsset(unittest.TestCase):
 
         self.assertIn("al_tree_select", custom_types)
         self.assertTrue(custom_types["al_tree_select"]["is_object"])
+        self.assertEqual(
+            custom_types["al_tree_select"]["parameters"],
+            ["choices", "alMinlength", "alMaxlength"],
+        )
 
 
 if __name__ == "__main__":

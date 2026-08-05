@@ -357,7 +357,7 @@ class ALTreeSelect(CustomDataType):
     # The real control is the tree the JavaScript builds; this input only
     # carries the value. Rendering it hidden from the start avoids a flash of
     # an empty text box before the widget appears. docassemble validates hidden
-    # inputs, so `required:` and the min/max rules still apply.
+    # inputs, so the custom `alMinlength`/`alMaxlength` rules still apply.
     input_type = "hidden"
     input_class = "al_tree_select"
     javascript = js_text
@@ -367,7 +367,9 @@ class ALTreeSelect(CustomDataType):
     # The tree itself. `choices:` is the literal YAML; `code:` is a Python
     # expression, which is also what `choices: {code: ...}` turns into. Use
     # `code:` when the labels need `word()` for translation.
-    parameters = ["choices"]
+    # These are prefixed because docassemble's standard `minlength` and
+    # `maxlength` extras validate the hidden JSON value as a character string.
+    parameters = ["choices", "alMinlength", "alMaxlength"]
     code_parameters = ["code"]
 
     # Everything the widget says for itself, so an interview can translate it
@@ -400,7 +402,7 @@ class ALTreeSelect(CustomDataType):
 
     @classmethod
     def validate(cls, item: Any, variable_name: str, data: Dict[str, Any]) -> bool:  # type: ignore[override]
-        """Check that the posted keys exist in the tree and honor `min`/`max`."""
+        """Check that the posted keys exist and honor selection-count limits."""
         selected = _selected_from(item)
         choices = _choices_from_field_data(data)
         if choices:
@@ -410,11 +412,12 @@ class ALTreeSelect(CustomDataType):
                 raise DAValidationError(
                     word("Your answer includes a choice that is not on the list.")
                 )
-        minimum = _int_or_none((data or {}).get("min"))
-        maximum = _int_or_none((data or {}).get("max"))
-        # An empty answer means "nothing selected"; `required:` is what makes an
-        # answer mandatory, exactly as it does for checkboxes.
-        if minimum is not None and selected and len(selected) < minimum:
+        minimum = _int_or_none((data or {}).get("alMinlength"))
+        maximum = _int_or_none((data or {}).get("alMaxlength"))
+        # With no alMinlength, an empty answer means "nothing selected" and is
+        # valid. A positive alMinlength intentionally makes an empty answer
+        # fail, matching the behavior of checkboxes and multiselect.
+        if minimum is not None and len(selected) < minimum:
             raise DAValidationError(
                 word("Please choose at least {num}.").format(num=minimum)
             )

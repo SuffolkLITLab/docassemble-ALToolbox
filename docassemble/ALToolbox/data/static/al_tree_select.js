@@ -1104,6 +1104,16 @@
     if (!$.validator || !ctx.$input.closest("form").length) {
       return;
     }
+
+    // The backing input contains JSON, so docassemble's generic field rules
+    // do not apply: `required` is controlled by whether alMinlength is
+    // present, and the prefixed limits count selected keys rather than
+    // characters.
+    try {
+      ctx.$input.rules("remove", "required minlength maxlength");
+    } catch (err) {
+      // The form has no validator yet; the server-side check still applies.
+    }
     if (ctx.min === null && ctx.max === null) {
       return;
     }
@@ -1135,7 +1145,7 @@
         "alTreeSelectMin",
         function (value, element, param) {
           var count = countFromValue(value);
-          return count === 0 || count >= param;
+          return count >= param;
         },
       );
     }
@@ -1203,8 +1213,12 @@
     ctx.hasGroups = hasGroups(choices);
     ctx.showKeys = boolAttr($input, "alShowKeys", false);
     ctx.selectAll = boolAttr($input, "alSelectAll", false) && ctx.hasGroups;
-    ctx.min = intAttr($input, "min");
-    ctx.max = intAttr($input, "max");
+    ctx.min = intAttr($input, "alMinlength");
+    ctx.max = intAttr($input, "alMaxlength");
+    // An al_tree_select is optional unless alMinlength is supplied. The hidden
+    // backing input may otherwise inherit docassemble's default `required`
+    // attribute even though the visible controls are checkboxes.
+    $input.removeAttr("required").prop("required", false);
 
     var expandRaw = attr($input, "alExpand");
     if (expandRaw === null || expandRaw === "") {
