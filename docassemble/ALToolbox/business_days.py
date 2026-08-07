@@ -3,7 +3,7 @@ import pandas as pd
 import datetime
 from datetime import date as dt
 from docassemble.base.util import as_datetime, DADateTime
-from typing import Union, Dict, Iterable, Mapping, Optional, cast
+from typing import Union, Dict, Iterable, Mapping, Optional
 
 """
   External docs: 
@@ -265,15 +265,16 @@ def is_business_day(
         is_business_uk = is_business_day("2023-12-26", country="UK")  # Boxing Day
         ```
     """
-    if not isinstance(date, DADateTime):
-        date = cast(DADateTime, as_datetime(date))
-    if date.dow in [
+    date_to_check: DADateTime = (
+        date if isinstance(date, DADateTime) else as_datetime(date)
+    )
+    if date_to_check.dow in [
         6,
         7,
     ]:  # Docassemble codes Saturday and Sunday as 6 and 7 respectively
         return False
-    if date.format("yyyy-MM-dd") in standard_holidays(
-        year=date.year,
+    if date_to_check.format("yyyy-MM-dd") in standard_holidays(
+        year=date_to_check.year,
         country=country,
         subdiv=subdiv,
         add_holidays=add_holidays,
@@ -339,9 +340,10 @@ def get_next_business_day(
         # Will skip March 17th as it's now considered a holiday
         ```
     """
-    if not isinstance(start_date, DADateTime):
-        start_date = cast(DADateTime, as_datetime(start_date))
-    date_to_check = start_date.plus(days=wait_n_days)
+    start: DADateTime = (
+        start_date if isinstance(start_date, DADateTime) else as_datetime(start_date)
+    )
+    date_to_check: DADateTime = start.plus(days=wait_n_days)
 
     while not is_business_day(
         date_to_check,
@@ -405,9 +407,9 @@ def get_date_after_n_business_days(
         # Will count 3 business days, skipping weekends and custom holiday
         ```
     """
-    if not isinstance(start_date, DADateTime):
-        start_date = cast(DADateTime, as_datetime(start_date))
-    date_to_check = start_date
+    date_to_check: DADateTime = (
+        start_date if isinstance(start_date, DADateTime) else as_datetime(start_date)
+    )
 
     for _ in range(wait_n_days):
         date_to_check = date_to_check.plus(days=1)
