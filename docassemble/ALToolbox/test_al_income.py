@@ -20,6 +20,30 @@ from .al_income import (
     recent_years,
 )
 
+_thread_context = None
+
+
+def setUpModule() -> None:
+    """Initialize docassemble thread context for tests.
+
+    Outside a request, docassemble's `this_thread` resolves to None, and any
+    call that touches locale or gathering mode blows up. Newer docassemble
+    exposes a context manager for exactly this; on older versions `this_thread`
+    is an ordinary thread local that is already usable.
+    """
+    global _thread_context
+    try:
+        from docassemble.base.thread_context import empty_globals, global_context
+    except ImportError:
+        return
+    _thread_context = global_context(empty_globals())
+    _thread_context.__enter__()
+
+
+def tearDownModule() -> None:
+    if _thread_context is not None:
+        _thread_context.__exit__(None, None, None)
+
 
 class test_correct_outputs(unittest.TestCase):
     def test_simple_value(self) -> None:

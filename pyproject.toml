@@ -9,6 +9,7 @@ name = "docassemble.ALToolbox"
 version = "0.18.0"
 description= "Collection of small utility functions, classes, and web components for Docassemble interviews"
 readme = "README.md"
+requires-python = ">=3.12"
 authors = [
     { name="Suffolk Legal Innovation and Technology Lab", email="litlab@suffolk.edu" },
 ]
@@ -68,6 +69,6 @@ dev = [
     "tiktoken",
     "defusedxml",
     "types-defusedxml",
+    "pytest",
 ]
-
 
