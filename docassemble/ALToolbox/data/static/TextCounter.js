@@ -27,9 +27,9 @@ $(document).on('daPageLoad', function(){
 	  function updateCount() {			
       var count = $(elm).val().length;   
       if (count == 1) {
-        countMsg.text("You have entered " + count + " character.");	                
+        countMsg.text(_("You have entered %d character.", count));
       } else {
-        countMsg.text("You have entered " + count + " characters.");
+        countMsg.text(_("You have entered %d characters.", count));
       }
     }         
     $(elm).on('keyup keydown', updateCount);  

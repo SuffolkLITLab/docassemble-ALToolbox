@@ -69,7 +69,8 @@ code: |
     "output_checkbox_demo": ['Generate a conditional checkbox output for docx templates', 'misc.py'],
     "save_input_data_demo": ['Save input for data reporting', 'save_input_data.py'],
     "Shorten a url": ['Shorten a long url for neater display on the screen', 'misc.py'],
-    "TextCounter": ['Text input with a counter', 'TextCounter.js'], 
+    "TextCounter": ['Text input with a counter', 'TextCounter.js'],
+    "translation_strings_demo": ['Translate strings inside JavaScript with _()', 'translation_strings.yml'],
     "ThreePartsDate": ['Date input with month, day, year as separate parts', 'ThreePartsDate.py'],
   }
   add_records(samples_list, labels)

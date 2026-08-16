@@ -1,0 +1,12 @@
+# Word translations for the strings ALToolbox's own JavaScript passes to _().
+# To use this file, add it to your server configuration:
+#
+#   words:
+#     - docassemble.ALToolbox:data/sources/altoolbox_words.yml
+#
+# The same format works for your own strings. Copy this file into your package's
+# data/sources directory, add your languages and phrases, and list it under
+# `words:` alongside this one.
+es:
+  You have entered %d character.: Ha escrito %d carácter.
+  You have entered %d characters.: Ha escrito %d caracteres.

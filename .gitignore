@@ -13,3 +13,5 @@ docassemble.ALToolbox.egg-info/**
 coverage_html
 .env
 dist/**
+
+uv.lock

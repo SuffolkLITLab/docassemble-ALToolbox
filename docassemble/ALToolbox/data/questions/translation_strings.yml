@@ -1,0 +1,6 @@
+features:
+  javascript:
+    - al_translate.js
+---
+modules:
+  - .translation_strings
