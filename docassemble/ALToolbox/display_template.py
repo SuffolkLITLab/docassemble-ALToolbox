@@ -12,6 +12,7 @@ def display_template(
     copy=False,
     classname="bg-light",
     class_name=None,  # deprecated
+    h_level=2,
 ) -> str:
     """
     Display a template with optional scrolling, collapsing, and copy functionality.
@@ -33,6 +34,8 @@ def display_template(
             Defaults to "bg-light".
         class_name (str, optional): Deprecated parameter for CSS class name.
             Defaults to None.
+        h_level (int, optional): The HTML heading level for the template subject.
+            Must be between 1 and 6. Defaults to 2.
 
     Returns:
         HTML string containing the rendered template with the specified
@@ -45,6 +48,9 @@ def display_template(
     ```
     """
     # 1. Initialize
+    if not isinstance(h_level, int) or not 1 <= h_level <= 6:
+        raise ValueError("h_level must be an integer between 1 and 6")
+
     if scrollable:
         scroll_class = "scrollable-panel"
         adjust_height = ""
@@ -94,7 +100,7 @@ def display_template(
     subject_html = ""
     subject_span = '<span class="subject"></span>'
     if has_subject:
-        subject_html = f'<div class="panel-heading"><h3 class="subject" id="{subject_id}">{subject_content}</h3></div>'
+        subject_html = f'<div class="panel-heading"><h{h_level} class="subject" id="{subject_id}">{subject_content}</h{h_level}></div>'
         subject_span = (
             f'<span class="subject" id="{subject_id}">{subject_content}</span>'
         )
