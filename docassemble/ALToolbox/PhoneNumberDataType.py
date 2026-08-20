@@ -81,7 +81,7 @@ function showInvalidInputMessage( params, field ) {
   return (
     $(field).attr('data-alInvalidInputMessage')
     // The default message could be confusing for invalid US phone numbers
-    || `This phone number doesn't look right. Note that a non-US number needs a "+" before the number.`
+    || alTranslate(`This phone number doesn't look right. Note that a non-US number needs a "+" before the number.`)
   )
 };
 

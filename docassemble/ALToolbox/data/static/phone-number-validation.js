@@ -1,4 +1,33 @@
-$(document).on('daPageLoad', function(){
+/** intl-tel-input's interface text, in the interview's language. */
+function phoneInputTranslations() {
+  return {
+    ...phoneCountryNames(),
+    selectedCountryAriaLabel: alTranslate("Change country, selected ${countryName} (${dialCode})"),
+    noCountrySelected: alTranslate("Select country"),
+    countryListAriaLabel: alTranslate("List of countries"),
+    searchPlaceholder: alTranslate("Search"),
+    clearSearchAriaLabel: alTranslate("Clear search"),
+    zeroSearchResults: alTranslate("No results found"),
+    oneSearchResult: alTranslate("1 result found"),
+    multipleSearchResults: alTranslate("${count} results found"),
+  };
+}
+
+/** Country names come from the browser, which already knows them in every language. */
+function phoneCountryNames() {
+  const names = {};
+  try {
+    const regions = new Intl.DisplayNames([alTranslate.language.replace(/_/g, '-')], { type: 'region' });
+    for (const country of window.intlTelInput.getCountryData()) {
+      names[country.iso2] = regions.of(country.iso2.toUpperCase());
+    }
+  } catch (error) {
+    // Unsupported browser or language: intl-tel-input falls back to English names.
+  }
+  return names;
+}
+
+function setupPhoneInputs() {
   /** When the page first loads, gets the value from any `.al_international_phone` input
   *    field, transforms it, puts the transformed value back into the input
   *    field, and adds a dropdown from which to choose a country. It
@@ -32,12 +61,16 @@ $(document).on('daPageLoad', function(){
   
   // Loop through all the .al_international_phone input fields on the current screen
   let phoneNodes = document.querySelectorAll( '.al_international_phone' );  // Class given by the CustomDataType
+  const i18n = phoneInputTranslations();
   for ( var node of phoneNodes ) {
+    // Rebuilding an input that is already set up replaces its interface text
+    window.intlTelInput.getInstance( node )?.destroy();
     var telObj = window.intlTelInput( node, {
       // The default country without any input into the plugin is 'us'
       // Once the user puts in the phone number of another country, though,
       // it will remember that country
       initialCountry: 'us',
+      i18n,
       loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/js/utils.js"),
       autoPlaceholder: "off",
       formatAsYouType: false,
@@ -54,5 +87,9 @@ $(document).on('daPageLoad', function(){
     // See https://www.npmjs.com/package/intl-tel-input#recommended-usage about the full international format.
     $(node).val(telObj.getNumber());
   };
-  
-}); 
+}
+
+$(document).on('daPageLoad', setupPhoneInputs);
+// On the first visit in a language the translations arrive after the page is drawn
+window.addEventListener('alTranslationsLoaded', setupPhoneInputs);
+
