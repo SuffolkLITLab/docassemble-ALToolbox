@@ -78,10 +78,13 @@ function validatePhoneNumber( value, element, params ) {
  * @returns {string} - Message to show if the field is invalid
  */
 function showInvalidInputMessage( params, field ) {
+  var defaultMessage = `This phone number doesn't look right. Note that a non-US number needs a "+" before the number.`;
   return (
     $(field).attr('data-alInvalidInputMessage')
     // The default message could be confusing for invalid US phone numbers
-    || `This phone number doesn't look right. Note that a non-US number needs a "+" before the number.`
+    || (typeof window.alTranslate === 'function'
+      ? window.alTranslate(defaultMessage)
+      : defaultMessage)
   )
 };
 

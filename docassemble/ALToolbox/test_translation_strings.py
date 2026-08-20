@@ -162,15 +162,37 @@ class TestAltoolboxJsStrings(unittest.TestCase):
     def _static_path(self, name: str) -> str:
         return os.path.join(os.path.dirname(__file__), "data", "static", name)
 
-    def test_every_string_passed_to_underscore_is_listed(self) -> None:
+    def test_loader_uses_the_json_catalog_endpoint(self) -> None:
+        with open(self._static_path("al_translate.js"), encoding="utf-8") as loader:
+            source = loader.read()
+        self.assertIn("al_translations.json?lang=", source)
+        self.assertNotIn("al_translations.js?lang=", source)
+
+    def test_every_string_passed_to_the_translator_is_listed(self) -> None:
         with open(self._static_path("TextCounter.js"), encoding="utf-8") as counter_js:
             source = counter_js.read()
-        found = set(re.findall(r'\b_\(\s*"((?:[^"\\]|\\.)*)"', source))
-        self.assertTrue(found, "expected TextCounter.js to call _()")
+        with open(
+            self._static_path("phone-number-validation.js"), encoding="utf-8"
+        ) as phone_js:
+            source += phone_js.read()
+        found = set(
+            re.findall(r'\b_\(\s*"((?:[^"\\]|\\.)*)"', source)
+            + re.findall(r'\btranslate\(\s*"((?:[^"\\]|\\.)*)"', source)
+        )
+        self.assertTrue(found, "expected ALToolbox JavaScript to call a translator")
         self.assertTrue(
             found.issubset(set(ALTOOLBOX_JS_STRINGS)),
             f"missing from ALTOOLBOX_JS_STRINGS: {found - set(ALTOOLBOX_JS_STRINGS)}",
         )
+
+        with open(
+            os.path.join(os.path.dirname(__file__), "PhoneNumberDataType.py"),
+            encoding="utf-8",
+        ) as phone_datatype:
+            self.assertIn(
+                'This phone number doesn\'t look right. Note that a non-US number needs a "+" before the number.',
+                phone_datatype.read(),
+            )
 
     def test_the_shipped_word_file_covers_every_string(self) -> None:
         import yaml  # type: ignore[import-untyped]
