@@ -1,7 +1,8 @@
-from typing import Any, Dict, List, Optional, Union, Literal
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union, Literal
 import keyword
 import os
 import json
+import base64
 import re
 import tiktoken
 from openai import OpenAI
@@ -448,6 +449,84 @@ def get_default_model(
     )
 
 
+# A provider bills an image at a flat cost, not by the length of its base64.
+# These are OpenAI's published figures and are close enough for a guard rail.
+IMAGE_TOKEN_ESTIMATE_LOW = 85
+IMAGE_TOKEN_ESTIMATE_HIGH = 1105
+
+
+def _message_text(message: Mapping[str, Any]) -> str:
+    """Return a message's text, whether its content is a string or parts."""
+    content = message.get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return " ".join(
+            str(part.get("text", ""))
+            for part in content
+            if isinstance(part, Mapping) and part.get("type") == "text"
+        )
+    return str(content or "")
+
+
+def _as_image_url(image: Union[str, bytes]) -> str:
+    """Normalise an image into something the chat endpoint will accept."""
+    if isinstance(image, bytes):
+        media_type = "image/png"
+        if image[:3] == b"\xff\xd8\xff":
+            media_type = "image/jpeg"
+        elif image[:6] in (b"GIF87a", b"GIF89a"):
+            media_type = "image/gif"
+        elif image[:4] == b"RIFF" and image[8:12] == b"WEBP":
+            media_type = "image/webp"
+        return f"data:{media_type};base64,{base64.b64encode(image).decode('ascii')}"
+    text = str(image)
+    if text.startswith(("data:", "http://", "https://")):
+        return text
+    raise ValueError(
+        "An image must be raw bytes, a data: URI, or an http(s) URL, "
+        f"not {text[:40]!r}"
+    )
+
+
+def _attach_images(
+    messages: List[Dict[str, Any]],
+    images: Sequence[Union[str, bytes]],
+    image_detail: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Turn the last user message into a multimodal one carrying the images.
+
+    Callers keep writing ordinary string-content messages; only the message the
+    images belong to changes shape, and only when images are supplied.
+    """
+    if not images:
+        return messages
+    attached = [dict(message) for message in messages]
+    target = next(
+        (
+            index
+            for index in range(len(attached) - 1, -1, -1)
+            if attached[index].get("role") == "user"
+        ),
+        None,
+    )
+    if target is None:
+        attached.append({"role": "user", "content": ""})
+        target = len(attached) - 1
+    existing = attached[target].get("content")
+    if isinstance(existing, list):
+        parts: List[Dict[str, Any]] = list(existing)
+    else:
+        parts = [{"type": "text", "text": str(existing or "")}]
+    for image in images:
+        image_url: Dict[str, Any] = {"url": _as_image_url(image)}
+        if image_detail:
+            image_url["detail"] = image_detail
+        parts.append({"type": "image_url", "image_url": image_url})
+    attached[target]["content"] = parts
+    return attached
+
+
 def chat_completion(
     system_message: Optional[str] = None,
     user_message: Optional[str] = None,
@@ -462,6 +541,8 @@ def chat_completion(
     max_output_tokens: Optional[int] = None,
     max_input_tokens: Optional[int] = None,
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = None,
+    images: Optional[Sequence[Union[str, bytes]]] = None,
+    image_detail: Optional[Literal["low", "high", "auto"]] = None,
 ) -> Union[List[Any], Dict[str, Any], str]:
     """A light wrapper on the OpenAI chat endpoint.
 
@@ -481,9 +562,24 @@ def chat_completion(
         max_output_tokens (Optional[int]): The maximum number of tokens to return from the API. Defaults to 16380.
         max_input_tokens (Optional[int]): The maximum number of tokens to send to the API. Defaults to 128000.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]) = None: The reasoning effort to use for thinking models. Defaults to value provided in the configuration or "low".
+        images (Optional[Sequence[Union[str, bytes]]]): Images to send alongside the
+            text, as raw bytes, `data:` URIs, or http(s) URLs. The last user message
+            becomes multimodal; every other message is untouched. Sending pixels to a
+            third party is a decision, so this is opt-in and never inferred.
+        image_detail (Optional[Literal["low", "high", "auto"]]): The detail level to
+            request for each image. "low" is markedly cheaper and is enough to say
+            what a logo or a seal is.
 
     Returns:
         A string with the response from the API endpoint or JSON data if json_mode is True
+
+    Example:
+        >>> chat_completion(
+        ...     system_message="Describe the image in one sentence.",
+        ...     user_message="What is this?",
+        ...     images=[png_bytes],
+        ...     image_detail="low",
+        ... )
     """
     if not reasoning_effort:
         reasoning_effort = get_config("open ai", {}).get("reasoning effort") or "low"
@@ -498,7 +594,7 @@ def chat_completion(
     if (
         messages
         and json_mode
-        and not any("json" in message["content"].lower() for message in messages)
+        and not any("json" in _message_text(message).lower() for message in messages)
     ):
         log(
             f"Warning: None of the messages contain the word 'json' but json_mode is set to True. Adding 'json' silently"
@@ -514,6 +610,10 @@ def chat_completion(
             {"role": "system", "content": str(system_message)},
             {"role": "user", "content": str(user_message)},
         ]
+
+    if images:
+        # Only the message the images belong to changes shape, and only here.
+        messages = _attach_images(list(messages), images, image_detail)
 
     if openai_base_url:
         openai_client = None  # Always override client in this circumstance
@@ -551,7 +651,26 @@ def chat_completion(
         # We can try encoding for gpt-4o because it seems like OpenAI isn't really changing the encoding anymore
         encoding = tiktoken.encoding_for_model("gpt-4o")
 
-    token_count = len(encoding.encode(str(messages)))
+    # Count the words, not the pixels: a provider bills an image at a flat rate,
+    # so tokenising its base64 both wastes time and trips max_input_tokens on
+    # inputs the endpoint would have accepted.
+    image_parts = 0
+    for message in messages:
+        content = message.get("content")
+        if isinstance(content, list):
+            image_parts += sum(
+                1
+                for part in content
+                if isinstance(part, Mapping) and part.get("type") == "image_url"
+            )
+    text_only = [
+        {"role": message.get("role", ""), "content": _message_text(message)}
+        for message in messages
+    ]
+    per_image = (
+        IMAGE_TOKEN_ESTIMATE_LOW if image_detail == "low" else IMAGE_TOKEN_ESTIMATE_HIGH
+    )
+    token_count = len(encoding.encode(str(text_only))) + image_parts * per_image
 
     # Set the max tokens to a reasonable default if not provided. This is reasonable for current models. The ones with smaller limits are mostly
     # obsolete now
@@ -572,7 +691,17 @@ def chat_completion(
 
     if not skip_moderation and openai_base_url == "https://api.openai.com/v1/":
         # Currently only checking if we're using the OpenAI endpoint
-        moderation_response = openai_client.moderations.create(input=str(messages))
+        moderation_response = openai_client.moderations.create(
+            input=str(
+                [
+                    {
+                        "role": message.get("role", ""),
+                        "content": _message_text(message),
+                    }
+                    for message in messages
+                ]
+            )
+        )
         if moderation_response.results[0].flagged:
             raise Exception(
                 f"OpenAI moderation error: { moderation_response.results[0] }"
