@@ -1,3 +1,4 @@
+# do not pre-load
 """Sending images through chat_completion.
 
 The endpoint takes a message whose content is a list of parts; everything here
