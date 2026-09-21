@@ -12,6 +12,7 @@ comment: |
 features:
   javascript:
     - "https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/js/intlTelInput.min.js"
+    - al_translate.js
     - phone-number-validation.js
   css:
     - "https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/css/intlTelInput.min.css"
@@ -21,3 +22,4 @@ features:
 ---
 modules:
   - .PhoneNumberDataType
+  - .translation_strings

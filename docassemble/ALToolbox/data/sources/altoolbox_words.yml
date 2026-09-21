@@ -4,9 +4,149 @@
 #   words:
 #     - docassemble.ALToolbox:data/sources/altoolbox_words.yml
 #
-# The same format works for your own strings. Copy this file into your package's
-# data/sources directory, add your languages and phrases, and list it under
-# `words:` alongside this one.
+# AssemblyLine includes these entries in its standard word catalogs. This file
+# remains a fallback for servers that use ALToolbox without AssemblyLine.
+ar:
+  "Change country, selected ${countryName} (${dialCode})": "تغيير البلد، المحدد حاليًا ${countryName} (${dialCode})"
+  "Select country": "حدد الدولة"
+  "List of countries": "قائمة الدول"
+  "Search": "يبحث"
+  "Clear search": "مسح البحث"
+  "No results found": "لم يتم العثور على نتائج"
+  "1 result found": "تم العثور على نتيجة واحدة"
+  "${count} results found": "تم العثور على ${count} نتيجة"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': 'يبدو أن رقم الهاتف هذا غير صحيح. لاحظ أن الرقم غير الأمريكي يحتاج إلى "+" قبل الرقم.'
+  "You have entered %d character.": "لقد أدخلت %d حرفًا."
+  "You have entered %d characters.": "لقد أدخلت %d أحرف."
 es:
-  You have entered %d character.: Ha escrito %d carácter.
-  You have entered %d characters.: Ha escrito %d caracteres.
+  "Change country, selected ${countryName} (${dialCode})": "Cambiar país, seleccionado ${countryName} (${dialCode})"
+  "Select country": "Seleccionar país"
+  "List of countries": "Lista de países"
+  "Search": "Buscar"
+  "Clear search": "Borrar búsqueda"
+  "No results found": "No se han encontrado resultados"
+  "1 result found": "1 resultado encontrado"
+  "${count} results found": "Se encontraron ${count} resultados"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': 'Este número de teléfono no parece correcto. Tenga en cuenta que un número que no es de EE. UU. necesita un "+" antes del número.'
+  "You have entered %d character.": "Ha escrito %d carácter."
+  "You have entered %d characters.": "Ha escrito %d caracteres."
+fr:
+  "Change country, selected ${countryName} (${dialCode})": "Changer de pays, ${countryName} sélectionné (${dialCode})"
+  "Select country": "Sélectionner un pays"
+  "List of countries": "Liste des pays"
+  "Search": "Recherche"
+  "Clear search": "Effacer la recherche"
+  "No results found": "Aucun résultat trouvé"
+  "1 result found": "1 résultat trouvé"
+  "${count} results found": "${count} résultats trouvés"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': 'Ce numéro de téléphone ne semble pas correct. Notez qu’un numéro non américain doit être précédé d’un "+".'
+  "You have entered %d character.": "Vous avez saisi %d caractère."
+  "You have entered %d characters.": "Vous avez saisi %d caractères."
+ht:
+  "Change country, selected ${countryName} (${dialCode})": "Chanje peyi, peyi chwazi ${countryName} (${dialCode})"
+  "Select country": "Chwazi peyi"
+  "List of countries": "Lis peyi yo"
+  "Search": "Rechèch"
+  "Clear search": "Efase rechèch"
+  "No results found": "Pa jwenn okenn rezilta"
+  "1 result found": "Yo jwenn 1 rezilta"
+  "${count} results found": "Yo jwenn ${count} rezilta"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': 'Nimewo telefòn sa a pa sanble kòrèk. Tanpri sonje yon nimewo ki pa ameriken bezwen yon "+" anvan nimewo a.'
+  "You have entered %d character.": "Ou antre %d karaktè."
+  "You have entered %d characters.": "Ou antre %d karaktè."
+km:
+  "Change country, selected ${countryName} (${dialCode})": "ប្តូរប្រទេស ប្រទេសដែលបានជ្រើសរើស ${countryName} (${dialCode})"
+  "Select country": "ជ្រើសរើសប្រទេស"
+  "List of countries": "បញ្ជីប្រទេស"
+  "Search": "ស្វែងរក"
+  "Clear search": "សម្អាតការស្វែងរក"
+  "No results found": "រកមិនឃើញលទ្ធផល"
+  "1 result found": "រកឃើញលទ្ធផល ១"
+  "${count} results found": "រកឃើញលទ្ធផល ${count}"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': 'លេខទូរសព្ទនេះមើលទៅមិនត្រឹមត្រូវទេ។ សូមចំណាំថា លេខទូរសព្ទដែលមិនមែនជាលេខអាមេរិក ត្រូវដាក់សញ្ញា "+" នៅពីមុខលេខ។'
+  "You have entered %d character.": "អ្នកបានបញ្ចូល %d តួអក្សរ។"
+  "You have entered %d characters.": "អ្នកបានបញ្ចូល %d តួអក្សរ។"
+pt:
+  "Change country, selected ${countryName} (${dialCode})": "Alterar país, país selecionado ${countryName} (${dialCode})"
+  "Select country": "Selecionar país"
+  "List of countries": "Lista de países"
+  "Search": "Procurar"
+  "Clear search": "Limpar pesquisa"
+  "No results found": "Nenhum resultado encontrado"
+  "1 result found": "1 resultado encontrado"
+  "${count} results found": "${count} resultados encontrados"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': 'Este número de telefone não parece correto. Observe que um número que não seja dos EUA precisa de um "+" antes do número.'
+  "You have entered %d character.": "Você digitou %d caractere."
+  "You have entered %d characters.": "Você digitou %d caracteres."
+vi:
+  "Change country, selected ${countryName} (${dialCode})": "Đổi quốc gia, quốc gia đã chọn ${countryName} (${dialCode})"
+  "Select country": "Chọn quốc gia"
+  "List of countries": "Danh sách các quốc gia"
+  "Search": "Tìm kiếm"
+  "Clear search": "Xóa tìm kiếm"
+  "No results found": "Không tìm thấy kết quả nào"
+  "1 result found": "Đã tìm thấy 1 kết quả"
+  "${count} results found": "Đã tìm thấy ${count} kết quả"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': 'Số điện thoại này có vẻ không đúng. Lưu ý rằng số điện thoại không phải của Hoa Kỳ cần có dấu "+" trước số.'
+  "You have entered %d character.": "Bạn đã nhập %d ký tự."
+  "You have entered %d characters.": "Bạn đã nhập %d ký tự."
+zh-Hans:
+  "Change country, selected ${countryName} (${dialCode})": "更改国家/地区，当前选定的国家/地区为 ${countryName} (${dialCode})"
+  "Select country": "选择国家/地区"
+  "List of countries": "国家/地区列表"
+  "Search": "搜索"
+  "Clear search": "清除搜索"
+  "No results found": "未找到结果"
+  "1 result found": "找到 1 个结果"
+  "${count} results found": "找到 ${count} 个结果"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': '此电话号码似乎不正确。请注意，非美国电话号码需要在号码前加上“+”。'
+  "You have entered %d character.": "您已输入 %d 个字符。"
+  "You have entered %d characters.": "您已输入 %d 个字符。"
+zh-CN:
+  "Change country, selected ${countryName} (${dialCode})": "更改国家/地区，当前选定的国家/地区为 ${countryName} (${dialCode})"
+  "Select country": "选择国家/地区"
+  "List of countries": "国家/地区列表"
+  "Search": "搜索"
+  "Clear search": "清除搜索"
+  "No results found": "未找到结果"
+  "1 result found": "找到 1 个结果"
+  "${count} results found": "找到 ${count} 个结果"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': '此电话号码似乎不正确。请注意，非美国电话号码需要在号码前加上“+”。'
+  "You have entered %d character.": "您已输入 %d 个字符。"
+  "You have entered %d characters.": "您已输入 %d 个字符。"
+zh-Hant:
+  "Change country, selected ${countryName} (${dialCode})": "更改國家/地區，目前選擇的國家/地區為 ${countryName} (${dialCode})"
+  "Select country": "選擇國家/地區"
+  "List of countries": "國家/地區清單"
+  "Search": "搜尋"
+  "Clear search": "清除搜尋"
+  "No results found": "找不到結果"
+  "1 result found": "找到 1 個結果"
+  "${count} results found": "找到 ${count} 個結果"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': '此電話號碼似乎不正確。請注意，非美國電話號碼需要在號碼前加上「+」。'
+  "You have entered %d character.": "您已輸入 %d 個字元。"
+  "You have entered %d characters.": "您已輸入 %d 個字元。"
+zh-TW:
+  "Change country, selected ${countryName} (${dialCode})": "更改國家/地區，目前選擇的國家/地區為 ${countryName} (${dialCode})"
+  "Select country": "選擇國家/地區"
+  "List of countries": "國家/地區清單"
+  "Search": "搜尋"
+  "Clear search": "清除搜尋"
+  "No results found": "找不到結果"
+  "1 result found": "找到 1 個結果"
+  "${count} results found": "找到 ${count} 個結果"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': '此電話號碼似乎不正確。請注意，非美國電話號碼需要在號碼前加上「+」。'
+  "You have entered %d character.": "您已輸入 %d 個字元。"
+  "You have entered %d characters.": "您已輸入 %d 個字元。"
+ne:
+  "Change country, selected ${countryName} (${dialCode})": "देश परिवर्तन गर्नुहोस्, हाल चयन गरिएको ${countryName} (${dialCode})"
+  "Select country": "देश चयन गर्नुहोस्"
+  "List of countries": "देशहरूको सूची"
+  "Search": "खोज्नुहोस्"
+  "Clear search": "खोजी खाली गर्नुहोस्"
+  "No results found": "कुनै परिणाम फेला परेन"
+  "1 result found": "१ परिणाम फेला पर्यो"
+  "${count} results found": "${count} वटा परिणाम फेला परे"
+  'This phone number doesn''t look right. Note that a non-US number needs a "+" before the number.': 'यो फोन नम्बर सही जस्तो देखिँदैन। अमेरिकाबाहिरको नम्बरअघि "+" राख्नुपर्छ भन्ने कुरा ध्यान दिनुहोस्।'
+  "You have entered %d character.": "तपाईंले %d अक्षर प्रविष्ट गर्नुभएको छ।"
+  "You have entered %d characters.": "तपाईंले %d अक्षरहरू प्रविष्ट गर्नुभएको छ।"
