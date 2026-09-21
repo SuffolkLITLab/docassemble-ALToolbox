@@ -10,6 +10,8 @@ stands in for a server is session-scoped, so it is not registered yet while
 pytest is collecting. Hence the imports inside the tests rather than at the top.
 """
 
+import os
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -39,7 +41,21 @@ class TestImageNormalisation(unittest.TestCase):
     def test_anything_else_is_refused_clearly(self):
         with self.assertRaises(ValueError) as caught:
             _llms()._as_image_url("/tmp/not-a-url.png")
-        self.assertIn("raw bytes", str(caught.exception))
+        self.assertIn("DAFile", str(caught.exception))
+
+    def test_da_file_bytes_are_read_from_path(self):
+        """A DAFile is resolved to bytes via .path() before sniffing the media type."""
+        llms = _llms()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+            tmp.write(PNG)
+            tmp_path = tmp.name
+        try:
+            da_file = MagicMock(spec=llms.DAFile)
+            da_file.path.return_value = tmp_path
+            result = llms._as_image_url(da_file)
+            self.assertTrue(result.startswith("data:image/png;base64,"))
+        finally:
+            os.unlink(tmp_path)
 
 
 class TestMessageText(unittest.TestCase):

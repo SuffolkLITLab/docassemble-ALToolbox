@@ -469,8 +469,32 @@ def _message_text(message: Mapping[str, Any]) -> str:
     return str(content or "")
 
 
-def _as_image_url(image: Union[str, bytes]) -> str:
-    """Normalise an image into something the chat endpoint will accept."""
+def _as_image_url(image: Union[DAFile, str, bytes]) -> str:
+    """Normalise an image into something the chat endpoint will accept.
+
+    Args:
+        image: The image to normalise.  Accepted forms are:
+
+            * **``DAFile``** – a Docassemble file object; the raw bytes are read
+              from ``image.path()`` and then processed as if they had been
+              passed directly.
+            * **``bytes``** – raw image bytes; the media type is sniffed from the
+              magic number (JPEG, PNG, GIF, or WEBP).
+            * **``str``** – either a ``data:`` URI or an ``http(s)://`` URL,
+              both of which are passed through unchanged.
+
+    Returns:
+        A string that the OpenAI chat endpoint will accept as an image URL:
+        either a ``data:<media-type>;base64,<payload>`` URI (for byte inputs)
+        or the original URL / data-URI string.
+
+    Raises:
+        ValueError: If the bytes do not match a recognised image magic number,
+            or if the string is not a ``data:`` URI or an ``http(s)://`` URL.
+    """
+    if isinstance(image, DAFile):
+        with open(image.path(), "rb") as fh:
+            image = fh.read()
     if isinstance(image, bytes):
         if image[:3] == b"\xff\xd8\xff":
             media_type = "image/jpeg"
@@ -490,14 +514,14 @@ def _as_image_url(image: Union[str, bytes]) -> str:
     if text.startswith(("data:", "http://", "https://")):
         return text
     raise ValueError(
-        "An image must be raw bytes, a data: URI, or an http(s) URL, "
+        "An image must be a DAFile, raw bytes, a data: URI, or an http(s) URL, "
         f"not {text[:40]!r}"
     )
 
 
 def _attach_images(
     messages: List[Dict[str, Any]],
-    images: Sequence[Union[str, bytes]],
+    images: Sequence[Union[DAFile, str, bytes]],
     image_detail: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Turn the last user message into a multimodal one carrying the images.
@@ -547,7 +571,7 @@ def chat_completion(
     max_output_tokens: Optional[int] = None,
     max_input_tokens: Optional[int] = None,
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = None,
-    images: Optional[Sequence[Union[str, bytes]]] = None,
+    images: Optional[Sequence[Union[DAFile, str, bytes]]] = None,
     image_detail: Optional[Literal["low", "high", "auto"]] = None,
 ) -> Union[List[Any], Dict[str, Any], str]:
     """A light wrapper on the OpenAI chat endpoint.
@@ -568,10 +592,17 @@ def chat_completion(
         max_output_tokens (Optional[int]): The maximum number of tokens to return from the API. Defaults to 16380.
         max_input_tokens (Optional[int]): The maximum number of tokens to send to the API. Defaults to 128000.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]) = None: The reasoning effort to use for thinking models. Defaults to value provided in the configuration or "low".
-        images (Optional[Sequence[Union[str, bytes]]]): Images to send alongside the
-            text, as raw bytes, `data:` URIs, or http(s) URLs. The last user message
-            becomes multimodal; every other message is untouched. Sending pixels to a
-            third party is a decision, so this is opt-in and never inferred.
+        images (Optional[Sequence[Union[DAFile, str, bytes]]]): Images to send alongside the
+            text. Each image may be:
+
+            * a ``DAFile`` – the bytes are read from ``image.path()``;
+            * raw ``bytes`` – the media type is sniffed from the magic number
+              (JPEG, PNG, GIF, WEBP);
+            * a ``str`` – either a ``data:`` URI or an ``http(s)://`` URL.
+
+            The last user message becomes multimodal; every other message is
+            untouched.  Sending pixels to a third party is a decision, so this
+            is opt-in and never inferred.
         image_detail (Optional[Literal["low", "high", "auto"]]): The detail level to
             request for each image. "low" is markedly cheaper and is enough to say
             what a logo or a seal is.
