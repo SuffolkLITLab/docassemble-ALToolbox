@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Union, Literal
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union, Literal, cast
 import keyword
 import os
 import json
@@ -449,10 +449,17 @@ def get_default_model(
     )
 
 
-# A provider bills an image at a flat cost, not by the length of its base64.
-# These are OpenAI's published figures and are close enough for a guard rail.
-IMAGE_TOKEN_ESTIMATE_LOW = 85
-IMAGE_TOKEN_ESTIMATE_HIGH = 1105
+# Conservative per-image upper bounds for OpenAI vision tokenization.  Actual
+# usage depends on the image dimensions, but using the model's maximum prevents
+# max_input_tokens from being bypassed without downloading remote image URLs.
+IMAGE_TOKEN_ESTIMATES = {
+    "gpt-4o-mini": {"low": 2833, "high": 48169},
+    "gpt-4o": {"low": 85, "high": 1445},
+    "gpt-4.1-mini": {"low": 9954, "high": 9954},
+    "gpt-4.1-nano": {"low": 3779, "high": 3779},
+    "gpt-4.1": {"low": 85, "high": 1445},
+}
+IMAGE_TOKEN_ESTIMATE_UNKNOWN = 73800
 
 
 def _message_text(message: Mapping[str, Any]) -> str:
@@ -467,6 +474,71 @@ def _message_text(message: Mapping[str, Any]) -> str:
             if isinstance(part, Mapping) and part.get("type") == "text"
         )
     return str(content or "")
+
+
+def _image_token_estimate(model: str, detail: Optional[str]) -> int:
+    """Return a conservative token upper bound for one image."""
+    model_name = model.lower()
+    estimates = next(
+        (
+            values
+            for prefix, values in IMAGE_TOKEN_ESTIMATES.items()
+            if model_name == prefix or model_name.startswith(f"{prefix}-")
+        ),
+        None,
+    )
+    if estimates is None:
+        # The API rejects patch-based images above 30,000 patches. Applying
+        # the largest published model multiplier (2.46) gives a safe fallback
+        # for models whose sizing rules are not known here.
+        return IMAGE_TOKEN_ESTIMATE_UNKNOWN
+    return estimates["low" if detail == "low" else "high"]
+
+
+def _messages_image_token_estimate(
+    messages: Sequence[Mapping[str, Any]], model: str
+) -> int:
+    """Estimate all image parts, respecting each part's requested detail."""
+    total = 0
+    for message in messages:
+        content = message.get("content")
+        if not isinstance(content, list):
+            continue
+        for part in content:
+            if isinstance(part, Mapping) and part.get("type") == "image_url":
+                image_url = part.get("image_url")
+                detail = (
+                    image_url.get("detail") if isinstance(image_url, Mapping) else None
+                )
+                total += _image_token_estimate(model, detail)
+    return total
+
+
+def _moderation_input(messages: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    """Convert chat messages into OpenAI's multimodal moderation input."""
+    text = str(
+        [
+            {"role": message.get("role", ""), "content": _message_text(message)}
+            for message in messages
+        ]
+    )
+    moderation_input: List[Dict[str, Any]] = [{"type": "text", "text": text}]
+    for message in messages:
+        content = message.get("content")
+        if not isinstance(content, list):
+            continue
+        for part in content:
+            if not isinstance(part, Mapping) or part.get("type") != "image_url":
+                continue
+            image_url = part.get("image_url")
+            if isinstance(image_url, Mapping) and isinstance(image_url.get("url"), str):
+                moderation_input.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": image_url["url"]},
+                    }
+                )
+    return moderation_input
 
 
 def _as_image_url(image: Union[DAFile, str, bytes]) -> str:
@@ -688,26 +760,15 @@ def chat_completion(
         # We can try encoding for gpt-4o because it seems like OpenAI isn't really changing the encoding anymore
         encoding = tiktoken.encoding_for_model("gpt-4o")
 
-    # Count the words, not the pixels: a provider bills an image at a flat rate,
-    # so tokenising its base64 both wastes time and trips max_input_tokens on
-    # inputs the endpoint would have accepted.
-    image_parts = 0
-    for message in messages:
-        content = message.get("content")
-        if isinstance(content, list):
-            image_parts += sum(
-                1
-                for part in content
-                if isinstance(part, Mapping) and part.get("type") == "image_url"
-            )
+    # Do not tokenize base64 as text. Image tokens depend on the model and
+    # detail level, so use conservative model-specific upper bounds instead.
     text_only = [
         {"role": message.get("role", ""), "content": _message_text(message)}
         for message in messages
     ]
-    per_image = (
-        IMAGE_TOKEN_ESTIMATE_LOW if image_detail == "low" else IMAGE_TOKEN_ESTIMATE_HIGH
+    token_count = len(encoding.encode(str(text_only))) + _messages_image_token_estimate(
+        messages, model
     )
-    token_count = len(encoding.encode(str(text_only))) + image_parts * per_image
 
     # Set the max tokens to a reasonable default if not provided. This is reasonable for current models. The ones with smaller limits are mostly
     # obsolete now
@@ -729,15 +790,8 @@ def chat_completion(
     if not skip_moderation and openai_base_url == "https://api.openai.com/v1/":
         # Currently only checking if we're using the OpenAI endpoint
         moderation_response = openai_client.moderations.create(
-            input=str(
-                [
-                    {
-                        "role": message.get("role", ""),
-                        "content": _message_text(message),
-                    }
-                    for message in messages
-                ]
-            )
+            model="omni-moderation-latest",
+            input=cast(Any, _moderation_input(messages)),
         )
         if moderation_response.results[0].flagged:
             raise Exception(

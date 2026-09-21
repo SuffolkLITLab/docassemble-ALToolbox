@@ -121,6 +121,9 @@ class TestAttachImages(unittest.TestCase):
 
 def _fake_client(reply="ok"):
     client = MagicMock()
+    moderation_result = MagicMock()
+    moderation_result.flagged = False
+    client.moderations.create.return_value.results = [moderation_result]
     choice = MagicMock()
     choice.finish_reason = "stop"
     choice.message.content = reply
@@ -177,6 +180,42 @@ class TestChatCompletionWithImages(unittest.TestCase):
             [part["type"] for part in sent["messages"][-1]["content"]],
             ["text", "image_url"],
         )
+
+    def test_image_is_included_in_multimodal_moderation(self):
+        llms = _llms()
+        fake = _fake_client()
+        with patch.object(llms, "client", fake):
+            llms.chat_completion(
+                model="gpt-4o",
+                system_message="be brief",
+                user_message="what is this",
+                images=[PNG],
+                image_detail="high",
+                skip_moderation=False,
+            )
+        moderation_call = fake.moderations.create.call_args.kwargs
+        self.assertEqual(moderation_call["model"], "omni-moderation-latest")
+        self.assertEqual(
+            [part["type"] for part in moderation_call["input"]],
+            ["text", "image_url"],
+        )
+        self.assertNotIn("detail", moderation_call["input"][1]["image_url"])
+
+    def test_nano_image_cost_is_applied_to_input_limit(self):
+        llms = _llms()
+        fake = _fake_client()
+        with patch.object(llms, "client", fake), self.assertRaises(Exception) as caught:
+            llms.chat_completion(
+                model="gpt-4.1-nano",
+                system_message="be brief",
+                user_message="what is this",
+                images=[PNG],
+                image_detail="high",
+                max_input_tokens=2000,
+                skip_moderation=True,
+            )
+        self.assertIn("Input to OpenAI is too long", str(caught.exception))
+        fake.chat.completions.create.assert_not_called()
 
     def test_nothing_changes_when_no_images_are_supplied(self):
         sent = self._call(system_message="be brief", user_message="hello")
