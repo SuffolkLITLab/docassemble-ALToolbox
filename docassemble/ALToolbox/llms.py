@@ -472,13 +472,19 @@ def _message_text(message: Mapping[str, Any]) -> str:
 def _as_image_url(image: Union[str, bytes]) -> str:
     """Normalise an image into something the chat endpoint will accept."""
     if isinstance(image, bytes):
-        media_type = "image/png"
         if image[:3] == b"\xff\xd8\xff":
             media_type = "image/jpeg"
+        elif image[:8] == b"\x89PNG\r\n\x1a\n":
+            media_type = "image/png"
         elif image[:6] in (b"GIF87a", b"GIF89a"):
             media_type = "image/gif"
         elif image[:4] == b"RIFF" and image[8:12] == b"WEBP":
             media_type = "image/webp"
+        else:
+            raise ValueError(
+                "Unrecognised image format: the byte stream does not match any "
+                "supported magic number (JPEG, PNG, GIF, WEBP)."
+            )
         return f"data:{media_type};base64,{base64.b64encode(image).decode('ascii')}"
     text = str(image)
     if text.startswith(("data:", "http://", "https://")):
