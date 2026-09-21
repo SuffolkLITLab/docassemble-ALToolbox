@@ -1,7 +1,8 @@
-from typing import Any, Dict, List, Optional, Union, Literal
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union, Literal, cast
 import keyword
 import os
 import json
+import base64
 import re
 import tiktoken
 from openai import OpenAI
@@ -448,6 +449,186 @@ def get_default_model(
     )
 
 
+# Conservative per-image upper bounds for OpenAI vision tokenization.  Actual
+# usage depends on the image dimensions, but using the model's maximum prevents
+# max_input_tokens from being bypassed without downloading remote image URLs.
+IMAGE_TOKEN_ESTIMATES = {
+    "gpt-4o-mini": {"low": 2833, "high": 48169},
+    "gpt-4o": {"low": 85, "high": 1445},
+    "gpt-4.1-mini": {"low": 9954, "high": 9954},
+    "gpt-4.1-nano": {"low": 3779, "high": 3779},
+    "gpt-4.1": {"low": 85, "high": 1445},
+}
+IMAGE_TOKEN_ESTIMATE_UNKNOWN = 73800
+
+
+def _message_text(message: Mapping[str, Any]) -> str:
+    """Return a message's text, whether its content is a string or parts."""
+    content = message.get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return " ".join(
+            str(part.get("text", ""))
+            for part in content
+            if isinstance(part, Mapping) and part.get("type") == "text"
+        )
+    return str(content or "")
+
+
+def _image_token_estimate(model: str, detail: Optional[str]) -> int:
+    """Return a conservative token upper bound for one image."""
+    model_name = model.lower()
+    estimates = next(
+        (
+            values
+            for prefix, values in IMAGE_TOKEN_ESTIMATES.items()
+            if model_name == prefix or model_name.startswith(f"{prefix}-")
+        ),
+        None,
+    )
+    if estimates is None:
+        # The API rejects patch-based images above 30,000 patches. Applying
+        # the largest published model multiplier (2.46) gives a safe fallback
+        # for models whose sizing rules are not known here.
+        return IMAGE_TOKEN_ESTIMATE_UNKNOWN
+    return estimates["low" if detail == "low" else "high"]
+
+
+def _messages_image_token_estimate(
+    messages: Sequence[Mapping[str, Any]], model: str
+) -> int:
+    """Estimate all image parts, respecting each part's requested detail."""
+    total = 0
+    for message in messages:
+        content = message.get("content")
+        if not isinstance(content, list):
+            continue
+        for part in content:
+            if isinstance(part, Mapping) and part.get("type") == "image_url":
+                image_url = part.get("image_url")
+                detail = (
+                    image_url.get("detail") if isinstance(image_url, Mapping) else None
+                )
+                total += _image_token_estimate(model, detail)
+    return total
+
+
+def _moderation_input(messages: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    """Convert chat messages into OpenAI's multimodal moderation input."""
+    text = str(
+        [
+            {"role": message.get("role", ""), "content": _message_text(message)}
+            for message in messages
+        ]
+    )
+    moderation_input: List[Dict[str, Any]] = [{"type": "text", "text": text}]
+    for message in messages:
+        content = message.get("content")
+        if not isinstance(content, list):
+            continue
+        for part in content:
+            if not isinstance(part, Mapping) or part.get("type") != "image_url":
+                continue
+            image_url = part.get("image_url")
+            if isinstance(image_url, Mapping) and isinstance(image_url.get("url"), str):
+                moderation_input.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": image_url["url"]},
+                    }
+                )
+    return moderation_input
+
+
+def _as_image_url(image: Union[DAFile, str, bytes]) -> str:
+    """Normalise an image into something the chat endpoint will accept.
+
+    Args:
+        image: The image to normalise.  Accepted forms are:
+
+            * **``DAFile``** – a Docassemble file object; the raw bytes are read
+              from ``image.path()`` and then processed as if they had been
+              passed directly.
+            * **``bytes``** – raw image bytes; the media type is sniffed from the
+              magic number (JPEG, PNG, GIF, or WEBP).
+            * **``str``** – either a ``data:`` URI or an ``http(s)://`` URL,
+              both of which are passed through unchanged.
+
+    Returns:
+        A string that the OpenAI chat endpoint will accept as an image URL:
+        either a ``data:<media-type>;base64,<payload>`` URI (for byte inputs)
+        or the original URL / data-URI string.
+
+    Raises:
+        ValueError: If the bytes do not match a recognised image magic number,
+            or if the string is not a ``data:`` URI or an ``http(s)://`` URL.
+    """
+    if isinstance(image, DAFile):
+        with open(image.path(), "rb") as fh:
+            image = fh.read()
+    if isinstance(image, bytes):
+        if image[:3] == b"\xff\xd8\xff":
+            media_type = "image/jpeg"
+        elif image[:8] == b"\x89PNG\r\n\x1a\n":
+            media_type = "image/png"
+        elif image[:6] in (b"GIF87a", b"GIF89a"):
+            media_type = "image/gif"
+        elif image[:4] == b"RIFF" and image[8:12] == b"WEBP":
+            media_type = "image/webp"
+        else:
+            raise ValueError(
+                "Unrecognised image format: the byte stream does not match any "
+                "supported magic number (JPEG, PNG, GIF, WEBP)."
+            )
+        return f"data:{media_type};base64,{base64.b64encode(image).decode('ascii')}"
+    text = str(image)
+    if text.startswith(("data:", "http://", "https://")):
+        return text
+    raise ValueError(
+        "An image must be a DAFile, raw bytes, a data: URI, or an http(s) URL, "
+        f"not {text[:40]!r}"
+    )
+
+
+def _attach_images(
+    messages: List[Dict[str, Any]],
+    images: Sequence[Union[DAFile, str, bytes]],
+    image_detail: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Turn the last user message into a multimodal one carrying the images.
+
+    Callers keep writing ordinary string-content messages; only the message the
+    images belong to changes shape, and only when images are supplied.
+    """
+    if not images:
+        return messages
+    attached = [dict(message) for message in messages]
+    target = next(
+        (
+            index
+            for index in range(len(attached) - 1, -1, -1)
+            if attached[index].get("role") == "user"
+        ),
+        None,
+    )
+    if target is None:
+        attached.append({"role": "user", "content": ""})
+        target = len(attached) - 1
+    existing = attached[target].get("content")
+    if isinstance(existing, list):
+        parts: List[Dict[str, Any]] = list(existing)
+    else:
+        parts = [{"type": "text", "text": str(existing or "")}]
+    for image in images:
+        image_url: Dict[str, Any] = {"url": _as_image_url(image)}
+        if image_detail:
+            image_url["detail"] = image_detail
+        parts.append({"type": "image_url", "image_url": image_url})
+    attached[target]["content"] = parts
+    return attached
+
+
 def chat_completion(
     system_message: Optional[str] = None,
     user_message: Optional[str] = None,
@@ -462,6 +643,8 @@ def chat_completion(
     max_output_tokens: Optional[int] = None,
     max_input_tokens: Optional[int] = None,
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]] = None,
+    images: Optional[Sequence[Union[DAFile, str, bytes]]] = None,
+    image_detail: Optional[Literal["low", "high", "auto"]] = None,
 ) -> Union[List[Any], Dict[str, Any], str]:
     """A light wrapper on the OpenAI chat endpoint.
 
@@ -481,9 +664,31 @@ def chat_completion(
         max_output_tokens (Optional[int]): The maximum number of tokens to return from the API. Defaults to 16380.
         max_input_tokens (Optional[int]): The maximum number of tokens to send to the API. Defaults to 128000.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]) = None: The reasoning effort to use for thinking models. Defaults to value provided in the configuration or "low".
+        images (Optional[Sequence[Union[DAFile, str, bytes]]]): Images to send alongside the
+            text. Each image may be:
+
+            * a ``DAFile`` – the bytes are read from ``image.path()``;
+            * raw ``bytes`` – the media type is sniffed from the magic number
+              (JPEG, PNG, GIF, WEBP);
+            * a ``str`` – either a ``data:`` URI or an ``http(s)://`` URL.
+
+            The last user message becomes multimodal; every other message is
+            untouched.  Sending pixels to a third party is a decision, so this
+            is opt-in and never inferred.
+        image_detail (Optional[Literal["low", "high", "auto"]]): The detail level to
+            request for each image. "low" is markedly cheaper and is enough to say
+            what a logo or a seal is.
 
     Returns:
         A string with the response from the API endpoint or JSON data if json_mode is True
+
+    Example:
+        >>> chat_completion(
+        ...     system_message="Describe the image in one sentence.",
+        ...     user_message="What is this?",
+        ...     images=[png_bytes],
+        ...     image_detail="low",
+        ... )
     """
     if not reasoning_effort:
         reasoning_effort = get_config("open ai", {}).get("reasoning effort") or "low"
@@ -498,7 +703,7 @@ def chat_completion(
     if (
         messages
         and json_mode
-        and not any("json" in message["content"].lower() for message in messages)
+        and not any("json" in _message_text(message).lower() for message in messages)
     ):
         log(
             f"Warning: None of the messages contain the word 'json' but json_mode is set to True. Adding 'json' silently"
@@ -514,6 +719,10 @@ def chat_completion(
             {"role": "system", "content": str(system_message)},
             {"role": "user", "content": str(user_message)},
         ]
+
+    if images:
+        # Only the message the images belong to changes shape, and only here.
+        messages = _attach_images(list(messages), images, image_detail)
 
     if openai_base_url:
         openai_client = None  # Always override client in this circumstance
@@ -551,7 +760,15 @@ def chat_completion(
         # We can try encoding for gpt-4o because it seems like OpenAI isn't really changing the encoding anymore
         encoding = tiktoken.encoding_for_model("gpt-4o")
 
-    token_count = len(encoding.encode(str(messages)))
+    # Do not tokenize base64 as text. Image tokens depend on the model and
+    # detail level, so use conservative model-specific upper bounds instead.
+    text_only = [
+        {"role": message.get("role", ""), "content": _message_text(message)}
+        for message in messages
+    ]
+    token_count = len(encoding.encode(str(text_only))) + _messages_image_token_estimate(
+        messages, model
+    )
 
     # Set the max tokens to a reasonable default if not provided. This is reasonable for current models. The ones with smaller limits are mostly
     # obsolete now
@@ -572,7 +789,10 @@ def chat_completion(
 
     if not skip_moderation and openai_base_url == "https://api.openai.com/v1/":
         # Currently only checking if we're using the OpenAI endpoint
-        moderation_response = openai_client.moderations.create(input=str(messages))
+        moderation_response = openai_client.moderations.create(
+            model="omni-moderation-latest",
+            input=cast(Any, _moderation_input(messages)),
+        )
         if moderation_response.results[0].flagged:
             raise Exception(
                 f"OpenAI moderation error: { moderation_response.results[0] }"
