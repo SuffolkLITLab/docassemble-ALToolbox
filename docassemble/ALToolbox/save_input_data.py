@@ -52,13 +52,19 @@ def save_input_data(
         - Data is stored with a random 32-character alphanumeric key
 
     Example:
-    ```python
-        >>> survey_data = {
-        ...     "age": 25,
-        ...     "income": 50000.0,
-        ...     "interests": my_checkbox_dict
-        ... }
-        >>> save_input_data("User Survey", survey_data, ["survey", "demographics"])
+    After collecting `feedback_was_helpful` and `feedback_comments`, call
+    this once in the feedback submission flow:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      save_input_data(
+          title="Interview feedback",
+          input_dict={"helpful": feedback_was_helpful, "comments": feedback_comments},
+          tags=["feedback"],
+      )
+      feedback_saved = True
     ```
     """
     type_dict: Dict[str, str] = {}

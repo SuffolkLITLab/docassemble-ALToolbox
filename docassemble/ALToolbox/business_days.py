@@ -42,38 +42,36 @@ def standard_holidays(
 
     Returns:
         A dictionary like-object that you can treat like:
-        ```
-        {
-            "2021-01-01": "New Year's Day",
-            ...
-            "2021-12-25": "Christmas Day",
-        }
-        ```
+    ```
+    {
+        "2021-01-01": "New Year's Day",
+        ...
+        "2021-12-25": "Christmas Day",
+    }
+    ```
         In place of a string, the object that is returned can also be treated as though
         the keys are datetime.date objects.
 
-    Examples:
-        ```python
-        # Get standard holidays for Massachusetts in 2023
-        ma_holidays = standard_holidays(2023)
-        print(ma_holidays["2023-07-04"])  # Independence Day
+    Example:
+    Read the holiday name from the library’s Massachusetts calendar:
 
-        # Get holidays for a different state
-        ca_holidays = standard_holidays(2023, country="US", subdiv="CA")
+    **Input (Mako)**
 
-        # Add custom holidays
-        custom_holidays = standard_holidays(
-            2023,
-            add_holidays={"03-17": "Company Founding Day"}
-        )
-        print(custom_holidays["2023-03-17"])  # Company Founding Day
+    ```mako
+    ${ standard_holidays(2023, country="US", subdiv="MA")["2023-07-04"] }
+    ```
 
-        # Remove holidays that your court doesn't observe
-        court_holidays = standard_holidays(
-            2023,
-            remove_holidays=["Columbus Day", "Veterans Day"]
-        )
-        ```
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ standard_holidays(2023, country="US", subdiv="MA")["2023-07-04"] }}
+    ```
+
+    **Output**
+
+    ```text
+    Independence Day
+    ```
     """
     # 1. Get standard holidays from python's holidays module
     countr_holidays: holidays.HolidayBase = holidays.country_holidays(
@@ -129,24 +127,21 @@ def non_business_days(
         A dictionary where keys are date strings ("YYYY-MM-DD") and values are the name of the non-business day
         (e.g., "Saturday", "New Year's Day").
 
-    Examples:
-        ```python
-        # Get all non-business days for 2023
-        all_non_business = non_business_days(2023)
-        print(len(all_non_business))  # Shows total count of non-business days
+    Example:
+    The value of `closed_days` contains the first two closed dates:
 
-        # Get just the first 10 non-business days of the year
-        first_ten = non_business_days(2023, first_n_dates=10)
+    **Input (interview YAML)**
 
-        # Get the last 5 non-business days of the year
-        last_five = non_business_days(2023, last_n_dates=5)
+    ```yaml
+    code: |
+      closed_days = non_business_days(2023, country="US", subdiv="MA", first_n_dates=2)
+    ```
 
-        # Get non-business days with custom holidays
-        custom_non_business = non_business_days(
-            2023,
-            add_holidays={"03-17": "Company Founding Day"}
-        )
-        ```
+    **Output**
+
+    ```text
+    {'2023-01-01': "New Year's Day", '2023-01-02': "New Year's Day (observed)"}
+    ```
     """
     # TODO: this function may not be necessary, but check with @purplesky2016 before removing
     # 1. Collect weekends and standard holidays
@@ -243,27 +238,21 @@ def is_business_day(
     Returns:
         True if the date is a business day, False otherwise.
 
-    Examples:
-        ```python
-        # Check if a specific date is a business day
-        assert(is_business_day("2023-03-26") == False)  # Sunday
+    Example:
+    March 26, 2023 is a Sunday. The value of `office_is_open` is:
 
-        # Check a weekday that's not a holiday
-        assert(is_business_day("2023-03-27") == True)  # Monday
+    **Input (interview YAML)**
 
-        # Check a holiday
-        assert(is_business_day("2023-07-04") == False)  # Independence Day
+    ```yaml
+    code: |
+      office_is_open = is_business_day("2023-03-26", country="US", subdiv="MA")
+    ```
 
-        # Check with custom holidays
-        is_company_day = is_business_day(
-            "2023-03-17",
-            add_holidays={"03-17": "Company Founding Day"}
-        )
-        assert(is_company_day == False)  # Custom holiday
+    **Output**
 
-        # Check for different jurisdiction
-        is_business_uk = is_business_day("2023-12-26", country="UK")  # Boxing Day
-        ```
+    ```text
+    False
+    ```
     """
     date_to_check: DADateTime = (
         date if isinstance(date, DADateTime) else as_datetime(date)
@@ -317,28 +306,28 @@ def get_next_business_day(
     Returns:
         A DADateTime object representing the next business day.
 
-    Examples:
-        ```python
-        # Get the next business day after a Friday
-        next_day = get_next_business_day("2023-03-24")  # Friday
-        print(next_day)  # 2023-03-27 (Monday)
+    Example:
+    With `appointment_date` set to Friday, March 24, 2023, and the
+    library’s Massachusetts holiday calendar, wait two calendar days, then
+    advance to the next open day:
 
-        # Get the first business day at least 5 days later
-        later_day = get_next_business_day("2023-03-20", wait_n_days=5)
-        print(later_day)  # First business day at least 5 days after March 20
+    **Input (Mako)**
 
-        # Handle holidays - if the calculated day falls on a holiday,
-        # it will automatically find the next business day
-        holiday_next = get_next_business_day("2023-07-03")  # Day before July 4th
-        print(holiday_next)  # 2023-07-05 (skips July 4th holiday)
+    ```mako
+    ${ get_next_business_day(appointment_date, wait_n_days=2, country="US", subdiv="MA").format("yyyy-MM-dd") }
+    ```
 
-        # With custom holidays
-        custom_next = get_next_business_day(
-            "2023-03-16",
-            add_holidays={"03-17": "Company Founding Day"}
-        )
-        # Will skip March 17th as it's now considered a holiday
-        ```
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ get_next_business_day(appointment_date, wait_n_days=2, country="US", subdiv="MA").format("yyyy-MM-dd") }}
+    ```
+
+    **Output**
+
+    ```text
+    2023-03-27
+    ```
     """
     start: DADateTime = (
         start_date if isinstance(start_date, DADateTime) else as_datetime(start_date)
@@ -381,31 +370,28 @@ def get_date_after_n_business_days(
     Returns:
         A DADateTime object representing the date after exactly n business days.
 
-    Examples:
-        ```python
-        # Get the date after exactly 5 business days
-        start_date = "2023-03-20"  # Monday
-        result_date = get_date_after_n_business_days(start_date, wait_n_days=5)
-        print(result_date)  # 2023-03-27 (Monday of next week)
+    Example:
+    With `appointment_date` set to Friday, March 24, 2023, and the
+    library’s Massachusetts holiday calendar, count two business days
+    after the starting date:
 
-        # Starting on a Friday, get date after 2 business days
-        friday_start = "2023-03-24"  # Friday
-        two_days_later = get_date_after_n_business_days(friday_start, wait_n_days=2)
-        print(two_days_later)  # 2023-03-28 (Tuesday, skipping weekend)
+    **Input (Mako)**
 
-        # Handle holidays automatically
-        before_holiday = "2023-07-03"  # Monday before July 4th
-        after_three_days = get_date_after_n_business_days(before_holiday, wait_n_days=3)
-        print(after_three_days)  # 2023-07-07 (Friday, skipping July 4th holiday)
+    ```mako
+    ${ get_date_after_n_business_days(appointment_date, wait_n_days=2, country="US", subdiv="MA").format("yyyy-MM-dd") }
+    ```
 
-        # With custom holidays
-        custom_result = get_date_after_n_business_days(
-            "2023-03-15",
-            wait_n_days=3,
-            add_holidays={"03-17": "Company Founding Day"}
-        )
-        # Will count 3 business days, skipping weekends and custom holiday
-        ```
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ get_date_after_n_business_days(appointment_date, wait_n_days=2, country="US", subdiv="MA").format("yyyy-MM-dd") }}
+    ```
+
+    **Output**
+
+    ```text
+    2023-03-28
+    ```
     """
     date_to_check: DADateTime = (
         start_date if isinstance(start_date, DADateTime) else as_datetime(start_date)

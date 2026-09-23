@@ -225,11 +225,28 @@ def _apply_groups(nodes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def normalize_tree(raw: Any) -> List[Dict[str, Any]]:
-    """Turn anything a developer may write under `choices:` into a list of nodes.
+    """
+    Turn anything a developer may write under `choices:` into a list of nodes.
 
     Every node is a dict with `key`, `label`, `help`, `selectable` and
     `children`. Kept in step with `normalizeChoices()` in `al_tree_select.js`;
     both sides have to agree about which keys are selectable.
+
+    Example:
+    The value of `issue_tree` is the normalized choice structure:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      issue_tree = normalize_tree([{"eviction": "Eviction"}])
+    ```
+
+    **Output**
+
+    ```text
+    [{'key': 'eviction', 'label': 'Eviction', 'help': None, 'group': None, 'selectable': True, 'children': []}]
+    ```
     """
     raw = _load(raw)
     if raw is None:
@@ -254,7 +271,28 @@ def normalize_tree(raw: Any) -> List[Dict[str, Any]]:
 
 
 def tree_keys(nodes: List[Dict[str, Any]]) -> List[str]:
-    """Every selectable key in the tree, in the order it is displayed."""
+    """
+    Every selectable key in the tree, in the order it is displayed.
+
+    Example:
+    The value of `issue_keys` contains selectable keys, excluding the
+    nonselectable Housing group:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      issue_keys = tree_keys(normalize_tree([
+          {"Housing": [{"eviction": "Eviction"}, {"repairs": "Repairs"}]}
+      ]))
+    ```
+
+    **Output**
+
+    ```text
+    ['eviction', 'repairs']
+    ```
+    """
     keys: List[str] = []
 
     def walk(items: List[Dict[str, Any]]) -> None:
@@ -351,7 +389,27 @@ except Exception as _error:  # pragma: no cover - only if packaging goes wrong
 
 
 class ALTreeSelect(CustomDataType):
-    """A hierarchical, searchable set of checkboxes that saves to a `DADict`."""
+    """
+    A hierarchical, searchable set of checkboxes that saves to a `DADict`.
+
+    Example:
+    With ALToolbox installed and `users[0]` already defined, the selected
+    choices are saved to `users[0].legal_issues` as a DADict:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    question: |
+      What do you need help with?
+    fields:
+      - Issues: users[0].legal_issues
+        datatype: al_tree_select
+        choices:
+          - Housing:
+              - eviction: Eviction
+              - repairs: Repairs
+    ```
+    """
 
     name = "al_tree_select"
     # The real control is the tree the JavaScript builds; this input only
@@ -402,7 +460,27 @@ class ALTreeSelect(CustomDataType):
 
     @classmethod
     def validate(cls, item: Any, variable_name: str, data: Dict[str, Any]) -> bool:  # type: ignore[override]
-        """Check that the posted keys exist and honor selection-count limits."""
+        """
+        Check that the posted keys exist and honor selection-count limits.
+
+        Example:
+        Docassemble calls this hook automatically for `datatype: al_tree_select`.
+        For a direct call, the last assigned variable contains:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          field_data = {"choices": [{"eviction": "Eviction"}, {"repairs": "Repairs"}]}
+          valid_selection = ALTreeSelect.validate(["eviction"], "users[0].legal_issues", field_data)
+        ```
+
+        **Output**
+
+        ```text
+        True
+        ```
+        """
         selected = _selected_from(item)
         choices = _choices_from_field_data(data)
         if choices:
@@ -429,11 +507,31 @@ class ALTreeSelect(CustomDataType):
 
     @classmethod
     def transform(cls, item: Any, variable_name: str, data: Dict[str, Any]) -> DADict:  # type: ignore[override]
-        """Build the `DADict` the interview will see.
+        """
+        Build the `DADict` the interview will see.
 
         Every selectable key in the tree gets an entry, so code can ask about a
         choice the user did not pick without a `KeyError` -- the same contract
         as `datatype: checkboxes`.
+
+        Example:
+        Docassemble calls this hook automatically for `datatype: al_tree_select`.
+        For a direct call, the last assigned variable contains:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          field_data = {"choices": [{"eviction": "Eviction"}, {"repairs": "Repairs"}]}
+          selected_issues = ALTreeSelect.transform(["eviction"], "users[0].legal_issues", field_data)
+          selected_keys = list(selected_issues.true_values())
+        ```
+
+        **Output**
+
+        ```text
+        ['eviction']
+        ```
         """
         selected = _selected_from(item)
         choices = _choices_from_field_data(data)
@@ -452,7 +550,27 @@ class ALTreeSelect(CustomDataType):
     def default_for(  # type: ignore[override]
         cls, item: Any, variable_name: str, data: Dict[str, Any]
     ) -> Optional[str]:
-        """Put an existing answer back into the input so it can be re-shown."""
+        """
+        Put an existing answer back into the input so it can be re-shown.
+
+        Example:
+        Docassemble calls this hook automatically for `datatype: al_tree_select`.
+        For a direct call, the last assigned variable contains:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          field_data = {"choices": [{"eviction": "Eviction"}, {"repairs": "Repairs"}]}
+          stored_selection = ALTreeSelect.default_for(["eviction"], "users[0].legal_issues", field_data)
+        ```
+
+        **Output**
+
+        ```text
+        ["eviction"]
+        ```
+        """
         selected = _selected_from(item)
         if not selected:
             return ""

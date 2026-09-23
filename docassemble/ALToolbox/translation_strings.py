@@ -86,7 +86,8 @@ def _language_candidates(language: str) -> Iterator[str]:
 
 
 def translation_catalog(language: Optional[str] = None) -> Dict[str, str]:
-    """Return the whole ``word()`` catalog for a language as ``{source: translation}``.
+    """
+    Return the whole ``word()`` catalog for a language as ``{source: translation}``.
 
     Args:
         language: A language code such as ``"es"`` or ``"es-MX"``. Defaults to
@@ -95,6 +96,23 @@ def translation_catalog(language: Optional[str] = None) -> Dict[str, str]:
     Returns:
         A copy of the catalog. Unknown languages return an empty dictionary,
         which is correct: every string then falls back to its source text.
+
+    Example:
+    After registering `add_translations("es", {"Copied!": "¡Copiado!"})`,
+    the value of `copied_label` is:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      copied_label = translation_catalog("es")["Copied!"]
+    ```
+
+    **Output**
+
+    ```text
+    ¡Copiado!
+    ```
     """
     if language is None:
         language = get_language()
@@ -113,7 +131,8 @@ def translation_catalog(language: Optional[str] = None) -> Dict[str, str]:
 
 
 def translate(text: str, language: Optional[str] = None) -> str:
-    """Translate one string exactly the way ``al_translate.js`` does.
+    """
+    Translate one string exactly the way ``al_translate.js`` does.
 
     Tries an exact match first, then a match that ignores whitespace,
     capitalization and trailing punctuation. Returns `text` unchanged when
@@ -121,6 +140,27 @@ def translate(text: str, language: Optional[str] = None) -> str:
 
     This is the server-side twin of the JavaScript ``_()``; use it when Python
     and JavaScript need to agree on the same string.
+
+    Example:
+    After registering `add_translations("es", {"Copied!": "¡Copiado!"})`:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ translate("Copied!", language="es") }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ translate("Copied!", language="es") }}
+    ```
+
+    **Output**
+
+    ```text
+    ¡Copiado!
+    ```
     """
     catalog = translation_catalog(language)
     if text in catalog:
@@ -133,7 +173,8 @@ def translate(text: str, language: Optional[str] = None) -> str:
 
 
 def add_translations(language: str, translations: Dict[str, str]) -> None:
-    """Add entries to the ``word()`` catalog at runtime.
+    """
+    Add entries to the ``word()`` catalog at runtime.
 
     A word translation file listed under ``words:`` in the server configuration
     is the better home for anything permanent: it loads once at startup and
@@ -153,6 +194,17 @@ def add_translations(language: str, translations: Dict[str, str]) -> None:
         The catalog is process-wide and shared by every session, so pass the
         same translations on every run rather than anything derived from one
         user's answers.
+
+    Example:
+    Register a translation before displaying translated text. For
+    permanent translations, prefer the server’s word translation files.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      add_translations("es", {"Copied!": "¡Copiado!"})
+    ```
     """
     update_word_collection(language, translations)
 

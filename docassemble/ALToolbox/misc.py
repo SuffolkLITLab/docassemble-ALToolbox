@@ -53,6 +53,21 @@ __all__ = [
 
 
 class shortenMe:
+    """
+    Create a temporary redirect URL, exposed as `shortenedURL`.
+
+    Example:
+    Create a temporary redirect to the current interview. Use the object’s
+    `shortenedURL` attribute as the link; the redirect expires after seven days.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      short_link = shortenMe(interview_url()).shortenedURL
+    ```
+    """
+
     def __init__(self, originalURL):
         self.shortenedURL = docassemble.base.functions.temp_redirect(
             originalURL, 60 * 60 * 24 * 7, False, False
@@ -79,11 +94,25 @@ def thousands(num: Union[float, str, Decimal], show_decimals=False) -> str:
         with 2 decimal places.
 
     Example:
-    ```python
-        >>> thousands(1234.56)
-        '1,234'
-        >>> thousands(1234.56, show_decimals=True)
-        '1,234.56'
+    With `users[0].monthly_income = 1234.56`, format a PDF field that
+    already has a printed currency symbol:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ thousands(users[0].monthly_income, show_decimals=True) }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ thousands(users[0].monthly_income, show_decimals=True) }}
+    ```
+
+    **Output**
+
+    ```text
+    1,234.56
     ```
     """
     try:
@@ -109,9 +138,19 @@ def tel(phone_number) -> str:
         str: HTML anchor tag with tel: link containing the phone number.
 
     Example:
-    ```python
-        >>> tel("555-123-4567")
-        '<a href="tel:555-123-4567">555-123-4567</a>'
+    With `users[0].phone_number = "202-555-0123"`, the output is HTML
+    for a clickable phone link in question text:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ tel(users[0].phone_number) }
+    ```
+
+    **Output**
+
+    ```text
+    <a href="tel:202-555-0123">202-555-0123</a>
     ```
     """
     return '<a href="tel:' + str(phone_number) + '">' + str(phone_number) + "</a>"
@@ -125,7 +164,8 @@ def fa_icon(
     fa_class: str = "fa-solid",
     aria_hidden: bool = True,
 ) -> str:
-    """Display a fontawesome icon inline.
+    """
+    Display a fontawesome icon inline.
 
     Docassemble allows you to display an icon from [fontawesome](https://fontawesome.com),
     but it does not provide control over the size or color of the icon. This function gives
@@ -136,7 +176,7 @@ def fa_icon(
             [free library](https://fontawesome.com/search?o=r&m=free).
         color: can be any [Bootstrap color variable](https://getbootstrap.com/docs/5.0/utilities/colors/).
             For example: `primary`, `secondary`, `warning`
-        color_css: allows you to use a CSS code to represent the color, e.g., `blue`, or `#fff` for black
+        color_css: allows you to use a CSS code to represent the color, e.g., `blue`, or `rgb(255, 255, 255)` for white
         size: used to control the [fontawesome size](https://fontawesome.com/v6.0/docs/web/style/size)
             (without the `fa-` prefix). Valid values include `2xs`, `xs`, the default of `sm`,
             `md`, `lg`, `xl`, `2x1`, and the python `None`, which defaults to `md`.
@@ -146,6 +186,23 @@ def fa_icon(
 
     Returns:
       HTML for a font-awesome icon of the specified size and color.
+
+    Display an information icon in question text:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ fa_icon("circle-info", color="primary", size="lg") }
+    ```
+
+    Example:
+    Display an information icon in question text:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ fa_icon("circle-info", color="primary", size="lg") }
+    ```
     """
     if not size or size == "md":
         size_str = ""
@@ -181,11 +238,25 @@ def space(var_name: str, prefix=" ", suffix="") -> str:
         and has a value, otherwise an empty string.
 
     Example:
-    ```python
-        >>> space("user_middle_name", prefix=" ", suffix="")
-        " John"  # if user_middle_name is defined as "John"
-        >>> space("undefined_var")
-        ""  # if variable is not defined
+    With `users[0].name.middle = "Morgan"`, include the leading space
+    only when a middle name is defined and nonempty:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ "Alex" + space("users[0].name.middle") + " Rivera" }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ "Alex" + space("users[0].name.middle") + " Rivera" }}
+    ```
+
+    **Output**
+
+    ```text
+    Alex Morgan Rivera
     ```
     """
     if (
@@ -222,13 +293,25 @@ def yes_no_unknown(
         condition is None, or the placeholder value if condition is False.
 
     Example:
-    ```python
-        >>> yes_no_unknown("user_answer", True, "Unknown", 0)
-        # Returns value of user_answer variable
-        >>> yes_no_unknown("user_answer", None, "Unknown", 0)
-        "Unknown"
-        >>> yes_no_unknown("user_answer", False, "Unknown", 0)
-        0
+    With `users[0].has_income = None`, show the unknown label instead
+    of the amount or a zero:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ yes_no_unknown("users[0].monthly_income", users[0].has_income) }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ yes_no_unknown("users[0].monthly_income", users[0].has_income) }}
+    ```
+
+    **Output**
+
+    ```text
+    Unknown
     ```
     """
     if condition:
@@ -253,13 +336,24 @@ def number_to_letter(n: Optional[int]) -> str:
         str: The letter representation of the number using Excel-style column naming.
 
     Example:
-    ```python
-        >>> number_to_letter(1)
-        'A'
-        >>> number_to_letter(26)
-        'Z'
-        >>> number_to_letter(27)
-        'AA'
+    Turn a one-based exhibit number into a label:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ number_to_letter(27) }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ number_to_letter(27) }}
+    ```
+
+    **Output**
+
+    ```text
+    AA
     ```
     """
     string = ""
@@ -302,10 +396,49 @@ def collapse_template(
         Complete HTML string for the Bootstrap collapse component, or empty
         string if template has no content.
 
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:collapse_template.yml
+    ---
+    template: help_text
+    subject: |
+      What should I enter?
+    content: |
+      Enter your current mailing address.
+    ---
+    question: |
+      Your address
+    subquestion: |
+      ${ collapse_template(help_text) }
+    fields:
+      - Street: users[0].address.address
+    ```
+
     Example:
-    ```python
-        >>> collapse_template(my_template, classname="bg-primary", collapsed=False)
-        '<div id="..." class="al_collapse_template">...</div>'
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:collapse_template.yml
+    ---
+    template: help_text
+    subject: |
+      What should I enter?
+    content: |
+      Enter your current mailing address.
+    ---
+    question: |
+      Your address
+    subquestion: |
+      ${ collapse_template(help_text) }
+    fields:
+      - Street: users[0].address.address
     ```
     """
     if not template.subject_as_html(trim=True) and not template.content_as_html():
@@ -350,10 +483,61 @@ def tabbed_templates_html(tab_group_name: str, *pargs) -> str:
         Complete HTML string containing Bootstrap tabs navigation and content
         panels.
 
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:display_template.yml
+    ---
+    template: help_text
+    subject: |
+      What should I enter?
+    content: |
+      Enter your current mailing address.
+    ---
+    template: next_steps
+    subject: |
+      Next steps
+    content: |
+      Review your answers before downloading.
+    ---
+    question: |
+      Your address
+    subquestion: |
+      ${ tabbed_templates_html("help_tabs", help_text, next_steps) }
+    fields:
+      - Street: users[0].address.address
+    ```
+
     Example:
-    ```python
-        >>> tabbed_templates_html("my_tabs", template1, template2, template3)
-        '<ul class="nav nav-tabs" id="my_tabs">...</ul><div class="tab-content">...</div>'
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:display_template.yml
+    ---
+    template: help_text
+    subject: |
+      What should I enter?
+    content: |
+      Enter your current mailing address.
+    ---
+    template: next_steps
+    subject: |
+      Next steps
+    content: |
+      Review your answers before downloading.
+    ---
+    question: |
+      Your address
+    subquestion: |
+      ${ tabbed_templates_html("help_tabs", help_text, next_steps) }
+    fields:
+      - Street: users[0].address.address
     ```
     """
     if isinstance(tab_group_name, str):
@@ -414,6 +598,55 @@ def review_widget(
         post_review_display: text displayed to user after review is submitted
     Returns:
         the HTML string of the widget
+
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:review_widget.yml
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      ${ review_widget(up_action="feedback_helpful", down_action="feedback_unhelpful") }
+    ---
+    event: feedback_helpful
+    code: |
+      feedback_was_helpful = True
+      background_response()
+    ---
+    event: feedback_unhelpful
+    code: |
+      feedback_was_helpful = False
+      background_response()
+    ```
+
+    Example:
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:review_widget.yml
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      ${ review_widget(up_action="feedback_helpful", down_action="feedback_unhelpful") }
+    ---
+    event: feedback_helpful
+    code: |
+      feedback_was_helpful = True
+      background_response()
+    ---
+    event: feedback_unhelpful
+    code: |
+      feedback_was_helpful = False
+      background_response()
+    ```
     """
     js_thumbs_up = f"javascript:altoolbox_thumbs_up_send('{up_action}', {'true' if review_action else 'false'})"
     js_thumbs_down = f"javascript:altoolbox_thumbs_down_send('{down_action}', {'true' if review_action else 'false'})"
@@ -460,9 +693,25 @@ def sum_if_defined(*pargs) -> Union[int, float, Decimal]:
         are treated as 0 (skipped).
 
     Example:
-    ```python
-        >>> sum_if_defined("income1", "income2", "income3")
-        # Returns sum of defined income variables, skipping any undefined ones
+    With `users[0].monthly_income = 1200`, `users[0].other_income = 300`,
+    the sum is 1500. Undefined variables are skipped:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ sum_if_defined("users[0].monthly_income", "users[0].other_income") }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ sum_if_defined("users[0].monthly_income", "users[0].other_income") }}
+    ```
+
+    **Output**
+
+    ```text
+    1500
     ```
     """
     total = 0
@@ -488,10 +737,16 @@ def add_records(obj, labels) -> Any:
         The populated obj (DAList) with interview records added.
 
     Example:
-    ```python
-        >>> interviews = {"intake": ["Intake Interview", "intake.yml"]}
-        >>> add_records(my_list, interviews)
-        # my_list[0].name = "intake", description = "Intake Interview", etc.
+    With `interview_list` declared as a DAList, populate a demo landing page:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      add_records(interview_list, {
+          "intake": ["Start an intake", "intake.yml"],
+          "feedback": ["Give feedback", "feedback.yml"],
+      })
     ```
     """
     index = 0
@@ -525,11 +780,24 @@ def output_checkbox(
         The checked_value if value_to_check is True, otherwise unchecked_value.
 
     Example:
-    ```python
-        >>> output_checkbox(True)
-        '[X]'
-        >>> output_checkbox(False, checked_value="YES", unchecked_value="NO")
-        'NO'
+    With `users[0].has_income = True`, mark a checkbox in a form:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ output_checkbox(users[0].has_income) }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ output_checkbox(users[0].has_income) }}
+    ```
+
+    **Output**
+
+    ```text
+    [X]
     ```
     """
     if value_to_check:
@@ -553,11 +821,24 @@ def nice_county_name(address: Address) -> str:
         the address has no county attribute.
 
     Example:
-    ```python
-        >>> nice_county_name(address_with_county)
-        'Suffolk'  # if address.county was "Suffolk County"
-        >>> nice_county_name(address_without_county)
-        ''
+    With `users[0].address.county = "Suffolk County"`:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ nice_county_name(users[0].address) }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ nice_county_name(users[0].address) }}
+    ```
+
+    **Output**
+
+    ```text
+    Suffolk
     ```
     """
     if not hasattr(address, "county"):
@@ -580,7 +861,8 @@ def button_array(
     custom_container_class="",
     custom_link_class="",
 ) -> str:
-    """Create a grid of da-buttons from a dictionary of links and icons
+    """
+    Create a grid of da-buttons from a dictionary of links and icons
 
     This uses the same CSS classes to mimic the look and feel of Docassemble's `buttons` field type, but
     doesn't have the limits of that particular input method. This is meant to appear
@@ -604,6 +886,18 @@ def button_array(
 
     Returns:
         str: HTML for a grid of buttons that mimics Docassemble's button field type.
+
+    Example:
+    With a `review_answers` event defined in your interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    question: |
+      What would you like to do?
+    subquestion: |
+      ${ button_array([{"name": "Review answers", "image": "pen-to-square", "url": url_action("review_answers")}]) }
+    ```
     """
     buttons = [
         button
@@ -625,7 +919,8 @@ def button_array(
 
 
 def none_to_empty(val: Any) -> Any:
-    """If the value is None or "None", return a DAEmpty value. Otherwise return the value.
+    """
+    If the value is None or "None", return a DAEmpty value. Otherwise return the value.
 
     This is useful for filling in a template and to prevent the word None from appearing in the output. For example,
     when handling a radio button that is not required and left unanswered.
@@ -637,6 +932,28 @@ def none_to_empty(val: Any) -> Any:
         val: the value to check
     Returns:
         a DAEmpty if the value is None, otherwise the value
+
+    Example:
+    With `users[0].name.middle = None`, the brackets show where the empty
+    value appears; the word "None" is omitted:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ "Middle name: [" + str(none_to_empty(users[0].name.middle)) + "]" }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ "Middle name: [" ~ none_to_empty(users[0].name.middle) ~ "]" }}
+    ```
+
+    **Output**
+
+    ```text
+    Middle name: []
+    ```
     """
     if val is None or val == "None":
         return DAEmpty()
@@ -646,7 +963,8 @@ def none_to_empty(val: Any) -> Any:
 def option_or_other(
     variable_name: str, other_variable_name: Optional[str] = None
 ) -> str:
-    """If the variable is set to 'Other', return the value of the 'other' variable. Otherwise return the value of the variable.
+    """
+    If the variable is set to 'Other', return the value of the 'other' variable. Otherwise return the value of the variable.
 
     This is useful for filling in a template and to prevent the word 'Other' from appearing in the output.
 
@@ -655,6 +973,28 @@ def option_or_other(
         other_variable_name: the name of the variable to return if the value of the first variable is 'Other'
     Returns:
         the value of the variable if it is not 'Other', otherwise the value of the other variable
+
+    Example:
+    With `users[0].contact_method = "Other"` and
+    `users[0].contact_method_other = "Postal mail"`:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ option_or_other("users[0].contact_method") }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ option_or_other("users[0].contact_method") }}
+    ```
+
+    **Output**
+
+    ```text
+    Postal mail
+    ```
     """
     if not other_variable_name:
         other_variable_name = variable_name + "_other"
@@ -667,7 +1007,8 @@ def option_or_other(
 def true_values_with_other(
     variable_name: str, other_variable_name: Optional[str] = None
 ) -> List[str]:
-    """Return a list of values that are True, with the value of the 'other' variable appended to the end of the list.
+    """
+    Return a list of values that are True, with the value of the 'other' variable appended to the end of the list.
 
     This is useful for filling in a template and to prevent the word 'Other' from appearing in the output.
 
@@ -680,6 +1021,29 @@ def true_values_with_other(
     Returns:
         A list of values that are True, with the value of the 'other'
         variable appended to the end of the list if 'other'/'Other' was selected.
+
+    Example:
+    With a DADict at `users[0].contact_methods` containing `email=True`
+    and `other=True`, and `users[0].contact_methods_other = "Postal mail"`,
+    in an English interview:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ comma_and_list(true_values_with_other("users[0].contact_methods")) }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ comma_and_list(true_values_with_other("users[0].contact_methods")) }}
+    ```
+
+    **Output**
+
+    ```text
+    email and Postal mail
+    ```
     """
     if not other_variable_name:
         other_variable_name = variable_name + "_other"
@@ -716,10 +1080,17 @@ def include_a_year(text: str, field: Optional[str] = None) -> bool:
         DAValidationError: If no valid year pattern is found in the text.
 
     Example:
-    ```python
-        >>> include_a_year("Born in 1985")
-        True
-        >>> include_a_year("Born long ago")  # raises DAValidationError
+    Require a year in the narrative, for example "The problem began in 2020":
+
+    **Input (interview YAML)**
+
+    ```yaml
+    question: |
+      Describe what happened
+    fields:
+      - Your description: incident_description
+        datatype: area
+        validate: include_a_year
     ```
     """
     # Match a 4-digit sequence
@@ -751,6 +1122,21 @@ def age_in_years(the_date: Union[str, DADateTime]) -> int:
         the_date: A string or DADateTime object representing the date of birth.
     Returns:
         The age in years as an integer.
+
+    Example:
+    After gathering `users[0].birthdate`, show their age as of today:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ age_in_years(users[0].birthdate) }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ age_in_years(users[0].birthdate) }}
+    ```
     """
     if isinstance(the_date, str):
         try:
@@ -797,18 +1183,26 @@ def format_date_if_defined(
     Returns:
         A formatted date string if `date_object_name` is defined, otherwise an empty string.
 
-    Examples:
-    ```python
-        >>> format_date_if_defined("users[0].birthdate", format='yyyy-MM-dd')
+    Example:
+    With `users[0].birthdate` set to January 2, 1990:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ format_date_if_defined("users[0].birthdate", format="yyyy-MM-dd") }
     ```
 
-        Returns a formatted date string if "users[0].birthdate" is defined, otherwise returns an empty string.
+    **Input (Jinja2)**
 
-    ```python
-        >>> format_date_if_defined("users[0].birthdate", default="No date provided", format='yyyy-MM-dd ')
+    ```jinja2
+    {{ format_date_if_defined("users[0].birthdate", format="yyyy-MM-dd") }}
     ```
 
-        Returns a formatted date string followed by one space if "users[0].birthdate" is defined, otherwise returns "No date provided". (Note space is added to the format="..." parameter)
+    **Output**
+
+    ```text
+    1990-01-02
+    ```
     """
     the_date = showifdef(date_object_name)
     if the_date:
