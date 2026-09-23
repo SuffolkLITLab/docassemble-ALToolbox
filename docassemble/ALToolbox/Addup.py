@@ -11,6 +11,28 @@ class Addup:
     This class provides functionality to sum specific numeric fields from all
     items in a Docassemble DAList, which is useful for financial calculations
     and data aggregation in legal document automation.
+
+    Example:
+    With two gathered expense entries whose `value` attributes are 100
+    and 50, both covering the same period:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ Addup(users[0].expenses, "value").sum }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ Addup(users[0].expenses, "value").sum }}
+    ```
+
+    **Output**
+
+    ```text
+    150
+    ```
     """
 
     def __init__(self, listName, varName):
@@ -44,9 +66,26 @@ class Addup:
                 or contained no numeric values.
 
         Example:
-        ```python
-            >>> addup = Addup(income_list, "monthly_amount")
-            >>> # Returns sum of monthly_amount fields from all items in income_list
+        With two gathered expense entries whose `value` attributes are 100
+        and 50, both covering the same period:
+        `expense_sum` was created with `Addup(users[0].expenses, "value")`.
+
+        **Input (Mako)**
+
+        ```mako
+        ${ expense_sum.g(users[0].expenses, "value") }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ expense_sum.g(users[0].expenses, "value") }}
+        ```
+
+        **Output**
+
+        ```text
+        150
         ```
         """
         self.sum = 0

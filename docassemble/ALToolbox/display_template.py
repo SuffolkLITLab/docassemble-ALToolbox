@@ -41,10 +41,45 @@ def display_template(
         HTML string containing the rendered template with the specified
         display options.
 
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:display_template.yml
+    ---
+    template: next_steps
+    subject: |
+      Next steps
+    content: |
+      Print your forms and keep a copy for your records.
+    ---
+    question: |
+      Your forms are ready
+    subquestion: |
+      ${ display_template(next_steps, scrollable=True, collapse=True) }
+    ```
+
     Example:
-    ```python
-        >>> display_template(my_template, scrollable=True, collapse=True)
-        '<div id="..." class="al_display_template">...</div>'
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:display_template.yml
+    ---
+    template: next_steps
+    subject: |
+      Next steps
+    content: |
+      Print your forms and keep a copy for your records.
+    ---
+    question: |
+      Your forms are ready
+    subquestion: |
+      ${ display_template(next_steps, scrollable=True, collapse=True) }
     ```
     """
     # 1. Initialize

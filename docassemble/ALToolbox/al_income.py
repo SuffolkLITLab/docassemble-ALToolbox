@@ -102,12 +102,28 @@ def times_per_year(
         The lowercase textual description of the frequency, or a generated
         description if not found in the list.
 
-    Examples:
-    ```python
-        >>> times_per_year([(12, "Monthly"), (1, "Annually")], 12)
-        'monthly'
-        >>> times_per_year([(12, "Monthly")], 5)
-        'Five times per year'
+    Example:
+    With a gathered `users[0].incomes` list containing monthly non-hourly
+    entries for wages (`value=1000`, `source="wages"`) and benefits
+    (`value=250`, `source="benefits"`), both with `times_per_year=12`,
+    and US English currency formatting:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ times_per_year([(12, "Monthly"), (1, "Annually")], users[0].incomes[0].times_per_year) }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ times_per_year([(12, "Monthly"), (1, "Annually")], users[0].incomes[0].times_per_year) }}
+    ```
+
+    **Output**
+
+    ```text
+    monthly
     ```
     """
     try:
@@ -142,12 +158,31 @@ def recent_years(
     Returns:
         List[int]: List of years in the specified order.
 
-    Examples:
-    ```python
-        >>> recent_years(past=3, future=1)  # if current year is 2023
-        [2024, 2023, 2022, 2021]
-        >>> recent_years(past=2, order="ascending", future=0)
-        [2022, 2023]
+    Populate the vehicle year choices relative to the year the interview runs:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    question: |
+      What year was your vehicle made?
+    fields:
+      - Year: users[0].vehicles[0].year
+        datatype: integer
+        code: recent_years(past=25, future=1)
+    ```
+
+    Example:
+    Populate the vehicle year choices relative to the year the interview runs:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    question: |
+      What year was your vehicle made?
+    fields:
+      - Year: users[0].vehicles[0].year
+        datatype: integer
+        code: recent_years(past=25, future=1)
     ```
     """
     now = datetime.datetime.now()
@@ -171,6 +206,25 @@ class ALPeriodicAmount(DAObject):
         source (str, optional): The "source" of the income, like a "job" or a "house".
         display_name (str, optional): If present, will have a translated string to show the
             user, as opposed to a raw english string from the program.
+
+    Example:
+    ALExpense inherits this calculation. With a gathered expense on the
+    first person, convert it to a monthly amount:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    modules:
+      - docassemble.ALToolbox.al_income
+    ---
+    objects:
+      - users[0].expenses: ALExpenseList
+    ---
+    question: |
+      Monthly expenses
+    subquestion: |
+      ${ currency(users[0].expenses[0].total(times_per_year=12)) }
+    ```
     """
 
     def __str__(self) -> str:
@@ -195,13 +249,26 @@ class ALPeriodicAmount(DAObject):
         Returns:
             Decimal: The calculated income amount for the specified frequency.
 
-        Examples:
-        ```python
-            >>> income = ALPeriodicAmount(value=1000, times_per_year=12)  # $1000/month
-            >>> income.total(1)  # Annual total
-            Decimal('12000')
-            >>> income.total(12)  # Monthly total
-            Decimal('1000')
+        Example:
+        With `users[0].expenses[0].value = 1000`, `.times_per_year = 12`,
+        and US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].expenses[0].total(times_per_year=1)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].expenses[0].total(times_per_year=1)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $12,000.00
         ```
         """
         val = _currency_float_to_decimal(self.value)
@@ -227,6 +294,24 @@ class ALIncome(ALPeriodicAmount):
             hours per week. This attribute is required if `.is_hourly` is True.
         source (str, optional): The "source" of the income, like a "job" or a "house".
         owner (str, optional): Full name of the income's owner as a single string.
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].incomes[0]`, is a `ALIncome`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].incomes: ALIncomeList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].incomes.total(times_per_year=12)) }
+    ```
     """
 
     def total(self, times_per_year: float = 1) -> Decimal:
@@ -247,6 +332,30 @@ class ALIncome(ALPeriodicAmount):
 
         Returns:
             The calculated income amount for the specified frequency.
+
+        Example:
+        With a gathered `users[0].incomes` list containing monthly non-hourly
+        entries for wages (`value=1000`, `source="wages"`) and benefits
+        (`value=250`, `source="benefits"`), both with `times_per_year=12`,
+        and US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].incomes[0].total(times_per_year=1)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].incomes[0].total(times_per_year=1)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $12,000.00
+        ```
         """
         if hasattr(self, "is_hourly") and self.is_hourly:
             val = _currency_float_to_decimal(self.value)
@@ -258,7 +367,27 @@ class ALIncome(ALPeriodicAmount):
 
 
 class ALExpense(ALPeriodicAmount):
-    """Not much changes from ALPeriodic Amount, just the generic object questions"""
+    """
+    Not much changes from ALPeriodic Amount, just the generic object questions
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].expenses[0]`, is a `ALExpense`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].expenses: ALExpenseList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].expenses.total(times_per_year=12)) }
+    ```
+    """
 
     pass
 
@@ -332,6 +461,24 @@ class ALIncomeList(DAList):
     - times_per_year: Frequency of the income
     - value: Amount value
     - total(): Calculate total amount for a given frequency
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].incomes[0]`, is a `ALIncome`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].incomes: ALIncomeList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].incomes.total(times_per_year=12)) }
+    ```
     """  # The DAList base sets/uses this dynamically; annotate for type checkers
 
     object_type: Optional[type]
@@ -358,15 +505,28 @@ class ALIncomeList(DAList):
         Returns:
             Set[str]: A set containing all unique source names from items in the list.
 
-        Examples:
-        ```python
-            >>> income_list = ALIncomeList([
-            ...     ALIncome(source="wages"),
-            ...     ALIncome(source="tips"),
-            ...     ALIncome(source="wages")
-            ... ])
-            >>> income_list.sources()
-            {'wages', 'tips'}
+        Example:
+        With a gathered `users[0].incomes` list containing monthly non-hourly
+        entries for wages (`value=1000`, `source="wages"`) and benefits
+        (`value=250`, `source="benefits"`), both with `times_per_year=12`,
+        and US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ comma_and_list(sorted(users[0].incomes.sources())) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ comma_and_list(users[0].incomes.sources() | sort) }}
+        ```
+
+        **Output**
+
+        ```text
+        benefits and wages
         ```
         """
         sources = set()
@@ -392,16 +552,28 @@ class ALIncomeList(DAList):
         Returns:
             ALIncomeList: A new ALIncomeList containing only items with matching sources.
 
-        Examples:
-        ```python
-            >>> income_list = ALIncomeList([
-            ...     ALIncome(source="wages", value=1000),
-            ...     ALIncome(source="tips", value=200),
-            ...     ALIncome(source="wages", value=1200)
-            ... ])
-            >>> wages_only = income_list.matches("wages")
-            >>> len(wages_only)
-            2
+        Example:
+        With a gathered `users[0].incomes` list containing monthly non-hourly
+        entries for wages (`value=1000`, `source="wages"`) and benefits
+        (`value=250`, `source="benefits"`), both with `times_per_year=12`,
+        and US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].incomes.matches("wages").total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].incomes.matches("wages").total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
         ```
         """
         # Always make sure we're working with a set
@@ -440,13 +612,28 @@ class ALIncomeList(DAList):
         Returns:
             Decimal: The total income amount for the specified frequency and filters.
 
-        Examples:
-        ```python
-            >>> income_list = ALIncomeList([wages_income, tips_income])
-            >>> income_list.total(times_per_year=12)  # Monthly total
-            Decimal('5000.00')
-            >>> income_list.total(source="wages")  # Annual wages only
-            Decimal('60000.00')
+        Example:
+        With a gathered `users[0].incomes` list containing monthly non-hourly
+        entries for wages (`value=1000`, `source="wages"`) and benefits
+        (`value=250`, `source="benefits"`), both with `times_per_year=12`,
+        and US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].incomes.total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].incomes.total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,250.00
         ```
         """
         self._trigger_gather()
@@ -474,7 +661,8 @@ class ALIncomeList(DAList):
         selected_types: Optional[DADict] = None,
         selected_terms: Optional[Mapping] = None,
     ) -> None:
-        """Gives a 'gather by checklist' option.
+        """
+        Gives a 'gather by checklist' option.
         If no selected_types param is passed, requires that a .selected_types
         attribute be set by a `datatype: checkboxes` fields
         If "other" is in the selected_types, the source will not be set directly.
@@ -486,6 +674,27 @@ class ALIncomeList(DAList):
         Args:
             selected_types (Optional[DADict]): A dictionary of selected types.
             selected_terms (Optional[Mapping]): A mapping of selected terms.
+
+        Example:
+        Use after declaring `users[0].incomes` as an ALIncomeList. This creates
+        entries for the checked sources; subsequent questions gather amounts:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        question: |
+          What kinds of income do you receive?
+        fields:
+          - Income sources: users[0].incomes.selected_types
+            datatype: checkboxes
+            choices:
+              - Wages: wages
+              - Benefits: benefits
+        ---
+        code: |
+          users[0].incomes.move_checks_to_list()
+          users[0].incomes.moved = True
+        ```
         """
         if selected_types is None:
             selected_types = self.selected_types
@@ -527,6 +736,24 @@ class ALJob(ALIncome):
             calculate the net income in `net_income()`.
         employer (Individual, optional): A docassemble Individual object, employer.address is the address
             and employer.phone is the phone.
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].jobs[0]`, is a `ALJob`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].jobs: ALJobList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].jobs.net_total(times_per_year=12)) }
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -559,6 +786,29 @@ class ALJob(ALIncome):
 
         Returns:
             The calculated gross income amount for the specified frequency.
+
+        Example:
+        With one gathered job in `users[0].jobs`, where `users[0].jobs[0]`
+        has `value=1000`, `deduction=200`, `times_per_year=12`, `is_hourly=False`,
+        and `hours_per_period=40`, and `source="job"`, using US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].jobs[0].gross_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].jobs[0].gross_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
+        ```
         """
         return self.total(times_per_year=times_per_year)
 
@@ -576,6 +826,29 @@ class ALJob(ALIncome):
 
         Returns:
             The calculated deduction amount for the specified frequency.
+
+        Example:
+        With one gathered job in `users[0].jobs`, where `users[0].jobs[0]`
+        has `value=1000`, `deduction=200`, `times_per_year=12`, `is_hourly=False`,
+        and `hours_per_period=40`, and `source="job"`, using US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].jobs[0].deductions(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].jobs[0].deductions(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $200.00
+        ```
         """
         deduction = _currency_float_to_decimal(self.deduction)
         return (deduction * Decimal(self.times_per_year)) / Decimal(times_per_year)
@@ -599,6 +872,29 @@ class ALJob(ALIncome):
             `self.deduction` is the amount deducted from one's pay over a period (not
             per hour if hourly). This will force the gathering of the ALJob's `.value`
             and `.deduction` attributes.
+
+        Example:
+        With one gathered job in `users[0].jobs`, where `users[0].jobs[0]`
+        has `value=1000`, `deduction=200`, `times_per_year=12`, `is_hourly=False`,
+        and `hours_per_period=40`, and `source="job"`, using US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].jobs[0].net_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].jobs[0].net_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $800.00
+        ```
         """
         return self.total(times_per_year=times_per_year) - self.deductions(
             times_per_year=times_per_year
@@ -615,6 +911,21 @@ class ALJob(ALIncome):
         Returns:
             A formatted string containing employer name, optionally with address
             and/or phone number if available.
+
+        Example:
+        After gathering the employer’s name, address, and phone number:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ users[0].jobs[0].employer_name_address_phone() }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ users[0].jobs[0].employer_name_address_phone() }}
+        ```
         """
         if self.employer.address.address and self.employer.phone:
             return (
@@ -641,13 +952,32 @@ class ALJob(ALIncome):
         Returns:
             The normalized number of hours worked for the specified frequency.
 
-        Examples:
-            If the person works 10 hours a week, it will return
-            520 when the times_per_year parameter is 1.
-
         Note:
             This will force the gathering of the attributes `.hours_per_period` and
             `.times_per_year`.
+
+        Example:
+        With one gathered job in `users[0].jobs`, where `users[0].jobs[0]`
+        has `value=1000`, `deduction=200`, `times_per_year=12`, `is_hourly=False`,
+        and `hours_per_period=40`, and `source="job"`, using US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ users[0].jobs[0].normalized_hours(times_per_year=1) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ users[0].jobs[0].normalized_hours(times_per_year=1) }}
+        ```
+
+        **Output**
+
+        ```text
+        480.0
+        ```
         """
         return (float(self.hours_per_period) * int(self.times_per_year)) / float(
             times_per_year
@@ -659,6 +989,24 @@ class ALJobList(ALIncomeList):
     Represents a list of ALJobs. Adds the `.gross_total()` and
     `.net_total()` methods to the ALIncomeList class. It's a more common
     way of reporting income than ALItemizedJobList.
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].jobs[0]`, is a `ALJob`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].jobs: ALJobList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].jobs.net_total(times_per_year=12)) }
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -686,6 +1034,29 @@ class ALJobList(ALIncomeList):
 
         `times_per_year` is some denominator of a year. E.g, to express a weekly
         period, use 52. The default is 1 (a year).
+
+        Example:
+        With one gathered job in `users[0].jobs`, where `users[0].jobs[0]`
+        has `value=1000`, `deduction=200`, `times_per_year=12`, `is_hourly=False`,
+        and `hours_per_period=40`, and `source="job"`, using US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].jobs.total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].jobs.total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
+        ```
         """
         return self.gross_total(
             times_per_year=times_per_year, source=source, exclude_source=exclude_source
@@ -709,6 +1080,29 @@ class ALJobList(ALIncomeList):
 
         Returns:
             The sum of the gross incomes of its ALJobs divided by the time times_per_year.
+
+        Example:
+        With one gathered job in `users[0].jobs`, where `users[0].jobs[0]`
+        has `value=1000`, `deduction=200`, `times_per_year=12`, `is_hourly=False`,
+        and `hours_per_period=40`, and `source="job"`, using US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].jobs.gross_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].jobs.gross_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
+        ```
         """
         self._trigger_gather()
         result: Decimal = Decimal(0)
@@ -741,6 +1135,29 @@ class ALJobList(ALIncomeList):
 
         Returns:
             The sum of the net incomes of its ALJobs divided by the time times_per_year.
+
+        Example:
+        With one gathered job in `users[0].jobs`, where `users[0].jobs[0]`
+        has `value=1000`, `deduction=200`, `times_per_year=12`, `is_hourly=False`,
+        and `hours_per_period=40`, and `source="job"`, using US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].jobs.net_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].jobs.net_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $800.00
+        ```
         """
         self._trigger_gather()
         result: Decimal = Decimal(0)
@@ -770,6 +1187,29 @@ class ALJobList(ALIncomeList):
 
         Returns:
             The sum of the deductions of its ALJobs divided by the time times_per_year.
+
+        Example:
+        With one gathered job in `users[0].jobs`, where `users[0].jobs[0]`
+        has `value=1000`, `deduction=200`, `times_per_year=12`, `is_hourly=False`,
+        and `hours_per_period=40`, and `source="job"`, using US English currency formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].jobs.deductions(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].jobs.deductions(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $200.00
+        ```
         """
         self._trigger_gather()
         result: Decimal = Decimal(0)
@@ -790,6 +1230,24 @@ class ALExpenseList(ALIncomeList):
         value: The monetary value of the expense
         source: The source category of the expense
         display_name: Human-readable name for display
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].expenses[0]`, is a `ALExpense`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].expenses: ALExpenseList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].expenses.total(times_per_year=12)) }
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -818,6 +1276,24 @@ class ALAsset(ALIncome):
             earns the income listed in the `value` attribute.
         owner (str, optional): Full name of the asset owner as a single string.
         source (str, optional): The "source" of the asset, like "vase".
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].assets[0]`, is a `ALAsset`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].assets: ALAssetList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].assets.market_value()) }
+    ```
     """
 
     def total(self, times_per_year: float = 1) -> Decimal:
@@ -831,6 +1307,29 @@ class ALAsset(ALIncome):
 
         Returns:
             Decimal: The .value attribute divided by the times per year.
+
+        Example:
+        With a gathered `users[0].assets` list containing one asset with
+        `market_value=10000`, `balance=2500`, `value=120`, `times_per_year=1`,
+        `owner="Alex Rivera"`, and `source="savings"`, in US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].assets[0].total()) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].assets[0].total()) }}
+        ```
+
+        **Output**
+
+        ```text
+        $120.00
+        ```
         """
         if not hasattr(self, "value") or self.value == "":
             return Decimal(0)
@@ -846,6 +1345,29 @@ class ALAsset(ALIncome):
 
         Returns:
             Decimal: The total equity in the asset.
+
+        Example:
+        With a gathered `users[0].assets` list containing one asset with
+        `market_value=10000`, `balance=2500`, `value=120`, `times_per_year=1`,
+        `owner="Alex Rivera"`, and `source="savings"`, in US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].assets[0].equity()) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].assets[0].equity()) }}
+        ```
+
+        **Output**
+
+        ```text
+        $7,500.00
+        ```
         """
         if getattr(self, loan_attribute, None) is None:
             return Decimal(self.market_value)
@@ -871,6 +1393,24 @@ class ALAssetList(ALIncomeList):
             earns the income listed in the `value` attribute.
         owner (str, optional): Full name of the asset owner as a single string.
         source (str, optional): The "source" of the asset, like "vase".
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].assets[0]`, is a `ALAsset`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].assets: ALAssetList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].assets.market_value()) }
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -895,6 +1435,29 @@ class ALAssetList(ALIncomeList):
 
         Returns:
             Decimal: The total market value of the assets.
+
+        Example:
+        With a gathered `users[0].assets` list containing one asset with
+        `market_value=10000`, `balance=2500`, `value=120`, `times_per_year=1`,
+        `owner="Alex Rivera"`, and `source="savings"`, in US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].assets.market_value()) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].assets.market_value()) }}
+        ```
+
+        **Output**
+
+        ```text
+        $10,000.00
+        ```
         """
         result = Decimal(0)
         satisfies_sources = _source_to_callable(source, exclude_source)
@@ -923,6 +1486,29 @@ class ALAssetList(ALIncomeList):
 
         Returns:
             Decimal: The total balance of the assets.
+
+        Example:
+        With a gathered `users[0].assets` list containing one asset with
+        `market_value=10000`, `balance=2500`, `value=120`, `times_per_year=1`,
+        `owner="Alex Rivera"`, and `source="savings"`, in US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].assets.balance()) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].assets.balance()) }}
+        ```
+
+        **Output**
+
+        ```text
+        $2,500.00
+        ```
         """
         self._trigger_gather()
         result = Decimal(0)
@@ -953,6 +1539,29 @@ class ALAssetList(ALIncomeList):
 
         Returns:
             Decimal: The total equity in the assets.
+
+        Example:
+        With a gathered `users[0].assets` list containing one asset with
+        `market_value=10000`, `balance=2500`, `value=120`, `times_per_year=1`,
+        `owner="Alex Rivera"`, and `source="savings"`, in US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].assets.equity()) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].assets.equity()) }}
+        ```
+
+        **Output**
+
+        ```text
+        $7,500.00
+        ```
         """
         self._trigger_gather()
         result = Decimal(0)
@@ -982,6 +1591,29 @@ class ALAssetList(ALIncomeList):
 
         Returns:
             Set[str]: A set of the unique owners of the assets.
+
+        Example:
+        With a gathered `users[0].assets` list containing one asset with
+        `market_value=10000`, `balance=2500`, `value=120`, `times_per_year=1`,
+        `owner="Alex Rivera"`, and `source="savings"`, in US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ comma_and_list(sorted(users[0].assets.owners())) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ comma_and_list(users[0].assets.owners() | sort) }}
+        ```
+
+        **Output**
+
+        ```text
+        Alex Rivera
+        ```
         """
         owners = set()
         if source is None and exclude_source is None:
@@ -1001,7 +1633,8 @@ class ALAssetList(ALIncomeList):
 
 
 class ALVehicle(ALAsset):
-    """Represents a vehicle as a specialized type of ALAsset.
+    """
+    Represents a vehicle as a specialized type of ALAsset.
 
     This subclass of ALAsset adds specific attributes relevant to vehicles,
     such as year, make, and model, and includes methods for representing
@@ -1018,6 +1651,24 @@ class ALVehicle(ALAsset):
         times_per_year (int): The frequency over which the `value` is earned annually.
         owner (str): Full name of the vehicle owner.
         source (str, optional): The source of the asset, defaults to 'vehicle'.
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].vehicles[0]`, is a `ALVehicle`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].vehicles: ALVehicleList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].vehicles.market_value()) }
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -1038,20 +1689,53 @@ class ALVehicle(ALAsset):
         Returns:
             str: A formatted string combining year, make, and model of the vehicle.
 
-        Examples:
-        ```python
-            >>> vehicle = ALVehicle(year=2020, make="Toyota", model="Camry")
-            >>> vehicle.year_make_model()
-            '2020 / Toyota / Camry'
-            >>> vehicle.year_make_model(separator=", ")
-            '2020, Toyota, Camry'
+        Example:
+        With `users[0].vehicles[0].year = 2020`, `.make = "Toyota"`,
+        and `.model = "Camry"` on that vehicle:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ users[0].vehicles[0].year_make_model() }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ users[0].vehicles[0].year_make_model() }}
+        ```
+
+        **Output**
+
+        ```text
+        2020 / Toyota / Camry
         ```
         """
         return separator.join(map(str, [self.year, self.make, self.model]))
 
 
 class ALVehicleList(ALAssetList):
-    """List of ALVehicles. Extends ALAssetList."""
+    """
+    List of ALVehicles. Extends ALAssetList.
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].vehicles[0]`, is a `ALVehicle`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].vehicles: ALVehicleList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].vehicles.market_value()) }
+    ```
+    """
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -1068,6 +1752,24 @@ class ALSimpleValue(DAObject):
         transaction_type (str, optional): Can be "expense", which will give a
             negative value to the total of the item.
         source (str, optional): The "source" of the item, like "vase".
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].transactions[0]`, is a `ALSimpleValue`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].transactions: ALSimpleValueList.using(complete_attribute="value")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].transactions.total()) }
+    ```
     """
 
     def total(self) -> Decimal:
@@ -1081,6 +1783,29 @@ class ALSimpleValue(DAObject):
 
         Returns:
             The total value of the item, taking into account the transaction type.
+
+        Example:
+        With a gathered `users[0].transactions` list containing a receipt
+        (`value=100`, `source="deposit"`) and an expense (`value=25`,
+        `source="fee"`, `transaction_type="expense"`), in US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].transactions[1].total()) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].transactions[1].total()) }}
+        ```
+
+        **Output**
+
+        ```text
+        -$25.00
+        ```
         """
         val = _currency_float_to_decimal(self.value)
         if hasattr(self, "transaction_type"):
@@ -1094,7 +1819,27 @@ class ALSimpleValue(DAObject):
 
 
 class ALSimpleValueList(DAList):
-    """Represents a filterable DAList of ALSimpleValues."""
+    """
+    Represents a filterable DAList of ALSimpleValues.
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].transactions[0]`, is a `ALSimpleValue`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].transactions: ALSimpleValueList.using(complete_attribute="value")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].transactions.total()) }
+    ```
+    """
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -1106,6 +1851,29 @@ class ALSimpleValueList(DAList):
 
         Returns:
             A set of the unique sources of values stored in the list.
+
+        Example:
+        With a gathered `users[0].transactions` list containing a receipt
+        (`value=100`, `source="deposit"`) and an expense (`value=25`,
+        `source="fee"`, `transaction_type="expense"`), in US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ comma_and_list(sorted(users[0].transactions.sources())) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ comma_and_list(users[0].transactions.sources() | sort) }}
+        ```
+
+        **Output**
+
+        ```text
+        deposit and fee
+        ```
         """
         sources = set()
         for value in self.elements:
@@ -1129,6 +1897,29 @@ class ALSimpleValueList(DAList):
 
         Returns:
             The total value in the list.
+
+        Example:
+        With a gathered `users[0].transactions` list containing a receipt
+        (`value=100`, `source="deposit"`) and an expense (`value=25`,
+        `source="fee"`, `transaction_type="expense"`), in US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].transactions.total()) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].transactions.total()) }}
+        ```
+
+        **Output**
+
+        ```text
+        $75.00
+        ```
         """
         self._trigger_gather()
         result = Decimal(0)
@@ -1166,6 +1957,20 @@ class ALItemizedValue(DAObject):
 
             If the ".exists" attribute is False or undefined, the item will not be used
             when calculating totals.
+
+    Example:
+    An ALItemizedJob initializes `to_add` and `to_subtract` as
+    ALItemizedValueDicts. Each named entry is an ALItemizedValue. With
+    `users[0].itemized_jobs` declared as an ALItemizedJobList:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      users[0].itemized_jobs[0].to_add["wages"].display_name = "Wages"
+      users[0].itemized_jobs[0].to_add["wages"].is_hourly = False
+      users[0].itemized_jobs[0].to_add["wages"].times_per_year = 12
+    ```
     """
 
     def income_fields(self, use_exists=True) -> List[Dict[str, Any]]:
@@ -1178,6 +1983,18 @@ class ALItemizedValue(DAObject):
 
         Returns:
             A list of dictionaries representing the fields for an itemized value.
+
+        Example:
+        After setting the entry’s `display_name` to "Wages":
+
+        **Input (interview YAML)**
+
+        ```yaml
+        question: |
+          Tell us about your wages
+        fields:
+          - code: users[0].itemized_jobs[0].to_add["wages"].income_fields()
+        ```
         """
         if use_exists:
             return [
@@ -1215,14 +2032,30 @@ class ALItemizedValue(DAObject):
             The total value of this item, or 0 if the item doesn't exist
             or has no value.
 
-        Examples:
-        ```python
-            >>> item = ALItemizedValue(value=1500, exists=True)
-            >>> item.total()
-            Decimal('1500')
-            >>> item_disabled = ALItemizedValue(exists=False)
-            >>> item_disabled.total()
-            Decimal('0')
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+        This is the raw amount before period or hourly conversions. For normalized
+        amounts, use the parent job’s `gross_total()`.
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs[0].to_add["wages"].total()) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs[0].to_add["wages"].total()) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
         ```
         """
         # If an item's value doesn't exist, use a value of 0
@@ -1262,6 +2095,20 @@ class ALItemizedValueDict(DAOrderedDict):
     Warning:
         Should only be accessed through an ALItemizedJob. Otherwise
         you may get unexpected results.
+
+    Example:
+    An ALItemizedJob initializes `to_add` and `to_subtract` as
+    ALItemizedValueDicts. Each named entry is an ALItemizedValue. With
+    `users[0].itemized_jobs` declared as an ALItemizedJobList:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      users[0].itemized_jobs[0].to_add["wages"].display_name = "Wages"
+      users[0].itemized_jobs[0].to_add["wages"].is_hourly = False
+      users[0].itemized_jobs[0].to_add["wages"].times_per_year = 12
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -1300,13 +2147,30 @@ class ALItemizedValueDict(DAOrderedDict):
         Returns:
             Decimal: The sum of all existing item values in the dictionary.
 
-        Examples:
-        ```python
-            >>> value_dict = ALItemizedValueDict()
-            >>> value_dict['wages'] = ALItemizedValue(value=1000, exists=True)
-            >>> value_dict['bonus'] = ALItemizedValue(value=500, exists=False)
-            >>> value_dict.total()
-            Decimal('1000')  # Only includes wages, not bonus
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+        This is the raw amount before period or hourly conversions. For normalized
+        amounts, use the parent job’s `gross_total()`.
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs[0].to_add.total()) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs[0].to_add.total()) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
         ```
         """
         val = Decimal(0)
@@ -1382,6 +2246,24 @@ class ALItemizedJob(DAObject):
         - The developer needs access to total money coming in, total money going out,
           and the total of money going in and money coming out.
         - A user must be able to add their own arbitrary items.
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].itemized_jobs[0]`, is a `ALItemizedJob`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].itemized_jobs: ALItemizedJobList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].itemized_jobs.net_total(times_per_year=12)) }
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -1471,6 +2353,30 @@ class ALItemizedJob(DAObject):
 
         Returns:
             The gross total of the job.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs[0].total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs[0].total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
+        ```
         """
         return self.gross_total(
             times_per_year=times_per_year, source=source, exclude_source=exclude_source
@@ -1497,6 +2403,30 @@ class ALItemizedJob(DAObject):
 
         Returns:
             Decimal: The sum of positive values for the given parameters.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs[0].gross_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs[0].gross_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
+        ```
         """
         # self.to_add._trigger_gather()
         total = Decimal(0)
@@ -1532,6 +2462,30 @@ class ALItemizedJob(DAObject):
 
         Returns:
             Decimal: The sum of deductions for the given parameters as a positive value.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs[0].deduction_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs[0].deduction_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $200.00
+        ```
         """
         # self.to_subtract._trigger_gather()
         total = Decimal(0)
@@ -1568,6 +2522,30 @@ class ALItemizedJob(DAObject):
 
         Returns:
             Decimal: The net value (gross minus deductions) for the given parameters.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs[0].net_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs[0].net_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $800.00
+        ```
         """
         # self.to_add._trigger_gather()
         # self.to_subtract._trigger_gather()
@@ -1584,6 +2562,21 @@ class ALItemizedJob(DAObject):
 
         Returns:
             A string containing the employer's name, address, and phone number.
+
+        Example:
+        After gathering the itemized job’s employer information:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ users[0].itemized_jobs[0].employer_name_address_phone() }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ users[0].itemized_jobs[0].employer_name_address_phone() }}
+        ```
         """
         info_list = []
         has_address = (
@@ -1618,6 +2611,30 @@ class ALItemizedJob(DAObject):
 
         Returns:
             The normalized number of hours worked in the given time period.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ users[0].itemized_jobs[0].normalized_hours(times_per_year=1) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ users[0].itemized_jobs[0].normalized_hours(times_per_year=1) }}
+        ```
+
+        **Output**
+
+        ```text
+        480.0
+        ```
         """
         return (float(self.hours_per_period) * float(self.times_per_year)) / float(
             times_per_year
@@ -1628,6 +2645,24 @@ class ALItemizedJobList(DAList):
     """
     Represents a list of ALItemizedJobs that can have both payments and money
         out. This is a less common way of reporting income.
+
+    Example:
+    In an AssemblyLine interview, `users` is an ALPeopleList and `users[0]`
+    is an ALIndividual. Include `docassemble.ALToolbox:al_income.yml` for
+    the income questions, then attach this list to the first person:
+    Each entry, such as `users[0].itemized_jobs[0]`, is a `ALItemizedJob`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    objects:
+      - users[0].itemized_jobs: ALItemizedJobList.using(complete_attribute="complete")
+    ---
+    question: |
+      Review your information
+    subquestion: |
+      Total: ${ currency(users[0].itemized_jobs.net_total(times_per_year=12)) }
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -1638,7 +2673,8 @@ class ALItemizedJobList(DAList):
             self.object_type = ALItemizedJob
 
     def sources(self, which_side: Optional[str] = None) -> Set[str]:
-        """Returns a set of the unique sources in all of the jobs.
+        """
+        Returns a set of the unique sources in all of the jobs.
         By default gets from both sides, if which_side is "deductions", only gets from deductions.
 
         Args:
@@ -1646,6 +2682,30 @@ class ALItemizedJobList(DAList):
 
         Returns:
             A set of the unique sources in all of the jobs.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ comma_and_list(sorted(users[0].itemized_jobs.sources(which_side="incomes"))) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ comma_and_list(users[0].itemized_jobs.sources(which_side="incomes") | sort) }}
+        ```
+
+        **Output**
+
+        ```text
+        wages
+        ```
         """
         sources = set()
         if not which_side:
@@ -1674,6 +2734,30 @@ class ALItemizedJobList(DAList):
 
         Returns:
             The gross total of the list.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs.total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs.total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
+        ```
         """
         return self.gross_total(
             times_per_year=times_per_year, source=source, exclude_source=exclude_source
@@ -1701,6 +2785,30 @@ class ALItemizedJobList(DAList):
 
         Returns:
             Decimal: The sum of the gross incomes for the given parameters.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs.gross_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs.gross_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $1,000.00
+        ```
         """
         self._trigger_gather()
         total = Decimal(0)
@@ -1737,6 +2845,30 @@ class ALItemizedJobList(DAList):
 
         Returns:
             Decimal: The sum of the deductions for the given parameters.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs.deduction_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs.deduction_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $200.00
+        ```
         """
         self._trigger_gather()
         total = Decimal(0)
@@ -1773,6 +2905,30 @@ class ALItemizedJobList(DAList):
 
         Returns:
             Decimal: The net total (gross minus deductions) for the given parameters.
+
+        Example:
+        With one gathered, non-hourly job in `users[0].itemized_jobs`, paid
+        monthly (`times_per_year=12`, `hours_per_period=40`). Its `to_add["wages"]`
+        is 1000 and `to_subtract["taxes"]` is 200, both with `exists=True`,
+        `is_hourly=False`, and `times_per_year=12`. Use US English formatting:
+
+        **Input (Mako)**
+
+        ```mako
+        ${ currency(users[0].itemized_jobs.net_total(times_per_year=12)) }
+        ```
+
+        **Input (Jinja2)**
+
+        ```jinja2
+        {{ currency(users[0].itemized_jobs.net_total(times_per_year=12)) }}
+        ```
+
+        **Output**
+
+        ```text
+        $800.00
+        ```
         """
         return self.gross_total(
             times_per_year=times_per_year, source=source

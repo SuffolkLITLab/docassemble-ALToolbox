@@ -198,7 +198,19 @@ def _extract_model_id(model: Any) -> Optional[str]:
 
 
 def list_available_models(openai_client: Optional[OpenAI] = None) -> List[str]:
-    """Return model IDs available on the configured OpenAI-compatible provider."""
+    """
+    Return model IDs available on the configured OpenAI-compatible provider.
+
+    Example:
+    With the provider configured on the server, list model IDs:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      available_models = list_available_models()
+    ```
+    """
     if not openai_client:
         openai_client = client
 
@@ -230,10 +242,30 @@ def get_available_models(
     openai_client: Optional[OpenAI] = None,
     available_models: Optional[List[str]] = None,
 ) -> List[str]:
-    """Return candidate model names that exist on the configured provider.
+    """
+    Return candidate model names that exist on the configured provider.
 
     Matching is case-insensitive, and results preserve the order from
     ``candidate_models``.
+
+    Example:
+    Using illustrative provider IDs and a previously fetched list, the
+    value of `matching_models` preserves candidate order and provider casing:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      matching_models = get_available_models(
+          ["MODEL-A", "model-b"], available_models=["model-a", "model-c"]
+      )
+    ```
+
+    **Output**
+
+    ```text
+    ['model-a']
+    ```
     """
     if available_models is None:
         available_models = list_available_models(openai_client=openai_client)
@@ -270,7 +302,8 @@ def get_first_available_model_set(
     return_partial_if_needed: bool = True,
     fallback_to_first_small_model: bool = True,
 ) -> List[str]:
-    """Return the first usable model set from a prioritized list.
+    """
+    Return the first usable model set from a prioritized list.
 
     Args:
         preferred_model_sets: Ordered fallback list of model sets. Each inner list
@@ -282,6 +315,19 @@ def get_first_available_model_set(
             first non-empty subset encountered.
         fallback_to_first_small_model: If True and no subset is found, returns
             ``[get_first_small_model(...)]`` when available.
+
+    Example:
+    With `preferred_model_sets` containing your ordered lists of provider
+    model IDs, select the first usable group:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      selected_models = get_first_available_model_set(
+          preferred_model_sets, require_full_set=False
+      )
+    ```
     """
     normalized_sets = _normalize_model_sets(preferred_model_sets)
     available_models = list_available_models(openai_client=openai_client)
@@ -307,10 +353,28 @@ def get_first_available_model_set(
 
 
 def detect_model_family(model_name: str) -> str:
-    """Infer provider family from a model name.
+    """
+    Infer provider family from a model name.
 
     Returns values like ``openai``, ``google``, ``anthropic``, ``mistral``,
     ``qwen``, ``deepseek``, or ``meta`` when patterns match.
+
+    Example:
+    Using an illustrative model ID, the value of `model_family` shows
+    the family recognized by the name pattern; this does not query availability:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      model_family = detect_model_family("gpt-example")
+    ```
+
+    **Output**
+
+    ```text
+    openai
+    ```
     """
     lowered = model_name.lower()
     for family, patterns in MODEL_FAMILY_PATTERNS.items():
@@ -325,7 +389,19 @@ def detect_model_family(model_name: str) -> str:
 def get_available_model_families(
     openai_client: Optional[OpenAI] = None,
 ) -> Dict[str, List[str]]:
-    """Group available models by detected family."""
+    """
+    Group available models by detected family.
+
+    Example:
+    Group the configured provider’s available models by family:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      model_families = get_available_model_families()
+    ```
+    """
     families: Dict[str, List[str]] = {}
     for model_name in list_available_models(openai_client=openai_client):
         family = detect_model_family(model_name)
@@ -337,7 +413,8 @@ def get_first_small_model(
     openai_client: Optional[OpenAI] = None,
     keywords: Optional[List[str]] = None,
 ) -> Optional[str]:
-    """Get the first available small/lite model from an OpenAI-compatible endpoint.
+    """
+    Get the first available small/lite model from an OpenAI-compatible endpoint.
 
     Queries the models endpoint and returns the first model whose name contains
     any of the provided keywords. This is useful for finding cost-effective models
@@ -355,9 +432,14 @@ def get_first_small_model(
         str: The ID of the first matching small model, or None if no models match or no client is available.
 
     Example:
-        >>> model = get_first_small_model()
-        >>> if model:
-        ...     response = chat_completion(system_message="...", user_message="...", model=model)
+    Select an available small model. The result may be None if none match:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      small_model = get_first_small_model()
+    ```
     """
     if keywords is None:
         keywords = ["nano", "mini", "small", "lite", "haiku", "turbo", "fast"]
@@ -373,7 +455,8 @@ def get_default_model(
     model_type: str = "small",
     openai_client: Optional[OpenAI] = None,
 ) -> str:
-    """Get the default model to use for LLM operations.
+    """
+    Get the default model to use for LLM operations.
 
     Checks the Docassemble configuration for a default model in this order:
     1. open ai -> default model
@@ -404,6 +487,16 @@ def get_default_model(
 
     Returns:
         str: The model ID to use for LLM operations.
+
+    Example:
+    Select a model using the server’s configuration and available models:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      draft_model = get_default_model(model_type="small")
+    ```
     """
     open_ai_config = get_config("open ai", {}) or {}
     normalized_model_type = (model_type or "small").lower()
@@ -646,7 +739,8 @@ def chat_completion(
     images: Optional[Sequence[Union[DAFile, str, bytes]]] = None,
     image_detail: Optional[Literal["low", "high", "auto"]] = None,
 ) -> Union[List[Any], Dict[str, Any], str]:
-    """A light wrapper on the OpenAI chat endpoint.
+    """
+    A light wrapper on the OpenAI chat endpoint.
 
     Includes support for token limits, minimal error handling, and moderation.
 
@@ -683,12 +777,18 @@ def chat_completion(
         A string with the response from the API endpoint or JSON data if json_mode is True
 
     Example:
-        >>> chat_completion(
-        ...     system_message="Describe the image in one sentence.",
-        ...     user_message="What is this?",
-        ...     images=[png_bytes],
-        ...     image_detail="low",
-        ... )
+    After gathering `incident_description`, generate text in a code block
+    and display `draft_summary` on a review screen. Generated wording varies:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      draft_summary = chat_completion(
+          system_message="Summarize the supplied text in plain language. Do not add facts.",
+          user_message=incident_description,
+      )
+    ```
     """
     if not reasoning_effort:
         reasoning_effort = get_config("open ai", {}).get("reasoning effort") or "low"
@@ -877,6 +977,20 @@ def extract_fields_from_text(
 
     Returns:
         dict: A dictionary of fields extracted from the text
+
+    Example:
+    With `uploaded_text` containing the text of a letter, extract values
+    for a review screen:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      extracted_fields = extract_fields_from_text(
+          uploaded_text,
+          {"sender_name": "The sender’s full name", "letter_date": "The date on the letter"},
+      )
+    ```
     """
     system_message = f"""
     Extract the list of fields from the text supplied by the user.
@@ -949,6 +1063,20 @@ def extract_fields_from_file(
 
     Returns:
         dict: A dictionary of fields extracted from the file
+
+    Example:
+    With `uploaded_letter` gathered using `datatype: file`, extract
+    values for the user to review:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      extracted_fields = extract_fields_from_file(
+          uploaded_letter,
+          {"sender_name": "The sender’s full name", "letter_date": "The date on the letter"},
+      )
+    ```
     """
     system_message = 'You are a data extraction assistant. You return answers in JSON format, like: {"field_name": "value", "field_name2": "value2"}'
 
@@ -1058,7 +1186,8 @@ def match_goals_from_text(
     temperature: float = 0,
     model: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Reads a user's message and determines whether it meets a set of goals, with the help of an LLM.
+    """
+    Reads a user's message and determines whether it meets a set of goals, with the help of an LLM.
 
     Args:
         question (str): The question that was asked to the user
@@ -1071,6 +1200,33 @@ def match_goals_from_text(
 
     Returns:
         A dictionary of fields extracted from the text
+
+    Check whether a gathered narrative supplies the requested details:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      matched_goals = match_goals_from_text(
+          question="Describe what happened",
+          user_response=incident_description,
+          goals={"date": "Includes when it happened", "event": "Describes what happened"},
+      )
+    ```
+
+    Example:
+    Check whether a gathered narrative supplies the requested details:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      matched_goals = match_goals_from_text(
+          question="Describe what happened",
+          user_response=incident_description,
+          goals={"date": "Includes when it happened", "event": "Describes what happened"},
+      )
+    ```
     """
     system_message = f"""
     The user message represents an answer to the following question:
@@ -1118,7 +1274,8 @@ def classify_text(
     temperature: float = 0,
     model: Optional[str] = None,
 ) -> str:
-    """Given a text, classify it into one of the provided choices with the assistance of a large language model.
+    """
+    Given a text, classify it into one of the provided choices with the assistance of a large language model.
 
     Args:
         text (str): The text to classify
@@ -1131,6 +1288,33 @@ def classify_text(
 
     Returns:
         The classification of the text.
+
+    Classify a gathered narrative into one of the supplied categories:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      issue_category = classify_text(
+          incident_description,
+          choices={"housing": "Problems with a home or landlord", "employment": "Problems at work"},
+          default_response="other",
+      )
+    ```
+
+    Example:
+    Classify a gathered narrative into one of the supplied categories:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      issue_category = classify_text(
+          incident_description,
+          choices={"housing": "Problems with a home or landlord", "employment": "Problems at work"},
+          default_response="other",
+      )
+    ```
     """
     system_prompt = f"""You are an expert annotator. Given a user's message, respond with the classification into one of the following categories:
     ```
@@ -1161,7 +1345,8 @@ def synthesize_user_responses(
     model: Optional[str] = None,
     user_language: str = "en",
 ) -> str:
-    """Given a first draft and a series of follow-up questions and answers, use an LLM to synthesize the user's responses
+    """
+    Given a first draft and a series of follow-up questions and answers, use an LLM to synthesize the user's responses
     into a single, coherent reply.
 
     Args:
@@ -1175,6 +1360,21 @@ def synthesize_user_responses(
 
     Returns:
         A synthesized response from the user.
+
+    Example:
+    Combine a gathered narrative and follow-up answer for a review screen:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      draft_summary = synthesize_user_responses([
+          {"role": "assistant", "content": "Describe what happened"},
+          {"role": "user", "content": incident_description},
+          {"role": "assistant", "content": "When did it happen?"},
+          {"role": "user", "content": incident_date_description},
+      ])
+    ```
     """
     system_message = f"""You are a helpful editor engaging in a conversation with the user. You are helping a user write a response to an open-ended question.
     You will see the user's initial draft, followed by a series of questions and answers that clarified additional content to include
@@ -1238,6 +1438,19 @@ def define_fields_from_dict(
         fields_to_ignore (Optional[List]): A list of fields to ignore. Defaults to
             None. Should be used to ensure safety when defining fields from untrusted
             sources. E.g., ["user_is_logged_in"]
+
+    Example:
+    With `users[0]` already defined, assign reviewed field values to the
+    first person in the interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      define_fields_from_dict(
+          {"users[0].name.first": "Alex", "users[0].name.last": "Rivera"},
+      )
+    ```
     """
     if not isinstance(field_dict, dict):
         log("Field dict is not a dictionary.")
@@ -1262,7 +1475,8 @@ def translate_text(
     temperature: float = 0,
     model: Optional[str] = None,
 ) -> str:
-    """Given some text, translate it into another language.
+    """
+    Given some text, translate it into another language.
 
     Args:
         text (str): The text to translate.
@@ -1277,6 +1491,19 @@ def translate_text(
 
     Returns:
         The translated text.
+
+    Example:
+    Translate gathered `notice_text` in a code block, then display
+    `translated_notice`. The generated wording may vary:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      translated_notice = translate_text(
+          notice_text, input_language="en", output_language="es"
+      )
+    ```
     """
     if not text or not str(text).strip():
         return ""
@@ -1317,12 +1544,31 @@ def translate_text(
 
 
 class Goal(DAObject):
-    """A class to represent a goal.
+    """
+    A class to represent a goal.
 
     Attributes:
         name (str): The name of the goal
         description (str): A description of the goal
         satisfied (bool): Whether the goal is satisfied
+
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ follow_up.goal_dict["goal_0"].description }
+    ```
+
+    Example:
+    A goal in a GoalSatisfactionList’s goal_dict.
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ follow_up.goal_dict["goal_0"].description }
+    ```
     """
 
     def response_satisfies_me_or_follow_up(
@@ -1334,7 +1580,8 @@ class Goal(DAObject):
         llm_assumed_role: Optional[str] = "teacher",
         user_assumed_role: Optional[str] = "student",
     ) -> str:
-        """Returns the text of the next question to ask the user or the string "satisfied"
+        """
+        Returns the text of the next question to ask the user or the string "satisfied"
         if the user's response satisfies the goal.
 
         Args:
@@ -1347,6 +1594,17 @@ class Goal(DAObject):
 
         Returns:
             The text of the next question to ask the user or the string "satisfied"
+
+        Example:
+        With a GoalSatisfactionList and `conversation` containing dictionaries
+        with `role` and `content`, request a follow-up for one goal:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          next_question = follow_up.goal_dict["goal_0"].response_satisfies_me_or_follow_up(messages=conversation)
+        ```
         """
         if not model:
             model = get_default_model(openai_client=openai_client)
@@ -1383,7 +1641,8 @@ class Goal(DAObject):
         openai_client: Optional[OpenAI] = None,
         model: Optional[str] = None,
     ) -> str:
-        """Returns the text of the next question to ask the user.
+        """
+        Returns the text of the next question to ask the user.
 
         Args:
             thread_so_far (List[Dict[str, str]]): The thread of the conversation so far
@@ -1392,6 +1651,17 @@ class Goal(DAObject):
 
         Returns:
             The text of the next question to ask the user.
+
+        Example:
+        With a GoalSatisfactionList and `conversation` containing dictionaries
+        with `role` and `content`, request a follow-up for one goal:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          next_question = follow_up.goal_dict["goal_0"].get_next_question(thread_so_far=conversation)
+        ```
         """
         if not model:
             model = get_default_model(openai_client=openai_client)
@@ -1413,7 +1683,27 @@ class Goal(DAObject):
 
 
 class GoalDict(DADict):
-    """A class to represent a DADict of Goals."""
+    """
+    A class to represent a DADict of Goals.
+
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ follow_up.goal_dict.satisfied() }
+    ```
+
+    Example:
+    A dictionary of goals created by a GoalSatisfactionList.
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ follow_up.goal_dict.satisfied() }
+    ```
+    """
 
     def init(self, *pargs, **kwargs):
         super().init(*pargs, **kwargs)
@@ -1421,10 +1711,30 @@ class GoalDict(DADict):
         self.auto_gather = False
 
     def satisfied(self) -> bool:
-        """Returns True if all goals are satisfied, False otherwise.
+        """
+        Returns True if all goals are satisfied, False otherwise.
 
         Returns:
             True if all goals are satisfied, False otherwise.
+
+        With a configured GoalSatisfactionList:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          all_goals_satisfied = follow_up.goal_dict.satisfied()
+        ```
+
+        Example:
+        With a configured GoalSatisfactionList:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          all_goals_satisfied = follow_up.goal_dict.satisfied()
+        ```
         """
         return all(
             [
@@ -1435,17 +1745,49 @@ class GoalDict(DADict):
 
 
 class GoalQuestion(DAObject):
-    """A class to represent a question about a goal.
+    """
+    A class to represent a question about a goal.
 
     Attributes:
         goal (Goal): The goal the question is about
         question (str): The question to ask the user
         response (str): The user's response to the question
+
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ follow_up[0].response }
+    ```
+
+    Example:
+    An entry created by a GoalSatisfactionList.
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ follow_up[0].response }
+    ```
     """
 
     @property
     def complete(self):
-        """Returns True if the goal, question, and response attributes are present."""
+        """
+        Returns True if the goal, question, and response attributes are present.
+
+        Example:
+        Docassemble uses this property during list gathering. Accessing it
+        triggers any missing question and response attributes:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          first_response_complete = follow_up[0].complete
+        ```
+        """
         self.goal
         self.question
         self.response
@@ -1453,7 +1795,8 @@ class GoalQuestion(DAObject):
 
 
 class GoalSatisfactionList(DAList):
-    """A class to help ask the user questions until all goals are satisfied.
+    """
+    A class to help ask the user questions until all goals are satisfied.
 
     Uses an LLM to prompt the user with follow-up questions if the initial response isn't complete.
     By default, the number of follow-up questions is limited to 10.
@@ -1479,6 +1822,51 @@ class GoalSatisfactionList(DAList):
         question_per_goal_limit (int): The maximum number of follow-up questions to ask the user per goal
         initial_draft (str): The initial draft of the user's response
         initial_question (str): The original question posed in the interview
+
+    With an LLM provider configured on the server:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:goal_satisfy.yml
+    ---
+    objects:
+      - follow_up: GoalSatisfactionList.using(goals=["Describe what happened", "Explain when it happened"], initial_question="Describe the incident")
+    ---
+    question: |
+      Describe the incident
+    fields:
+      - Description: follow_up.initial_draft
+        datatype: area
+    ---
+    code: |
+      follow_up.gather()
+      draft_summary = follow_up.synthesize_draft_response()
+    ```
+
+    Example:
+    With an LLM provider configured on the server:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:goal_satisfy.yml
+    ---
+    objects:
+      - follow_up: GoalSatisfactionList.using(goals=["Describe what happened", "Explain when it happened"], initial_question="Describe the incident")
+    ---
+    question: |
+      Describe the incident
+    fields:
+      - Description: follow_up.initial_draft
+        datatype: area
+    ---
+    code: |
+      follow_up.gather()
+      draft_summary = follow_up.synthesize_draft_response()
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -1526,8 +1914,20 @@ class GoalSatisfactionList(DAList):
     #    return len([e for e in self.elements if e.goal == goal])
 
     def mark_satisfied_goals(self) -> None:
-        """Marks goals as satisfied if the user's response satisfies the goal.
+        """
+        Marks goals as satisfied if the user's response satisfies the goal.
         This should be used as soon as the user gives their initial reply.
+
+        Example:
+        After gathering `follow_up.initial_draft`, check the initial response
+        before starting the follow-up questions:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          follow_up.mark_satisfied_goals()
+        ```
         """
         extracted_fields = match_goals_from_text(
             self.initial_question,
@@ -1540,23 +1940,47 @@ class GoalSatisfactionList(DAList):
                 self.goal_dict[field].satisfied = True
 
     def keep_going(self) -> bool:
-        """Returns True if there is at least one unsatisfied goal and if the number of follow-up questions asked is less than the question limit, False otherwise.
+        """
+        Returns True if there is at least one unsatisfied goal and if the number of follow-up questions asked is less than the question limit, False otherwise.
 
         Returns:
             True if there is at least one unsatisfied goal and if the number of follow-up questions asked is less than the question limit, False otherwise.
+
+        Example:
+        With `follow_up` configured as a `GoalSatisfactionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          can_ask_another_question = follow_up.keep_going()
+        ```
         """
         if not self._get_next_unsatisfied_goal() or self.satisfied():
             return False
         return len(self.elements) < self.question_limit
 
     def need_more_questions(self) -> bool:
-        """Returns True if there is at least one unsatisfied goal, False otherwise.
+        """
+        Returns True if there is at least one unsatisfied goal, False otherwise.
 
         Also has the side effect of checking the user's most recent response to see if it satisfies the goal
         and updating the next question to be asked.
 
         Returns:
             True if there is at least one unsatisfied goal, False otherwise.
+
+        Example:
+        With `follow_up` configured as a `GoalSatisfactionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          follow_up.there_is_another = follow_up.need_more_questions()
+        ```
         """
         goal = self._get_next_unsatisfied_goal()
         if not goal:
@@ -1582,10 +2006,22 @@ class GoalSatisfactionList(DAList):
         return self.keep_going()
 
     def satisfied(self) -> bool:
-        """Returns True if all goals are satisfied, False otherwise.
+        """
+        Returns True if all goals are satisfied, False otherwise.
 
         Returns:
             True if all goals are satisfied, False otherwise.
+
+        Example:
+        With `follow_up` configured as a `GoalSatisfactionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          response_is_complete = follow_up.satisfied()
+        ```
         """
         return self.goal_dict.satisfied()
 
@@ -1608,11 +2044,23 @@ class GoalSatisfactionList(DAList):
         return next_goal
 
     def get_next_goal_and_question(self) -> tuple:
-        """Returns the next unsatisfied goal, along with a follow-up question to ask the user, if relevant.
+        """
+        Returns the next unsatisfied goal, along with a follow-up question to ask the user, if relevant.
 
         Returns:
             A tuple of (Goal, str) where the first item is the next unsatisfied goal and the second item is the next question to ask the user, if relevant.
             If the user's response to the last question satisfied the goal, returns (None, None).
+
+        Example:
+        With `follow_up` configured as a GoalSatisfactionList, assign the
+        next gathered list entry’s goal and question:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          follow_up[i].goal, follow_up[i].question = follow_up.get_next_goal_and_question()
+        ```
         """
         goal = self._get_next_unsatisfied_goal()
 
@@ -1661,10 +2109,22 @@ class GoalSatisfactionList(DAList):
         return messages
 
     def synthesize_draft_response(self) -> str:
-        """Returns a draft response that synthesizes the user's responses to the questions.
+        """
+        Returns a draft response that synthesizes the user's responses to the questions.
 
         Returns:
             A draft response that synthesizes the user's responses to the questions.
+
+        Example:
+        With `follow_up` configured as a `GoalSatisfactionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          draft_summary = follow_up.synthesize_draft_response()
+        ```
         """
         messages = [
             {"role": "assistant", "content": self.initial_question},
@@ -1682,13 +2142,25 @@ class GoalSatisfactionList(DAList):
     def provide_feedback(
         self, feedback_prompt: str = ""
     ) -> Union[List[Any], Dict[str, Any], str]:
-        """Returns feedback to the user based on the goals they satisfied.
+        """
+        Returns feedback to the user based on the goals they satisfied.
 
         Args:
             feedback_prompt (str): The prompt to use for the feedback. Defaults to "".
 
         Returns:
             Feedback to the user based on the goals they satisfied.
+
+        Example:
+        With `follow_up` configured as a `GoalSatisfactionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          draft_feedback = follow_up.provide_feedback(feedback_prompt="Explain which details are still missing.")
+        ```
         """
         if not feedback_prompt:
             feedback_prompt = """
@@ -1718,22 +2190,55 @@ class GoalSatisfactionList(DAList):
 
 
 class GoalOrientedQuestion(DAObject):
-    """A class to represent a question in a goal-oriented questionnaire.
+    """
+    A class to represent a question in a goal-oriented questionnaire.
 
     Attributes:
         question (str or dict): The question to ask the user (text or field structure)
         response (str or dict): The user's response to the question (text or field values)
+
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ follow_up[0].response }
+    ```
+
+    Example:
+    An entry created by a GoalOrientedQuestionList.
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ follow_up[0].response }
+    ```
     """
 
     @property
     def complete(self):
-        """Returns True if the question and response attributes are present."""
+        """
+        Returns True if the question and response attributes are present.
+
+        Example:
+        Docassemble uses this property during list gathering. Accessing it
+        triggers any missing question and response attributes:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          first_response_complete = follow_up[0].complete
+        ```
+        """
         self.question
         self.response
         return True
 
     def response_as_text(self) -> str:
-        """Returns the response in a readable text format for the LLM.
+        """
+        Returns the response in a readable text format for the LLM.
 
         Combines both structured responses from response_dict and the open-ended response.
         Uses original labels from the question for better context.
@@ -1741,6 +2246,25 @@ class GoalOrientedQuestion(DAObject):
 
         Returns:
             A formatted string representation of all responses.
+
+        After gathering the first entry in a GoalOrientedQuestionList:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          response_text = follow_up[0].response_as_text()
+        ```
+
+        Example:
+        After gathering the first entry in a GoalOrientedQuestionList:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          response_text = follow_up[0].response_as_text()
+        ```
         """
         response_parts = []
 
@@ -1793,6 +2317,19 @@ class GoalOrientedQuestion(DAObject):
 
         Returns:
             A list of field dictionaries suitable for use in a fields: code: block
+
+        Example:
+        With a GoalOrientedQuestionList whose next entry’s `question` has
+        already been generated:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        question: |
+          Please tell us more
+        fields:
+          - code: follow_up[i].build_field_list()
+        ```
         """
         field_list = []
 
@@ -1821,7 +2358,8 @@ class GoalOrientedQuestion(DAObject):
 
 
 class GoalOrientedQuestionList(DAList):
-    """A class to help ask the user follow-up questions until their response satisfies a single rubric.
+    """
+    A class to help ask the user follow-up questions until their response satisfies a single rubric.
 
     Unlike GoalSatisfactionList which tracks multiple individual goals, this class focuses on a single
     rubric that describes what constitutes a complete response. The AI will continue asking follow-up
@@ -1855,6 +2393,51 @@ class GoalOrientedQuestionList(DAList):
         user_language (str): The language of the user that the questions should be written in, in addition to English. Uses ISO 639-1 two-letter codes or ISO 639-3 three-letter codes. Defaults to "en".
         skip_moderation (bool): If True, skips moderation checks when generating structured fields. Defaults to True.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]): The level of reasoning effort to use when generating responses. Defaults to "low"; use "minimal" for increased speed.
+
+    With an LLM provider configured on the server:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:goal_oriented_question.yml
+    ---
+    objects:
+      - follow_up: GoalOrientedQuestionList.using(rubric="The response explains what happened and when.", initial_question="Describe the incident")
+    ---
+    question: |
+      Describe the incident
+    fields:
+      - Description: follow_up.initial_draft
+        datatype: area
+    ---
+    code: |
+      follow_up.gather()
+      draft_summary = follow_up.synthesize_draft_response()
+    ```
+
+    Example:
+    With an LLM provider configured on the server:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:goal_oriented_question.yml
+    ---
+    objects:
+      - follow_up: GoalOrientedQuestionList.using(rubric="The response explains what happened and when.", initial_question="Describe the incident")
+    ---
+    question: |
+      Describe the incident
+    fields:
+      - Description: follow_up.initial_draft
+        datatype: area
+    ---
+    code: |
+      follow_up.gather()
+      draft_summary = follow_up.synthesize_draft_response()
+    ```
     """
 
     reasoning_effort: Optional[Literal["minimal", "low", "medium", "high"]]
@@ -1889,6 +2472,20 @@ class GoalOrientedQuestionList(DAList):
             self.reasoning_effort = "low"
 
     def bilingual_rule(self) -> str:
+        """
+        Return prompt instructions for the question list’s configured language.
+
+        Example:
+        With `follow_up.user_language` set, get the language instructions for
+        a custom prompt used with this GoalOrientedQuestionList:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          language_instructions = follow_up.bilingual_rule()
+        ```
+        """
         if self.user_language == "en":
             return (
                 "- Write questions, field labels, and choice text in English.".rstrip()
@@ -1905,13 +2502,25 @@ class GoalOrientedQuestionList(DAList):
             """.rstrip()
 
     def generate_initial_question_fields(self) -> Dict[str, Any]:
-        """Generate structured fields for the initial question using the LLM.
+        """
+        Generate structured fields for the initial question using the LLM.
 
         This allows the initial question to use structured fields (radio, checkboxes, etc.)
         instead of requiring an open-ended narrative response.
 
         Returns:
             A dict with the structure for the initial question fields.
+
+        Example:
+        With `follow_up` configured as a GoalOrientedQuestionList and
+        `use_structured_initial_question=True`, generate the initial question:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          follow_up.initial_question_structure = follow_up.generate_initial_question_fields()
+        ```
         """
         system_message = f"""You are a {self.llm_assumed_role} creating an intake form.
 
@@ -1969,10 +2578,35 @@ class GoalOrientedQuestionList(DAList):
         return results
 
     def build_initial_field_list(self) -> List[Dict[str, Any]]:
-        """Build field list for the initial question when using structured format.
+        """
+        Build field list for the initial question when using structured format.
 
         Returns:
             A list of field dictionaries suitable for use in a fields: code: block
+
+        GoalOrientedQuestionList:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        question: |
+          Tell us about the incident
+        fields:
+          - code: follow_up.build_initial_field_list()
+        ```
+
+        Example:
+        After generating `follow_up.initial_question_structure` for a
+        GoalOrientedQuestionList:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        question: |
+          Tell us about the incident
+        fields:
+          - code: follow_up.build_initial_field_list()
+        ```
         """
         if not hasattr(self, "initial_question_structure"):
             self.initial_question_structure = self.generate_initial_question_fields()
@@ -1999,12 +2633,32 @@ class GoalOrientedQuestionList(DAList):
         return field_list
 
     def initial_response_as_text(self) -> str:
-        """Returns the initial response in text format, handling both string and dict formats.
+        """
+        Returns the initial response in text format, handling both string and dict formats.
 
         Handles checkboxes specially by using .true_values() to show only checked items.
 
         Returns:
             A formatted string representation of the initial response.
+
+        After gathering the initial response in a GoalOrientedQuestionList:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          initial_response_text = follow_up.initial_response_as_text()
+        ```
+
+        Example:
+        After gathering the initial response in a GoalOrientedQuestionList:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          initial_response_text = follow_up.initial_response_as_text()
+        ```
         """
         # If initial_draft is a string (traditional open-ended response)
         if hasattr(self, "initial_draft") and isinstance(self.initial_draft, str):
@@ -2058,23 +2712,47 @@ class GoalOrientedQuestionList(DAList):
         return ""
 
     def keep_going(self) -> bool:
-        """Returns True if the response is not yet complete and the question limit hasn't been reached.
+        """
+        Returns True if the response is not yet complete and the question limit hasn't been reached.
 
         Returns:
             True if more questions can be asked, False otherwise.
+
+        Example:
+        With `follow_up` configured as a `GoalOrientedQuestionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          can_ask_another_question = follow_up.keep_going()
+        ```
         """
         if self.satisfied():
             return False
         return len(self.elements) < self.question_limit
 
     def need_more_questions(self) -> bool:
-        """Returns True if the user needs to answer more questions, False otherwise.
+        """
+        Returns True if the user needs to answer more questions, False otherwise.
 
         Also has the side effect of checking the user's most recent response to see if it satisfies
         the rubric and updating the next question to be asked.
 
         Returns:
             True if more questions are needed, False otherwise.
+
+        Example:
+        With `follow_up` configured as a `GoalOrientedQuestionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          follow_up.there_is_another = follow_up.need_more_questions()
+        ```
         """
         status = self._check_satisfaction()
 
@@ -2087,10 +2765,22 @@ class GoalOrientedQuestionList(DAList):
         return self.keep_going()
 
     def satisfied(self) -> bool:
-        """Returns True if the rubric is satisfied, False otherwise.
+        """
+        Returns True if the rubric is satisfied, False otherwise.
 
         Returns:
             True if the rubric is satisfied, False otherwise.
+
+        Example:
+        With `follow_up` configured as a `GoalOrientedQuestionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          response_is_complete = follow_up.satisfied()
+        ```
         """
         if not hasattr(self, "_satisfied"):
             self._satisfied = False
@@ -2205,10 +2895,22 @@ class GoalOrientedQuestionList(DAList):
         return results
 
     def get_next_question(self) -> Optional[Union[str, Dict[str, Any]]]:
-        """Returns the text or field structure of the next question to ask the user.
+        """
+        Returns the text or field structure of the next question to ask the user.
 
         Returns:
             The text/fields of the next question, or None if no more questions are needed.
+
+        Example:
+        With `follow_up` configured as a GoalOrientedQuestionList, assign the
+        next gathered list entry’s question:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          follow_up[i].question = follow_up.get_next_question()
+        ```
         """
         if not self.keep_going():
             return None
@@ -2250,10 +2952,22 @@ class GoalOrientedQuestionList(DAList):
         return messages
 
     def synthesize_draft_response(self) -> str:
-        """Returns a draft response that synthesizes the user's responses to the questions.
+        """
+        Returns a draft response that synthesizes the user's responses to the questions.
 
         Returns:
             A draft response that synthesizes the user's responses to the questions.
+
+        Example:
+        With `follow_up` configured as a `GoalOrientedQuestionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          draft_summary = follow_up.synthesize_draft_response()
+        ```
         """
         messages = [
             {"role": "assistant", "content": self.initial_question},
@@ -2280,13 +2994,25 @@ class GoalOrientedQuestionList(DAList):
     def provide_feedback(
         self, feedback_prompt: str = ""
     ) -> Union[List[Any], Dict[str, Any], str]:
-        """Returns feedback to the user based on how well they satisfied the rubric.
+        """
+        Returns feedback to the user based on how well they satisfied the rubric.
 
         Args:
             feedback_prompt (str): The prompt to use for the feedback. Defaults to "".
 
         Returns:
             Feedback to the user based on how well they satisfied the rubric.
+
+        Example:
+        With `follow_up` configured as a `GoalOrientedQuestionList` (see the class
+        example), use in the interview’s follow-up flow:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          draft_feedback = follow_up.provide_feedback(feedback_prompt="Explain which details are still missing.")
+        ```
         """
         if not feedback_prompt:
             feedback_prompt = f"""
@@ -2328,16 +3054,48 @@ class GoalOrientedQuestionList(DAList):
 
 
 class IntakeQuestion(DAObject):
-    """A class to represent a question in an LLM-assisted intake questionnaire.
+    """
+    A class to represent a question in an LLM-assisted intake questionnaire.
 
     Attributes:
         question (str): The question to ask the user
         response (str): The user's response to the question
+
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ intake_screener[0].response }
+    ```
+
+    Example:
+    An entry created by an IntakeQuestionList.
+    After gathering this value:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ intake_screener[0].response }
+    ```
     """
 
     @property
     def complete(self):
-        """Returns True if the question and response attributes are present."""
+        """
+        Returns True if the question and response attributes are present.
+
+        Example:
+        Docassemble uses this property during list gathering. Accessing it
+        triggers any missing question and response attributes:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          first_response_complete = intake_screener[0].complete
+        ```
+        """
         self.question
         self.response
         return True
@@ -2369,6 +3127,26 @@ class IntakeQuestionList(DAList):
         llm_user_qualifies_prompt (str): The prompt to use to determine if the user qualifies. We have provided a default prompt.
         out_of_questions (bool): Whether the user has run out of questions to answer
         qualifies (bool): Whether the user qualifies based on the criteria
+
+    Example:
+    With an LLM provider configured, replace the sample screening criteria
+    with the criteria used by your organization:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:intake.yml
+    ---
+    objects:
+      - intake_screener: |
+          IntakeQuestionList.using(criteria={"housing": "The applicant needs help with a housing problem."}, problem_type="housing")
+    ---
+    mandatory: True
+    code: |
+      intake_screener.gather()
+      intake_screener.intake_results
+    ```
     """
 
     def init(self, *pargs, **kwargs):
@@ -2446,13 +3224,25 @@ class IntakeQuestionList(DAList):
         return True
 
     def need_more_questions(self) -> bool:
-        """Returns True if the user needs to answer more questions, False otherwise.
+        """
+        Returns True if the user needs to answer more questions, False otherwise.
 
         Also has the side effect of checking the user's most recent response to see if it satisfies the criteria
         and updating both the next question to be asked and the current qualification status.
 
         Returns:
             True if the user needs to answer more questions, False otherwise.
+
+        Example:
+        With `intake_screener` configured as an IntakeQuestionList, use in
+        the gathering flow. This also updates `qualifies` and `next_question`:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          intake_screener.there_is_another = intake_screener.need_more_questions()
+        ```
         """
         status = self._current_qualification_status()
         self.qualifies = status["qualifies"]

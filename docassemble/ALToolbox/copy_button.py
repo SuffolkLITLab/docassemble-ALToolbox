@@ -54,9 +54,18 @@ def copy_button_html(
         str: Complete HTML string containing the copy button and associated elements.
 
     Example:
-    ```python
-        >>> copy_button_html("Hello World", text_before="Message:", label="Copy Message")
-        '<div class="al_copy">...<button class="btn btn-secondary al_copy_button">...</div>'
+    In an AssemblyLine interview after gathering the first user’s address:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:copy_button.yml
+    ---
+    question: |
+      Copy your mailing address
+    subquestion: |
+      ${ copy_button_html(users[0].address.on_one_line(), label="Copy address") }
     ```
     """
 

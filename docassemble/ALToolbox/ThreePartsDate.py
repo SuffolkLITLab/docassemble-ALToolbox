@@ -934,13 +934,20 @@ def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Option
         a localized error message indicating which parts need to be entered.
 
     Example:
-    ```python
-        >>> check_empty_parts("12//2023")
-        "Enter a day"
-        >>> check_empty_parts("//")
-        "Enter a month, a day, and a year"
-        >>> check_empty_parts("12/25/2023")
-        None
+    In an English interview, the value of `missing_part_message` is:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      from docassemble.ALToolbox.ThreePartsDate import check_empty_parts
+      missing_part_message = check_empty_parts("12//2023")
+    ```
+
+    **Output**
+
+    ```text
+    Enter a day
     ```
     """
     # This only handles US dates. How do we use a locale-specific date?
@@ -972,6 +979,41 @@ def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Option
 
 
 class ThreePartsDate(CustomDataType):
+    """
+    A custom date input with separate month, day, and year controls.
+
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    modules:
+      - docassemble.ALToolbox.ThreePartsDate
+    ---
+    question: |
+      Appointment date
+    fields:
+      - Appointment date: appointment_date
+        datatype: ThreePartsDate
+    ```
+
+    Example:
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    modules:
+      - docassemble.ALToolbox.ThreePartsDate
+    ---
+    question: |
+      Appointment date
+    fields:
+      - Appointment date: appointment_date
+        datatype: ThreePartsDate
+    ```
+    """
+
     name = "ThreePartsDate"
     input_type = "ThreePartsDate"
     javascript = js_text.format()
@@ -1006,6 +1048,23 @@ class ThreePartsDate(CustomDataType):
 
         Raises:
             DAValidationError: If the date string is invalid or cannot be parsed.
+
+        Example:
+        Docassemble normally calls this automatically for the datatype. For
+        a direct validation check, the value of `valid_date` is:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          valid_date = ThreePartsDate.validate("01/02/1990")
+        ```
+
+        **Output**
+
+        ```text
+        True
+        ```
         """
         # If there's no input in the item, it's valid
         if not isinstance(item, str) or item == "":
@@ -1037,6 +1096,24 @@ class ThreePartsDate(CustomDataType):
 
         Returns:
             datetime or None: The parsed datetime object, or None if empty.
+
+        Example:
+        Docassemble normally transforms the submitted field automatically.
+        For a direct conversion, the value of `date_label` is:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          parsed_date = ThreePartsDate.transform("01/02/1990")
+          date_label = parsed_date.format("yyyy-MM-dd")
+        ```
+
+        **Output**
+
+        ```text
+        1990-01-02
+        ```
         """
         if item:
             return as_datetime(item)
@@ -1052,6 +1129,23 @@ class ThreePartsDate(CustomDataType):
 
         Returns:
             str or None: The formatted date string, or None if empty.
+
+        Example:
+        With `users[0].birthdate` set to January 2, 1990, the value of
+        `date_input` is the string used to repopulate the widget:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          date_input = ThreePartsDate.default_for(users[0].birthdate)
+        ```
+
+        **Output**
+
+        ```text
+        01/02/1990
+        ```
         """
         if isinstance(item, DADateTime):
             return item.format("MM/dd/yyyy")
@@ -1059,6 +1153,41 @@ class ThreePartsDate(CustomDataType):
 
 
 class BirthDate(ThreePartsDate):
+    """
+    A three-part date input that rejects future dates of birth.
+
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    modules:
+      - docassemble.ALToolbox.ThreePartsDate
+    ---
+    question: |
+      Date of birth
+    fields:
+      - Date of birth: users[0].birthdate
+        datatype: BirthDate
+    ```
+
+    Example:
+    In an interview:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    modules:
+      - docassemble.ALToolbox.ThreePartsDate
+    ---
+    question: |
+      Date of birth
+    fields:
+      - Date of birth: users[0].birthdate
+        datatype: BirthDate
+    ```
+    """
+
     name = "BirthDate"
     input_type = "BirthDate"
     javascript = js_text.format().replace("ThreePartsDate", "BirthDate")
@@ -1098,6 +1227,23 @@ class BirthDate(ThreePartsDate):
         Raises:
             DAValidationError: If the date is invalid, improperly formatted,
                 or in the future.
+
+        Example:
+        Docassemble normally calls this automatically for the datatype. For
+        a direct validation check, the value of `valid_date` is:
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          valid_date = BirthDate.validate("01/02/1990")
+        ```
+
+        **Output**
+
+        ```text
+        True
+        ```
         """
         # If there's no input in the item, it's valid
         if not isinstance(item, str) or item == "":

@@ -9,6 +9,20 @@ class myTable:
     This class processes DAList objects containing 'Individual' or 'Thing' objects
     and converts them into structured table format suitable for document addenda.
     It handles data sanitization and formatting for display purposes.
+
+    Example:
+    For a legacy interview with `household_members` declared as a
+    DAList of Individual objects, use `addendum_table.tableList` in the
+    addendum template. The first list entry is omitted from the addendum;
+    this helper recognizes base Individual/Thing types rather than
+    AssemblyLine subclasses.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      addendum_table = myTable(household_members, "Household members", ["Name"])
+    ```
     """
 
     def __init__(self, tblData, tblTitle, tblHeader):
@@ -70,6 +84,18 @@ class myTextList:
     This class handles text content that might be too long to fit in the main form
     by truncating it at a specified limit and storing the overflow text for use
     in addenda or continuation pages.
+
+    Example:
+    With a gathered text variable `description`, prepare the main form’s
+    `description_overflow.text_cutoff` and the addendum’s
+    `description_overflow.txtList`.
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      description_overflow = myTextList(description, 40, "Description")
+    ```
     """
 
     def __init__(self, text, limit, title):
@@ -101,9 +127,15 @@ class myTextList:
             and self.txtList to contain addendum data if truncation occurred.
 
         Example:
-        ```python
-            >>> text_handler = myTextList("Very long text...", 100, "Description")
-            >>> # If text > 100 chars, text_cutoff will end with " (See Addendum.)"
+        With a gathered text variable `description`, prepare the main form’s
+        `description_overflow.text_cutoff` and the addendum’s
+        `description_overflow.txtList`. The object is an existing myTextList.
+
+        **Input (interview YAML)**
+
+        ```yaml
+        code: |
+          description_overflow.g(description, 40, "Description")
         ```
         """
         # 1. Adjust limit
@@ -154,11 +186,20 @@ def safe_json2(the_object, level=0, is_key=False) -> Any:
         limit is exceeded.
 
     Example:
-    ```python
-        >>> import datetime
-        >>> obj = {"date": datetime.datetime(2023, 12, 25)}
-        >>> safe_json2(obj)
-        {"date": "12/25/2023"}
+    With `users[0].birthdate` set to January 2, 1990, the value of
+    `serializable_answers` is:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      serializable_answers = safe_json2({"birthdate": users[0].birthdate})
+    ```
+
+    **Output**
+
+    ```text
+    {'birthdate': '01/02/1990'}
     ```
     """
     if level > 20:
@@ -240,11 +281,20 @@ def type_name(the_object) -> str:
         str: The class name of the object, or the full type string if parsing fails.
 
     Example:
-    ```python
-        >>> type_name("hello")
-        'str'
-        >>> type_name([1, 2, 3])
-        'list'
+    When inspecting a value while developing an interview, `value_type` is:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    code: |
+      from docassemble.ALToolbox.addenda import type_name
+      value_type = type_name("Alex")
+    ```
+
+    **Output**
+
+    ```text
+    str
     ```
     """
     name = str(type(the_object))

@@ -5,6 +5,41 @@ __all__ = ["PhoneNumber"]
 
 
 class PhoneNumber(CustomDataType):
+    """
+    An international phone-number input with browser-side validation.
+
+    Include the JavaScript and CSS support for this custom datatype:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:phone-number-validation.yml
+    ---
+    question: |
+      What is your mobile phone number?
+    fields:
+      - Mobile phone: users[0].mobile_number
+        datatype: al_international_phone
+    ```
+
+    Example:
+    Include the JavaScript and CSS support for this custom datatype:
+
+    **Input (interview YAML)**
+
+    ```yaml
+    include:
+      - docassemble.ALToolbox:phone-number-validation.yml
+    ---
+    question: |
+      What is your mobile phone number?
+    fields:
+      - Mobile phone: users[0].mobile_number
+        datatype: al_international_phone
+    ```
+    """
+
     name = "al_international_phone"
     input_class = "al_international_phone"
     javascript = """\
