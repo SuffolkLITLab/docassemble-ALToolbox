@@ -42,7 +42,10 @@ def save_record(monkeypatch):
 
     # Simulate the json.dumps call made when SQLAlchemy commits a JSON column.
     # This catches the original failure even for deeply nested values.
-    session.commit.side_effect = lambda: json.dumps(session.add.call_args.args[0].data)
+    # allow_nan=False matches PostgreSQL, which rejects NaN and Infinity in JSON.
+    session.commit.side_effect = lambda: json.dumps(
+        session.add.call_args.args[0].data, allow_nan=False
+    )
 
     def save(**kwargs):
         assert module.save_input_data(**kwargs) is None
@@ -79,7 +82,25 @@ def test_primitives_dates_and_decimals(save_record, value, expected, field_type)
     assert entry.data["field_type_list"] == {"answer": field_type}
 
 
-def test_people_and_gathered_lists_save_display_text(save_record):
+@pytest.mark.parametrize(
+    "value",
+    [
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+        Decimal("NaN"),
+        Decimal("sNaN"),
+        Decimal("Infinity"),
+        Decimal("-Infinity"),
+    ],
+)
+def test_non_finite_numbers_save_as_none(save_record, value):
+    entry = save_record(input_dict={"answer": value})
+    assert entry.data["answer"] is None
+    assert entry.data["field_type_list"] == {"answer": "float"}
+
+
+def test_people_and_gathered_lists_save_item_display_text(save_record):
     john = Individual("users[0]")
     john.name.first = "John"
     john.name.last = "Smith"
@@ -90,7 +111,26 @@ def test_people_and_gathered_lists_save_display_text(save_record):
 
     entry = save_record(input_dict={"person": john, "people": people})
     assert entry.data["person"] == "John Smith"
-    assert entry.data["people"] == "John Smith and Jane Smith"
+    assert entry.data["people"] == ["John Smith", "Jane Smith"]
+
+
+def test_lists_serialize_each_item(save_record):
+    house = DAObject("assets[0]", value=Decimal("2.50"))
+    car = DAObject("assets[1]", name="Car")
+    assets = DAList(
+        "assets", elements=[house, car, Decimal("NaN"), date(2026, 1, 2)], gathered=True
+    )
+
+    entry = save_record(input_dict={"assets": assets})
+    assert entry.data["assets"] == [safe_json(house), "Car", None, "2026-01-02"]
+    assert entry.data["assets"][0]["value"] == 2.5
+
+
+def test_ungathered_lists_save_existing_items(save_record):
+    people = DAList("people", elements=["Jane"])
+    people.there_are_any = True
+    entry = save_record(input_dict={"people": people})
+    assert entry.data["people"] == ["Jane"]
 
 
 def test_inherited_custom_string_method(save_record):

@@ -1,8 +1,9 @@
 from docassemble.base.generate_key import random_alphanumeric
 from docassemble.base.functions import get_current_info, safe_json
-from docassemble.base.util import DADict, DAObject
+from docassemble.base.util import DADict, DAList, DAObject
 from datetime import date, time
 from decimal import Decimal
+import math
 from typing import Dict, List, Any, Optional
 
 try:
@@ -26,12 +27,22 @@ __all__ = ["save_input_data"]
 
 def _serialize_input_value(value: Any) -> Any:
     """Keep data types where possible, preferring useful object display text."""
+    if (isinstance(value, Decimal) and not value.is_finite()) or (
+        isinstance(value, float) and not math.isfinite(value)
+    ):
+        # NaN and infinity aren't valid JSON, so PostgreSQL would reject them.
+        return None
     if value is None or isinstance(
         value, (str, bool, int, float, date, time, Decimal, list, dict, set, tuple)
     ):
         # Keep containers structured and dates/numbers in safe_json's standard
         # format. safe_json does not recursively serialize tuples, so use a list.
         return safe_json(list(value) if isinstance(value, tuple) else value)
+
+    if isinstance(value, DAList):
+        # Save each item on its own, so unnamed objects don't become their
+        # variable names. Reading elements directly avoids triggering gathering.
+        return [_serialize_input_value(item) for item in value.elements]
 
     string_method = type(value).__str__
     if string_method is not object.__str__ and (
