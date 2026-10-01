@@ -1,6 +1,9 @@
 from docassemble.base.generate_key import random_alphanumeric
-from docassemble.base.functions import get_current_info
-from docassemble.base.util import DADict
+from docassemble.base.functions import get_current_info, safe_json
+from docassemble.base.util import DADict, DAList, DAObject
+from datetime import date, time
+from decimal import Decimal
+import math
 from typing import Dict, List, Any, Optional
 
 try:
@@ -22,6 +25,41 @@ except ImportError:
 __all__ = ["save_input_data"]
 
 
+def _serialize_input_value(value: Any) -> Any:
+    """Keep data types where possible, preferring useful object display text."""
+    if (isinstance(value, Decimal) and not value.is_finite()) or (
+        isinstance(value, float) and not math.isfinite(value)
+    ):
+        # NaN and infinity aren't valid JSON, so PostgreSQL would reject them.
+        return None
+    if value is None or isinstance(
+        value, (str, bool, int, float, date, time, Decimal, list, dict, set, tuple)
+    ):
+        # Keep containers structured and dates/numbers in safe_json's standard
+        # format. safe_json does not recursively serialize tuples, so use a list.
+        return safe_json(list(value) if isinstance(value, tuple) else value)
+
+    if isinstance(value, DAList):
+        # Save each item on its own, so unnamed objects don't become their
+        # variable names. Reading elements directly avoids triggering gathering.
+        return [_serialize_input_value(item) for item in value.elements]
+
+    string_method = type(value).__str__
+    if string_method is not object.__str__ and (
+        string_method is not DAObject.__str__ or hasattr(value, "name")
+    ):
+        # DAObject's default string is just its variable name unless it has a
+        # name attribute. Other overrides (including inherited ones) can give
+        # useful display text, such as an individual's full name.
+        try:
+            return str(value)
+        except Exception:
+            # For example, a DAList may not yet be gathered or a display method
+            # may depend on an undefined interview variable.
+            pass
+    return safe_json(value)
+
+
 def save_input_data(
     title: str = "",
     input_dict: Optional[Dict[str, Any]] = None,
@@ -33,13 +71,18 @@ def save_input_data(
     Processes and stores user input data from survey-type interviews into the
     Docassemble JSON storage system. Automatically handles type inference and
     flattening of complex data structures like checkboxes and multiselect fields.
+    Dates use ISO format and Decimals become floats. Objects with a useful
+    ``__str__`` method are saved as display text (for example, an individual's
+    name); other objects and native containers are serialized with ``safe_json``.
+    If an object's string method raises an exception, ``safe_json`` is used instead.
 
     Args:
         title (str, optional): A descriptive title for this data entry.
             Defaults to "".
         input_dict (Optional[Dict[str, Any]], optional): Dictionary mapping field
-            names to their values from interview questions. Values can be strings,
-            floats, ints, or DADict objects. If None, an empty dict is used.
+            names to their values from interview questions, including primitives,
+            dates, Decimals, containers, and Docassemble objects. If None, an
+            empty dict is used.
             Defaults to None.
         tags (Optional[List[str]], optional): List of string tags to associate
             with this data entry for categorization and filtering. Defaults to None.
@@ -74,10 +117,14 @@ def save_input_data(
         input_dict = {}
     for k, v in input_dict.items():
         field_dict[k] = v
-        if isinstance(v, int):
+        if isinstance(v, bool):
+            type_dict[k] = "bool"
+        elif isinstance(v, int):
             type_dict[k] = "int"
-        elif isinstance(v, float):
+        elif isinstance(v, (float, Decimal)):
             type_dict[k] = "float"
+        elif isinstance(v, date):
+            type_dict[k] = "date"
         elif isinstance(v, DADict):  # This covers checkboxes and multiselect
             type_dict[k] = "checkboxes"
         else:
@@ -95,9 +142,9 @@ def save_input_data(
         # so that each key/value pair is saved in its own column.
         if v in ["checkboxes", "multiselect"]:
             for subkey, subvalue in field_dict[k].elements.items():
-                data_to_save[k + "_" + subkey] = subvalue
+                data_to_save[f"{k}_{subkey}"] = _serialize_input_value(subvalue)
         else:
-            data_to_save[k] = field_dict[k]
+            data_to_save[k] = _serialize_input_value(field_dict[k])
 
     # Save one record per session to JsonStorage datatable.
     filename = get_current_info().get("yaml_filename", None)
