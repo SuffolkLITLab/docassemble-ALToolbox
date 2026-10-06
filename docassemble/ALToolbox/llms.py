@@ -739,7 +739,7 @@ def _is_thinking_model(model: str) -> bool:
     if any(model.startswith(prefix) for prefix in ["o1", "o3"]):
         return True
     gpt = re.match(r"gpt-(\d+)", model)
-    return bool(gpt) and int(gpt.group(1)) >= 5
+    return gpt is not None and int(gpt.group(1)) >= 5
 
 
 def chat_completion(
