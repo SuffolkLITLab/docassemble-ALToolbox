@@ -722,6 +722,26 @@ def _attach_images(
     return attached
 
 
+def _is_thinking_model(model: str) -> bool:
+    """Whether a model only accepts the default temperature.
+
+    OpenAI's reasoning models reject any temperature but the default and take
+    `reasoning_effort` instead. That covers o1, o3, and every GPT model from
+    gpt-5 on (gpt-5, gpt-5.6-luna, gpt-6-luna, ...), so the GPT check reads the
+    major version rather than listing each one.
+
+    Args:
+        model (str): the model name, e.g. "gpt-6-luna".
+
+    Returns:
+        bool: True if the model is a thinking model.
+    """
+    if any(model.startswith(prefix) for prefix in ["o1", "o3"]):
+        return True
+    gpt = re.match(r"gpt-(\d+)", model)
+    return bool(gpt) and int(gpt.group(1)) >= 5
+
+
 def chat_completion(
     system_message: Optional[str] = None,
     user_message: Optional[str] = None,
@@ -898,10 +918,8 @@ def chat_completion(
                 f"OpenAI moderation error: { moderation_response.results[0] }"
             )
 
-    # Thinking models (o1, o3, gpt-5) don't support temperature parameter
-    is_thinking_model = any(
-        model.startswith(prefix) for prefix in ["o1", "o3", "gpt-5"]
-    )
+    # Thinking models (o1, o3, gpt-5 and later) don't support temperature parameter
+    is_thinking_model = _is_thinking_model(model)
 
     # Build completion parameters based on model type
     if is_thinking_model:
