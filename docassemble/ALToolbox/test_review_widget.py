@@ -33,19 +33,35 @@ class TestReviewWidget(unittest.TestCase):
             self.assertEqual(tag, "button")
             self.assertEqual(attrs["type"], "button")
             self.assertNotIn("href", attrs)
-            self.assertEqual(attrs["onclick"], f'altoolbox_thumbs_{control}_send("{action}", false)')
+            self.assertEqual(
+                attrs["onclick"], f'altoolbox_thumbs_{control}_send("{action}", false)'
+            )
             self.assertIn("btn-info", attrs["class"])
 
     def test_handlers_keep_the_optional_review_stage_and_escape_actions(self):
         action = 'feedback["helpful"]'
-        controls = self.controls(up_action=action, down_action="unhelpful", review_action="review")
-        self.assertEqual(controls["al-thumbs-widget-up"][1]["onclick"],
-                         f"altoolbox_thumbs_up_send({json.dumps(action)}, true)")
-        self.assertEqual(controls["al-thumbs-widget-down"][1]["onclick"],
-                         'altoolbox_thumbs_down_send("unhelpful", true)')
+        controls = self.controls(
+            up_action=action, down_action="unhelpful", review_action="review"
+        )
+        self.assertEqual(
+            controls["al-thumbs-widget-up"][1]["onclick"],
+            f"altoolbox_thumbs_up_send({json.dumps(action)}, true)",
+        )
+        self.assertEqual(
+            controls["al-thumbs-widget-down"][1]["onclick"],
+            'altoolbox_thumbs_down_send("unhelpful", true)',
+        )
 
-    @patch("docassemble.ALToolbox.misc.word", side_effect=lambda text: f'Traducido "{text}"')
+    @patch(
+        "docassemble.ALToolbox.misc.word",
+        side_effect=lambda text: f'Traducido "{text}"',
+    )
     def test_accessible_labels_remain_translated(self, mock_word):
         controls = self.controls(up_action="helpful", down_action="unhelpful")
-        self.assertEqual(controls["al-thumbs-widget-up"][1]["aria-label"], 'Traducido "Thumbs up"')
-        self.assertEqual(controls["al-thumbs-widget-down"][1]["aria-label"], 'Traducido "Thumbs down"')
+        self.assertEqual(
+            controls["al-thumbs-widget-up"][1]["aria-label"], 'Traducido "Thumbs up"'
+        )
+        self.assertEqual(
+            controls["al-thumbs-widget-down"][1]["aria-label"],
+            'Traducido "Thumbs down"',
+        )
