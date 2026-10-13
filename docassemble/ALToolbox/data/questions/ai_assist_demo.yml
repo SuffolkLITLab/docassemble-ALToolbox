@@ -1,0 +1,78 @@
+---
+include:
+  - ai_assist.yml
+---
+metadata:
+  title: AI-assisted questions demo
+  short title: AI assist demo
+---
+objects:
+  - incident_ai: AIAssist.using(task="rewrite", source="incident_description")
+  - notice_ai: |
+      AIAssist.using(
+        task="extract",
+        source="notice_text",
+        outputs={
+          "hearing_date": "The date of the hearing",
+          "court_name": "The name of the court",
+          "case_number": "The case or docket number",
+        },
+      )
+---
+mandatory: True
+code: |
+  incident_description
+  incident_narrative
+  notice_text
+  hearing_date
+  all_done
+---
+id: incident description
+question: |
+  Tell us what happened
+fields:
+  - no label: incident_description
+    datatype: area
+---
+id: review incident description
+question: |
+  Review your description
+subquestion: |
+  ${ incident_ai.review_note() }
+fields:
+  - no label: incident_narrative
+    datatype: area
+    default: ${ incident_ai.suggestion() }
+---
+id: notice text
+question: |
+  Paste the text of your court notice
+fields:
+  - no label: notice_text
+    datatype: area
+---
+id: review notice details
+question: |
+  Check the information we found
+subquestion: |
+  ${ notice_ai.review_note() }
+fields:
+  - Hearing date: hearing_date
+    datatype: date
+    default: ${ notice_ai.suggestion("hearing_date") }
+  - Court: court_name
+    default: ${ notice_ai.suggestion("court_name") }
+  - Case number: case_number
+    required: False
+    default: ${ notice_ai.suggestion("case_number") }
+---
+id: all done
+event: all_done
+question: |
+  All done
+subquestion: |
+  **Your description**
+
+  ${ incident_narrative }
+
+  **Hearing:** ${ court_name }, ${ hearing_date }
