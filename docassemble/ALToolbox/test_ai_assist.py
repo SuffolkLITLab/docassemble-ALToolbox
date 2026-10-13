@@ -320,6 +320,49 @@ class TestGoal(AIAssistTestCase):
             self.assertEqual(assist.suggestion(), "it happened")
         self.assertEqual(assist.status, "error")
 
+    def test_a_failure_keeps_the_replies_and_retry_tries_again(self):
+        assist = self.goal()
+        reply = _Reply("On Monday")
+        reply.question = "When?"
+        assist.followups.append(reply)
+        followups = type(assist.followups)
+        with patch.object(followups, "gather", return_value=True):
+            assist.followups.ai_failed = True
+            self.assertEqual(assist.suggestion(), "it happened\n\nWhen?\nOn Monday")
+            self.assertEqual(assist.status, "error")
+            assist.retry()
+            self.assertFalse(hasattr(assist.followups, "ai_failed"))
+            self.assertEqual(len(assist.followups), 1)  # the reply is kept
+            with patch.object(
+                followups, "synthesize_draft_response", return_value="Monday."
+            ):
+                self.assertEqual(assist.suggestion(), "Monday.")
+
+    def test_changed_goal_settings_start_the_follow_ups_over(self):
+        assist = self.goal()
+        followups = type(assist.followups)
+        asked = []
+
+        def gather(self_list, *args, **kwargs):
+            # Stands in for asking one follow-up question.
+            if not self_list.elements:
+                self_list.append(_Reply(f"reply {len(asked)}"))
+                asked.append(self_list.rubric)
+            return True
+
+        with (
+            patch.object(followups, "gather", gather),
+            patch.object(
+                followups, "synthesize_draft_response", side_effect=["one", "two"]
+            ),
+        ):
+            self.assertEqual(assist.suggestion(), "one")
+            assist.rubric = "Who was there"
+            self.assertEqual(assist.suggestion(), "two")
+        # Asked again, with the new rubric; the old reply is gone.
+        self.assertEqual(asked, ["When", "Who was there"])
+        self.assertEqual([r.text for r in assist.followups.elements], ["reply 1"])
+
     def test_goal_instructions_shape_the_written_answer(self):
         assist = self.goal(instructions="Write in the first person.")
         self.assertEqual(

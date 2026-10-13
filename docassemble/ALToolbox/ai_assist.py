@@ -247,10 +247,38 @@ class AIAssist(DAObject):
         return result
 
     def retry(self) -> None:
-        """Forget the last result, so the next `run()` calls the AI again."""
+        """Forget the last result, so the next `run()` calls the AI again.
+
+        For "goal", a follow-up question that failed is tried again; the
+        answers already given are kept.
+        """
         for name in ("_result", "_fingerprint_of_result", "_status_of_result"):
             if hasattr(self, name):
                 delattr(self, name)
+        followups = getattr(self, "followups", None)
+        if followups is not None and getattr(followups, "ai_failed", False):
+            del followups.ai_failed
+            followups.reset_gathered()
+            if hasattr(followups, "there_is_another"):
+                del followups.there_is_another
+
+    def _goal_settings(self) -> List[Any]:
+        return [
+            self.rubric,
+            self.initial_question,
+            int(self.question_limit),
+            self.model,
+            self.instructions,
+        ]
+
+    def _restart_followups(self) -> None:
+        followups = self.followups
+        followups.clear()
+        followups.reset_gathered()
+        for name in ("there_are_any", "there_is_another", "_satisfied", "ai_failed"):
+            if hasattr(followups, name):
+                delattr(followups, name)
+        self.retry()
 
     def _call(self, text: str) -> Any:
         model = self.model or None
@@ -315,22 +343,22 @@ class AIAssist(DAObject):
     def _run_goal(self) -> Optional[str]:
         followups = self.followups
         source_text = _as_text(self.source_value())
-        if getattr(self, "_goal_source", None) != source_text:
-            # A changed answer starts the follow-up questions over.
-            if getattr(self, "_goal_source", None) is not None:
-                followups.clear()
-                followups.reset_gathered()
-                for name in (
-                    "there_are_any",
-                    "there_is_another",
-                    "_satisfied",
-                    "ai_failed",
-                ):
-                    if hasattr(followups, name):
-                        delattr(followups, name)
-                self.retry()
+        key = [source_text] + self._goal_settings()
+        if getattr(self, "_goal_key", None) != key:
+            # A changed answer or changed settings start the follow-up
+            # questions over, with the current settings.
+            if getattr(self, "_goal_key", None) is not None:
+                self._restart_followups()
             followups.initial_draft = source_text
-            self._goal_source = source_text
+            followups.rubric = (
+                self.rubric or "The response fully answers the question that was asked."
+            )
+            followups.initial_question = self.initial_question or "Tell us more."
+            followups.question_limit = int(self.question_limit)
+            followups.custom_instructions = self.instructions or ""
+            if self.model:
+                followups.model = self.model
+            self._goal_key = key
         try:
             followups.gather()  # Asks each follow-up question in turn.
         except Exception as err:
@@ -397,9 +425,23 @@ class AIAssist(DAObject):
             return result if result in self.choices else ""
         if isinstance(result, str) and result.strip():
             return result.strip()
-        if self.task in ("rewrite", "goal", "translate"):
+        if self.task == "goal":
+            return self._goal_fallback()
+        if self.task in ("rewrite", "translate"):
             return _as_text(self.source_value())
         return ""
+
+    def _goal_fallback(self) -> str:
+        """The person's answer and their replies, when AI couldn't combine them."""
+        parts = [_as_text(self.source_value())]
+        for item in self.followups.elements:
+            question = getattr(item, "question", "")
+            if isinstance(question, dict):
+                question = question.get("question_text", "")
+            reply = _reply_text(item)
+            if reply:
+                parts.append(f"{question}\n{reply}" if question else reply)
+        return "\n\n".join(part for part in parts if part)
 
     def review_note(self) -> str:
         """One sentence for the review screen that says where the values came from."""

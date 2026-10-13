@@ -8,7 +8,16 @@ metadata:
 ---
 objects:
   - incident_ai: AIAssist.using(task="rewrite", source="incident_description")
-  - notice_ai: AIAssist.using(task="extract", source="notice_text", outputs={"hearing_date": "The date of the hearing", "court_name": "The name of the court", "case_number": "The case or docket number"})
+  - notice_ai: |
+      AIAssist.using(
+        task="extract",
+        source="notice_text",
+        outputs={
+          "hearing_date": "The date of the hearing",
+          "court_name": "The name of the court",
+          "case_number": "The case or docket number",
+        },
+      )
 ---
 mandatory: True
 code: |
