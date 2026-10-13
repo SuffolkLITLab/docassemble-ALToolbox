@@ -27,12 +27,14 @@ code: |
   hearing_date
   all_done
 ---
+id: incident description
 question: |
   Tell us what happened
 fields:
   - no label: incident_description
     datatype: area
 ---
+id: review incident description
 question: |
   Review your description
 subquestion: |
@@ -42,12 +44,14 @@ fields:
     datatype: area
     default: ${ incident_ai.suggestion() }
 ---
+id: notice text
 question: |
   Paste the text of your court notice
 fields:
   - no label: notice_text
     datatype: area
 ---
+id: review notice details
 question: |
   Check the information we found
 subquestion: |
@@ -62,6 +66,7 @@ fields:
     required: False
     default: ${ notice_ai.suggestion("case_number") }
 ---
+id: all done
 event: all_done
 question: |
   All done
