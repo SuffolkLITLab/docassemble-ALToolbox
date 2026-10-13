@@ -1,0 +1,33 @@
+---
+# Generic screens for AIAssist. The interview supplies the question that
+# collects the input and the review question; this file asks permission and
+# decides what happens when there is no AI service.
+modules:
+  - .ai_assist
+---
+include:
+  - goal_oriented_question.yml
+---
+generic object: AIAssist
+id: ai assist permission
+question: |
+  Would you like help from AI?
+subquestion: |
+  AI can ${ x.permission_purpose() }.
+
+  ${ x.permission_data() } will be sent to an AI service. AI can
+  make mistakes, so you will be able to check and change the result before
+  you continue.
+field: x.use_ai
+buttons:
+  - Use AI help: True
+  - Continue without AI: False
+---
+# Tried before the question above: skip it when the author turned it off or
+# the server has no AI service.
+generic object: AIAssist
+code: |
+  if not x.ai_available():
+    x.use_ai = False
+  elif not x.ask_permission:
+    x.use_ai = True
