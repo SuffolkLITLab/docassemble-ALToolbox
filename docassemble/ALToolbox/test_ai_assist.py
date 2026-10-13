@@ -180,6 +180,7 @@ class TestStructured(AIAssistTestCase):
             self.assertEqual(assist.suggestion(), "")
         self.assertEqual(call.call_count, 1)
         self.assertEqual(call.call_args.args[1], {"hearing_date": "The hearing date"})
+        self.assertIn("answers below", assist.review_note())
 
     def test_extract_ignores_values_that_are_not_scalars(self):
         assist = self.make(
@@ -219,6 +220,36 @@ class TestStructured(AIAssistTestCase):
             _module().AIAssist("assist", task="run_anything")
 
 
+class TestClassifyInstructions(AIAssistTestCase):
+    def test_instructions_reach_the_classifier(self):
+        assist = self.make(
+            {"story": "s"},
+            task="classify",
+            source="story",
+            choices={"eviction": "Eviction", "repairs": "Repairs"},
+            instructions="Prefer eviction when both fit.",
+            use_ai=True,
+        )
+        with (
+            patch.object(
+                _module().llms, "chat_completion", return_value="eviction"
+            ) as call,
+            patch.object(_module().llms, "classify_text") as plain,
+        ):
+            self.assertEqual(assist.suggestion(), "eviction")
+        plain.assert_not_called()
+        self.assertIn("Prefer eviction", call.call_args.kwargs["system_message"])
+        self.assertEqual(call.call_args.kwargs["user_message"], "s")
+
+
+class _Reply:
+    def __init__(self, text):
+        self.text = text
+
+    def response_as_text(self):
+        return self.text
+
+
 class TestGoal(AIAssistTestCase):
     def test_goal_synthesizes_after_the_follow_ups(self):
         assist = self.make(
@@ -242,6 +273,73 @@ class TestGoal(AIAssistTestCase):
             assist.followups.append(object())
             self.assertEqual(assist.suggestion(), "It happened on Monday.")
         self.assertEqual(assist.followups.initial_draft, "it happened")
+
+    def goal(self, **settings):
+        return self.make(
+            {"story": "it happened"},
+            task="goal",
+            source="story",
+            rubric="When",
+            use_ai=True,
+            **settings,
+        )
+
+    def test_an_edited_follow_up_reply_writes_a_new_answer(self):
+        assist = self.goal()
+        reply = _Reply("Monday")
+        followups = type(assist.followups)
+        with (
+            patch.object(followups, "gather", return_value=True),
+            patch.object(
+                followups,
+                "synthesize_draft_response",
+                side_effect=["Monday.", "Tuesday."],
+            ) as synth,
+        ):
+            assist.followups.append(reply)
+            self.assertEqual(assist.suggestion(), "Monday.")
+            self.assertEqual(assist.suggestion(), "Monday.")
+            reply.text = "Tuesday"
+            self.assertEqual(assist.suggestion(), "Tuesday.")
+        self.assertEqual(synth.call_count, 2)
+
+    def test_a_failed_follow_up_ends_the_questions_not_the_interview(self):
+        assist = self.goal()
+        followups = assist.followups
+        with (
+            patch.object(
+                _module().llms.GoalOrientedQuestionList,
+                "need_more_questions",
+                side_effect=RuntimeError("provider down"),
+            ),
+            patch.object(_module(), "log"),
+        ):
+            self.assertFalse(followups.need_more_questions())
+        self.assertTrue(followups.ai_failed)
+        with patch.object(type(followups), "gather", return_value=True):
+            self.assertEqual(assist.suggestion(), "it happened")
+        self.assertEqual(assist.status, "error")
+
+    def test_goal_instructions_shape_the_written_answer(self):
+        assist = self.goal(instructions="Write in the first person.")
+        self.assertEqual(
+            assist.followups.custom_instructions, "Write in the first person."
+        )
+        assist.followups.initial_question = "What happened?"
+        with (
+            patch.object(
+                _module().llms, "synthesize_user_responses", return_value="I..."
+            ) as synth,
+            patch.object(
+                type(assist.followups), "initial_response_as_text", return_value="it"
+            ),
+        ):
+            assist.followups.append(_Reply("Monday"))
+            assist.followups[0].question = "When?"
+            self.assertEqual(assist.followups.synthesize_draft_response(), "I...")
+        self.assertEqual(
+            synth.call_args.kwargs["custom_instructions"], "Write in the first person."
+        )
 
 
 if __name__ == "__main__":
