@@ -1,4 +1,66 @@
-$(document).on('daPageLoad', function(){
+(function () {
+  function currentLanguage() {
+    return (
+      window.alTranslationsLang ||
+      document.documentElement.getAttribute("lang") ||
+      "en"
+    );
+  }
+
+  function translate(text) {
+    return typeof window.alTranslate === "function"
+      ? window.alTranslate(text)
+      : text;
+  }
+
+  function getUiTranslations() {
+    return {
+      selectedCountryAriaLabel: translate(
+        "Change country, selected ${countryName} (${dialCode})"
+      ),
+      noCountrySelected: translate("Select country"),
+      countryListAriaLabel: translate("List of countries"),
+      searchPlaceholder: translate("Search"),
+      clearSearchAriaLabel: translate("Clear search"),
+      zeroSearchResults: translate("No results found"),
+      oneSearchResult: translate("1 result found"),
+      multipleSearchResults: translate("${count} results found"),
+    };
+  }
+
+  function getI18n() {
+    var translations = getUiTranslations();
+    if (
+      typeof Intl === "undefined" ||
+      typeof Intl.DisplayNames !== "function" ||
+      !window.intlTelInput.getCountryData
+    ) {
+      return translations;
+    }
+
+    try {
+      var regionNames = new Intl.DisplayNames(
+        [currentLanguage().replace(/_/g, "-")],
+        { type: "region" }
+      );
+      window.intlTelInput.getCountryData().forEach(function (country) {
+        try {
+          var name = regionNames.of(country.iso2.toUpperCase());
+          if (name) {
+            translations[country.iso2] = name;
+          }
+        } catch (error) {
+          // A private-use or otherwise unknown country code can be skipped.
+        }
+      });
+    } catch (error) {
+      // If the browser has no country names for this locale, keep the
+      // translated interface and let intl-tel-input use its English names.
+    }
+    return translations;
+  }
+
+  function setupPhoneInputs() {
   /** When the page first loads, gets the value from any `.al_international_phone` input
   *    field, transforms it, puts the transformed value back into the input
   *    field, and adds a dropdown from which to choose a country. It
@@ -30,20 +92,26 @@ $(document).on('daPageLoad', function(){
   *    1. https://github.com/google/libphonenumber/blob/master/FAQ.md
   */
   
-  // Loop through all the .al_international_phone input fields on the current screen
-  let phoneNodes = document.querySelectorAll( '.al_international_phone' );  // Class given by the CustomDataType
-  for ( var node of phoneNodes ) {
-    var telObj = window.intlTelInput( node, {
+    // Loop through all the .al_international_phone input fields on the current screen
+    let phoneNodes = document.querySelectorAll( '.al_international_phone' );  // Class given by the CustomDataType
+    for ( var node of phoneNodes ) {
+      if (node._alToolboxPhoneInstance) {
+        node._alToolboxPhoneInstance.destroy();
+      }
+
+      var telObj = window.intlTelInput( node, {
       // The default country without any input into the plugin is 'us'
       // Once the user puts in the phone number of another country, though,
       // it will remember that country
       initialCountry: 'us',
+      i18n: getI18n(),
       loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/js/utils.js"),
       autoPlaceholder: "off",
       formatAsYouType: false,
       // Avoid default of MOBILE (https://github.com/jackocnr/intl-tel-input?tab=readme-ov-file#:~:text=validationNumberTypes,-Type%3A%20String)
       validationNumberTypes: null,
-    });
+      });
+      node._alToolboxPhoneInstance = telObj;
     
     // If the user already entered a number and comes back to the page,
     // docassemble puts the previously saved value into the input field.
@@ -52,7 +120,10 @@ $(document).on('daPageLoad', function(){
     // can see it if you go forward and back three times on our demo screens.
     
     // See https://www.npmjs.com/package/intl-tel-input#recommended-usage about the full international format.
-    $(node).val(telObj.getNumber());
-  };
-  
-}); 
+      $(node).val(telObj.getNumber());
+    };
+  }
+
+  $(document).on('daPageLoad', setupPhoneInputs);
+  window.addEventListener("alTranslationsLoaded", setupPhoneInputs);
+})();

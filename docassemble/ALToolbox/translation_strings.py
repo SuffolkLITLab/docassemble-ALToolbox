@@ -33,10 +33,19 @@ from docassemble.base.util import log
 
 __all__ = ["add_translations", "translate", "translation_catalog"]
 
-# Every string ALToolbox's own JavaScript passes to `_()`. Nothing reads this at
-# runtime; it is the checklist a translator needs, and a test keeps it honest by
-# grepping the shipped .js files.
+# Every string ALToolbox's own JavaScript or custom datatype passes to the
+# translator. Nothing reads this at runtime; it is the checklist a translator
+# needs, and a test keeps it honest by grepping the shipped source files.
 ALTOOLBOX_JS_STRINGS = [
+    "Change country, selected ${countryName} (${dialCode})",
+    "Select country",
+    "List of countries",
+    "Search",
+    "Clear search",
+    "No results found",
+    "1 result found",
+    "${count} results found",
+    'This phone number doesn\'t look right. Note that a non-US number needs a "+" before the number.',
     "You have entered %d character.",
     "You have entered %d characters.",
 ]
