@@ -767,14 +767,18 @@ def chat_completion(
     Args:
         system_message (str): The role the chat engine should play
         user_message (str): The message (data) from the user
-        openai_client (Optional[OpenAI]): An OpenAI client object, optional. If omitted, will fall back to creating a new OpenAI client with the API key provided as an environment variable
-        openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided, a new OpenAI client will be created.
+        openai_client (Optional[OpenAI]): An OpenAI client object, optional. When supplied,
+            its endpoint and credentials take precedence over openai_api, openai_base_url,
+            and configuration. If omitted, select or construct a client from those settings.
+        openai_api (Optional[str]): the API key for an OpenAI client, optional. If provided
+            without openai_client, a new OpenAI client will be created.
         temperature (float): The temperature to use for the GPT API
         json_mode (bool): Whether to use JSON mode for the GPT API. Requires the word `json` in the system message, but will add if you omit it.
         model (str): The model to use for the GPT API. If not provided, uses the configured default model or the first available small model.
         messages (Optional[List[Dict[str, str]]]): A list of messages to send to the chat engine. If provided, system_message and user_message will be ignored.
         skip_moderation (bool): Whether to skip the OpenAI moderation step, which may save seconds but risks banning your account. Only enable when you have full control over the inputs.
-        openai_base_url (Optional[str]): The base URL for the OpenAI API. Defaults to value provided in the configuration or "https://api.openai.com/v1/".
+        openai_base_url (Optional[str]): The base URL for the OpenAI API when no client is
+            supplied. Defaults to configuration or "https://api.openai.com/v1/".
         max_output_tokens (Optional[int]): The maximum number of tokens to return from the API. Defaults to 16380.
         max_input_tokens (Optional[int]): The maximum number of tokens to send to the API. Defaults to 128000.
         reasoning_effort (Optional[Literal["minimal", "low", "medium", "high"]]) = None: The reasoning effort to use for thinking models. Defaults to value provided in the configuration or "low".
@@ -813,7 +817,9 @@ def chat_completion(
     if not reasoning_effort:
         reasoning_effort = get_config("open ai", {}).get("reasoning effort") or "low"
 
-    if not openai_base_url:
+    if openai_client is not None:
+        openai_base_url = str(openai_client.base_url)
+    elif not openai_base_url:
         openai_base_url = (
             get_config("open ai", {}).get("base url")
             or get_config("openai base url")
@@ -844,10 +850,7 @@ def chat_completion(
         # Only the message the images belong to changes shape, and only here.
         messages = _attach_images(list(messages), images, image_detail)
 
-    if openai_base_url:
-        openai_client = None  # Always override client in this circumstance
-
-    if not openai_client:
+    if openai_client is None:
         if openai_api:
             openai_base_url = openai_base_url or "https://api.openai.com/v1/"
             openai_client = OpenAI(api_key=openai_api, base_url=openai_base_url)
@@ -866,7 +869,7 @@ def chat_completion(
             else:
                 openai_client = client
 
-    if not openai_client:
+    if openai_client is None:
         raise Exception(
             "You need to pass an OpenAI client or API key to use this function, or the API key needs to be set in the environment or Docassemble configuration. Try adding a new section in your global config that looks like this:\n\nopen ai:\n    key: sk-..."
         )
