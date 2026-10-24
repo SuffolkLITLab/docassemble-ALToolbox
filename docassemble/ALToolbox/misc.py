@@ -48,6 +48,7 @@ __all__ = [
     "thousands",
     "true_values_with_other",
     "yes_no_unknown",
+    "yesnomaybe",
     "format_date_if_defined",
 ]
 
@@ -320,6 +321,42 @@ def yes_no_unknown(
         return unknown
     else:
         return placeholder
+
+
+def yesnomaybe(answer: Optional[bool]) -> str:
+    """
+    Format a yesnomaybe answer using translated labels.
+
+    Args:
+        answer (Optional[bool]): True for yes, False for no, or None for unknown.
+
+    Returns:
+        str: Translated "Yes", "No", or "I don't know".
+
+    Example:
+    With `users[0].has_income = None` and the interview language set to English:
+
+    **Input (Mako)**
+
+    ```mako
+    ${ yesnomaybe(users[0].has_income) }
+    ```
+
+    **Input (Jinja2)**
+
+    ```jinja2
+    {{ yesnomaybe(users[0].has_income) }}
+    ```
+
+    **Output**
+
+    ```text
+    I don't know
+    ```
+    """
+    if answer is None:
+        return word("I don't know")
+    return word("Yes") if answer else word("No")
 
 
 def number_to_letter(n: Optional[int]) -> str:

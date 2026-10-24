@@ -2,7 +2,8 @@
 
 import unittest
 from unittest.mock import patch
-from .misc import button_array, ButtonDict, true_values_with_other, fa_icon
+from . import misc
+from .misc import button_array, ButtonDict, true_values_with_other, fa_icon, yesnomaybe
 import defusedxml.ElementTree as ET
 
 
@@ -78,6 +79,20 @@ class TestButtonArray(unittest.TestCase):
         self.assertTrue(
             fa_icon("question-circle", color=None, size=None).startswith(":")
         )
+
+
+class TestYesNoMaybe(unittest.TestCase):
+    def test_formats_each_answer(self):
+        for answer, expected in [(True, "Yes"), (False, "No"), (None, "I don't know")]:
+            with self.subTest(answer=answer):
+                self.assertEqual(yesnomaybe(answer), expected)
+
+    @patch.object(misc, "word", side_effect=lambda text: "translated " + text)
+    def test_translates_all_labels(self, translate):
+        for answer, expected in [(True, "Yes"), (False, "No"), (None, "I don't know")]:
+            with self.subTest(answer=answer):
+                self.assertEqual(yesnomaybe(answer), "translated " + expected)
+                translate.assert_called_with(expected)
 
 
 if __name__ == "__main__":
