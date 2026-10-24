@@ -20,7 +20,7 @@ js_text = """\
 /*
 * Notes to keep around:
 * - Rule names must avoid dashes and underscores because of plugin and da limitations.
-* - Avoid a min date default for birthdays. Too hard to predict developer needs, like great-grandmother's birthday. Document that developers need to set a min value if they want one.
+* - The year spinbutton starts at 1600 by default. Use alMin to override the minimum year for a field.
 * - Cannot use regular `min`/`max` attributes. We can get that the rules exist, but we can't get their messages.
 * - Notes on js date inconsistencies: https://dygraphs.com/date-formats.html
 * 
@@ -178,6 +178,13 @@ function create_date_part({{type, date_id, part_label}}) {{
   // aria-describedby is ok to have, even when the date-part error is
   // not present or is display: none
   var $field = $('<input class="form-control al_field ' + type + ' ' + date_id + '" type="number" min="1" inputmode="numeric">');
+  if (type === 'year') {{
+    let min_attr = $(document.getElementById(date_id)).attr('data-alMin') || '';
+    let min_date = new Date(min_attr.replace(/-/g, '/'));
+    $field.attr('min', isNaN(min_date.getTime()) ? 1600 : min_date.getFullYear());
+  }} else {{
+    $field.attr('max', 31);
+  }}
   $field.attr('id', id);
   $field.attr('name', name);
   // There's only one message element, so all fields are described by it.
@@ -981,6 +988,10 @@ def check_empty_parts(item: str, default_msg="{} is not a valid date") -> Option
 class ThreePartsDate(CustomDataType):
     """
     A custom date input with separate month, day, and year controls.
+
+    An empty year stays blank until entered or incremented. The year spinbutton
+    starts at 1600 by default. Set the field's `alMin` to a date, such as
+    `1800-01-01`, to use that date's year as the minimum instead.
 
     In an interview:
 
