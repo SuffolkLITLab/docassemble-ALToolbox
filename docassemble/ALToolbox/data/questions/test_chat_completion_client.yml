@@ -17,6 +17,7 @@ code: |
   results
   final_screen
 ---
+id: "chat completion client selection"
 question: chat_completion client selection
 subquestion: |
   The mocked cases make no network calls. The live case sends one short
@@ -103,6 +104,7 @@ code: |
     del _live
 ---
 event: final_screen
+id: "client selection results"
 question: |
   % if all_passed:
   All ${ len(results) } cases passed
