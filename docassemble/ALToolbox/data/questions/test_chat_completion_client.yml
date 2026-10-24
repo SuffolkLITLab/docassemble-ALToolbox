@@ -1,0 +1,122 @@
+---
+metadata:
+  title: chat_completion client selection check
+  short title: Client selection
+  comment: |
+    Manual check for issue #368 / PR #375. Each case passes a real OpenAI
+    SDK client whose HTTP transport is mocked, so requests are recorded
+    instead of being sent. The optional live case uses the configured
+    endpoint.
+---
+modules:
+  - .llms
+---
+mandatory: True
+code: |
+  intro_seen
+  results
+  final_screen
+---
+question: chat_completion client selection
+subquestion: |
+  The mocked cases make no network calls. The live case sends one short
+  request to the server's configured `open ai` endpoint.
+fields:
+  - Also run a live call through the module-level client: run_live
+    datatype: yesnoradio
+    default: False
+continue button field: intro_seen
+---
+code: |
+  import json as _json
+  import httpx as _httpx
+  from openai import OpenAI as _OpenAI
+
+  def _mock_client(base_url, log):
+    def handler(request):
+      log.append(str(request.url))
+      if request.url.path.endswith("/moderations"):
+        body = {"id": "modr", "model": "omni-moderation-latest",
+                "results": [{"flagged": False, "categories": {}, "category_scores": {}}]}
+      else:
+        body = {"id": "chat", "object": "chat.completion", "created": 0,
+                "model": "gpt-4o-mini",
+                "choices": [{"index": 0, "finish_reason": "stop",
+                             "message": {"role": "assistant",
+                                         "content": "mock reply from " + request.url.host}}]}
+      return _httpx.Response(200, json=body)
+    return _OpenAI(api_key="test-key", base_url=base_url,
+                   http_client=_httpx.Client(transport=_httpx.MockTransport(handler)))
+
+  def _run(name, expected_reply, expected_urls, client_url, **kwargs):
+    log = []
+    try:
+      reply = chat_completion(
+        system_message="Be brief", user_message="Hello", model="gpt-4o-mini",
+        openai_client=_mock_client(client_url, log), **kwargs)
+    except Exception as err:
+      reply = "ERROR: " + repr(err)
+    passed = reply == expected_reply and log == expected_urls
+    return {"name": name, "passed": passed, "reply": reply,
+            "requests": log, "expected": expected_urls}
+
+  _results = [
+    _run("Supplied client, no base URL argument (the #368 regression)",
+         "mock reply from supplied.test",
+         ["https://supplied.test/v1/chat/completions"],
+         "https://supplied.test/v1/"),
+    _run("Supplied client wins over explicit openai_base_url and openai_api",
+         "mock reply from supplied.test",
+         ["https://supplied.test/v1/chat/completions"],
+         "https://supplied.test/v1/",
+         openai_base_url="https://ignored.test/v1/", openai_api="other-key"),
+    _run("Supplied client at api.openai.com runs moderation first",
+         "mock reply from api.openai.com",
+         ["https://api.openai.com/v1/moderations",
+          "https://api.openai.com/v1/chat/completions"],
+         "https://api.openai.com/v1/", skip_moderation=False),
+    _run("Supplied client at a custom endpoint skips moderation",
+         "mock reply from supplied.test",
+         ["https://supplied.test/v1/chat/completions"],
+         "https://supplied.test/v1/", skip_moderation=False),
+    _run("Ignored openai_base_url does not trigger moderation for a custom client",
+         "mock reply from supplied.test",
+         ["https://supplied.test/v1/chat/completions"],
+         "https://supplied.test/v1/", skip_moderation=False,
+         openai_base_url="https://api.openai.com/v1/"),
+  ]
+
+  if run_live:
+    try:
+      _live = chat_completion(
+        system_message="Reply with the single word: pong", user_message="ping")
+      _results.append({"name": "Live call via module-level client", "passed": bool(_live),
+                       "reply": _live, "requests": [], "expected": []})
+    except Exception as err:
+      _results.append({"name": "Live call via module-level client", "passed": False,
+                       "reply": "ERROR: " + repr(err), "requests": [], "expected": []})
+
+  results = _json.loads(_json.dumps(_results))
+  all_passed = all(r["passed"] for r in results)
+  del _results, _run, _mock_client, _OpenAI, _httpx, _json
+  if run_live:
+    del _live
+---
+event: final_screen
+question: |
+  % if all_passed:
+  All ${ len(results) } cases passed
+  % else:
+  ${ len([r for r in results if not r["passed"]]) } of ${ len(results) } cases failed
+  % endif
+subquestion: |
+  % for r in results:
+  #### ${ "PASS" if r["passed"] else "FAIL" }: ${ r["name"] }
+
+  * Reply: `${ r["reply"] }`
+  % if r["expected"]:
+  * Requests: `${ r["requests"] }`
+  * Expected: `${ r["expected"] }`
+  % endif
+
+  % endfor
