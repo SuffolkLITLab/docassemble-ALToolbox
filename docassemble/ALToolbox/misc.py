@@ -7,6 +7,8 @@ except Exception:  # Fallback for older Python
 
 from base64 import b64encode
 from decimal import Decimal
+from html import escape
+import json
 import docassemble.base.functions
 from docassemble.base.util import (
     action_button_html,
@@ -648,16 +650,16 @@ def review_widget(
       background_response()
     ```
     """
-    js_thumbs_up = f"javascript:altoolbox_thumbs_up_send('{up_action}', {'true' if review_action else 'false'})"
-    js_thumbs_down = f"javascript:altoolbox_thumbs_down_send('{down_action}', {'true' if review_action else 'false'})"
+    js_thumbs_up = f"altoolbox_thumbs_up_send({json.dumps(up_action)}, {'true' if review_action else 'false'})"
+    js_thumbs_down = f"altoolbox_thumbs_down_send({json.dumps(down_action)}, {'true' if review_action else 'false'})"
     widget = f"""
 <div class="card al-review-widget-container" style="width: 20rem;">
   <div class="card-body">
     <p class="al-thumbs-widget">{word(thumbs_display)}</p>
-    <a href="{js_thumbs_up}" id="al-thumbs-widget-up"
-        class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs up')}">{fa_icon('thumbs-up', size='md')}</a>
-    <a href="{js_thumbs_down}" id="al-thumbs-widget-down"
-        class="btn btn-md btn-info al-thumbs-widget" aria-label="{word('Thumbs down')}">{fa_icon('thumbs-down', size='md')}</a>
+    <button type="button" onclick="{escape(js_thumbs_up, quote=True)}" id="al-thumbs-widget-up"
+        class="btn btn-md btn-info al-thumbs-widget" aria-label="{escape(word('Thumbs up'), quote=True)}">{fa_icon('thumbs-up', size='md')}</button>
+    <button type="button" onclick="{escape(js_thumbs_down, quote=True)}" id="al-thumbs-widget-down"
+        class="btn btn-md btn-info al-thumbs-widget" aria-label="{escape(word('Thumbs down'), quote=True)}">{fa_icon('thumbs-down', size='md')}</button>
     """
     if review_action:
         review_area_id = review_action + "_area_id"
