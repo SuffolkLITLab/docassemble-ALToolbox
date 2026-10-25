@@ -143,18 +143,21 @@ always_reserved_names = set(
 
 DEFAULT_MODEL_SETS: Dict[str, List[List[str]]] = {
     "small": [
+        ["gpt-5.6-luna"],
         ["gpt-5-nano", "gpt-4.1-nano", "gpt-4o-mini"],
         ["o4-mini", "o3-mini", "gpt-4o-mini"],
         ["claude-3-5-haiku", "claude-3-haiku"],
         ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
     ],
     "medium": [
+        ["gpt-5.6-terra"],
         ["gpt-5-mini", "gpt-4.1-mini", "gpt-4o"],
         ["o3", "gpt-4o"],
         ["claude-3-7-sonnet", "claude-3-5-sonnet"],
         ["gemini-2.5-flash"],
     ],
     "large": [
+        ["gpt-5.6-sol"],
         ["gpt-5", "gpt-4.1", "gpt-4o"],
         ["o1", "o1-preview", "gpt-4o"],
         ["claude-3-7-sonnet", "claude-3-opus"],
@@ -162,7 +165,22 @@ DEFAULT_MODEL_SETS: Dict[str, List[List[str]]] = {
     ],
 }
 
-MODEL_TYPE_FALLBACKS = {"small": "gpt-5-nano", "medium": "gpt-5-mini", "large": "gpt-5"}
+MODEL_TYPE_FALLBACKS = {
+    "small": "gpt-5-nano",
+    "medium": "gpt-5-mini",
+    "large": "gpt-5",
+}
+
+DEFAULT_SMALL_MODEL_KEYWORDS = [
+    "luna",
+    "nano",
+    "mini",
+    "small",
+    "lite",
+    "haiku",
+    "turbo",
+    "fast",
+]
 
 MODEL_FAMILY_PATTERNS: Dict[str, List[str]] = {
     # Provider-first grouping so users can reason across mixed endpoints.
@@ -416,17 +434,28 @@ def get_first_small_model(
     """
     Get the first available small/lite model from an OpenAI-compatible endpoint.
 
-    Queries the models endpoint and returns the first model whose name contains
-    any of the provided keywords. This is useful for finding cost-effective models
-    for tasks that don't require full capability.
-
-    Common keywords for small models: "nano", "mini", "small", "lite", "haiku", "turbo", "fast"
+    Queries the models endpoint and returns the first matching model in endpoint
+    order. Built-in keywords match complete separator-delimited segments, so
+    "mini" does not match "gemini" and "luna" does not match "lunaris". With
+    built-in keywords, terra and sol models are excluded even when their names
+    contain "fast" or "turbo". Custom keyword lists override these exclusions.
 
     Args:
         openai_client (Optional[OpenAI]): An OpenAI client object. If None, uses the global client.
-        keywords (Optional[List[str]]): Keywords to filter model names. If None (recommended),
-            defaults to ["nano", "mini", "small", "lite", "haiku", "turbo", "fast"].
-            Matching is case-insensitive.
+        keywords (Optional[List[str]]): Keywords to filter model names. If None,
+            uses the "open ai" configuration's "small model keywords" list, then
+            defaults to luna, nano, mini, small, lite, haiku, turbo, and fast.
+            An explicit list overrides configuration. An empty argument or config
+            list disables matches. Matching is case-insensitive. Custom keywords
+            retain legacy substring matching, except luna/terra/sol, which always
+            match complete segments.
+
+    For example, teach a deployment an additional small-model name:
+
+    ```yaml
+    open ai:
+        small model keywords: [luna, nano, mini, small, lite, haiku, turbo, fast, tiny]
+    ```
 
     Returns:
         str: The ID of the first matching small model, or None if no models match or no client is available.
@@ -441,13 +470,43 @@ def get_first_small_model(
       small_model = get_first_small_model()
     ```
     """
+    use_default_keywords = False
     if keywords is None:
-        keywords = ["nano", "mini", "small", "lite", "haiku", "turbo", "fast"]
+        open_ai_config = get_config("open ai", {}) or {}
+        configured_keywords = (
+            open_ai_config.get("small model keywords")
+            if isinstance(open_ai_config, dict)
+            else None
+        )
+        if isinstance(configured_keywords, list) and all(
+            isinstance(keyword, str) for keyword in configured_keywords
+        ):
+            keywords = configured_keywords
+        else:
+            keywords = DEFAULT_SMALL_MODEL_KEYWORDS
+            use_default_keywords = True
 
-    keywords_lower = [k.lower() for k in keywords]
-    for model_id in list_available_models(openai_client=openai_client):
-        if any(keyword in model_id.lower() for keyword in keywords_lower):
+    keywords_lower = [k.lower() for k in keywords if k]
+    available_models = list_available_models(openai_client=openai_client)
+    for model_id in available_models:
+        lowered = model_id.lower()
+        segments = re.split(r"[-_.:/]", lowered)
+        if use_default_keywords and {"terra", "sol"}.intersection(segments):
+            continue
+        if any(
+            (
+                keyword in segments
+                if use_default_keywords or keyword in {"luna", "terra", "sol"}
+                else keyword in lowered
+            )
+            for keyword in keywords_lower
+        ):
             return model_id
+    log(
+        "Warning: No small model matched keywords "
+        f"{keywords!r}. Available models ({len(available_models)} total, first 20): "
+        f"{available_models[:20]!r}"
+    )
     return None
 
 
@@ -527,15 +586,10 @@ def get_default_model(
         configured_model_sets + default_model_sets,
         openai_client=openai_client,
         require_full_set=True,
+        fallback_to_first_small_model=normalized_model_type == "small",
     )
     if selected_set:
         return selected_set[0]
-
-    # For "small", keep keyword-based fallback for backward compatibility.
-    if normalized_model_type == "small":
-        small_model = get_first_small_model(openai_client=openai_client)
-        if small_model:
-            return small_model
 
     return MODEL_TYPE_FALLBACKS.get(
         normalized_model_type, MODEL_TYPE_FALLBACKS["small"]
