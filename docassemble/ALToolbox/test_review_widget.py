@@ -53,7 +53,7 @@ class TestReviewWidget(unittest.TestCase):
         )
 
     @patch(
-        "docassemble.ALToolbox.misc.word",
+        f"{review_widget.__module__}.word",
         side_effect=lambda text: f'Traducido "{text}"',
     )
     def test_accessible_labels_remain_translated(self, mock_word):

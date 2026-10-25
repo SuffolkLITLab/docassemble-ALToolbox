@@ -53,6 +53,10 @@ class DefaultsPlugin:
     def get_configuration(self) -> dict:
         return {}
 
+    @hookimpl
+    def get_button_class_prefix(self) -> str:
+        return "btn-"
+
 
 @pytest.fixture(scope="session", autouse=True)
 def docassemble_defaults():
