@@ -83,8 +83,8 @@ fields:
   - Provider: provider
     datatype: radio
     choices:
-      - OpenAI: ${ openai_base_url }
-      - Google Gemini: "https://generativelanguage.googleapis.com/v1beta/openai/"
+      - OpenAI: openai
+      - Google Gemini: gemini
   - Model: model
     datatype: combobox
     code: |
@@ -95,7 +95,7 @@ fields:
       The default is the smallest available model when discovery is supported.
     show if:
       variable: provider
-      is: ${get_config("open ai",{}).get("base url") or get_config("openai base url") or "https://api.openai.com/v1/"}
+      is: openai
   - Model: model
     datatype: combobox
     choices:
@@ -105,7 +105,7 @@ fields:
     default: gemini-2.5-flash
     show if:
       variable: provider
-      is: "https://generativelanguage.googleapis.com/v1beta/openai/"
+      is: gemini
 ---
 code: |
   results = chat_completion(
@@ -115,9 +115,10 @@ code: |
     # The following are optional parameters shown for demonstration purposes
     model=model,
     json_mode=False,
-    openai_base_url=provider,
+    # provider is just a name, the real address is picked here
+    openai_base_url="https://generativelanguage.googleapis.com/v1beta/openai/" if provider == "gemini" else openai_base_url,
     # default comes from config otherwise
-    openai_api = get_config("google gemini api key") if provider == "https://generativelanguage.googleapis.com/v1beta/openai/" else None,
+    openai_api = get_config("google gemini api key") if provider == "gemini" else None,
   )
   process_input = True
 ---
