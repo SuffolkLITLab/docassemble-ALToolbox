@@ -1,3 +1,7 @@
+metadata:
+  required privileges:
+    - admin
+    - developer
 ---
 include:
   - goal_oriented_question_structured.yml

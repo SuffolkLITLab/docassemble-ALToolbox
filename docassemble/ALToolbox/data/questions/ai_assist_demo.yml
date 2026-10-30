@@ -1,3 +1,7 @@
+metadata:
+  required privileges:
+    - admin
+    - developer
 ---
 include:
   - ai_assist.yml

@@ -1,3 +1,7 @@
+metadata:
+  required privileges:
+    - admin
+    - developer
 ---
 include:
   - intake.yml # docassemble.ALToolbox:data/questions/intake.yml
