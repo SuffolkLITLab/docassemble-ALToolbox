@@ -1,3 +1,7 @@
+metadata:
+  required privileges:
+    - admin
+    - developer
 ---
 metadata:
   title: ALToolbox - Save Input Data
