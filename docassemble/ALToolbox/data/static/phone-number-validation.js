@@ -74,7 +74,7 @@ function setupPhoneInputs() {
       // The default country without any input into the plugin is 'us'
       // Once the user puts in the phone number of another country, though,
       // it will remember that country
-      initialCountry: previousCountry || 'us',
+      initialCountry: 'us',
       i18n,
       loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/js/utils.js"),
       autoPlaceholder: "off",
@@ -93,6 +93,8 @@ function setupPhoneInputs() {
     // Only on first setup: intl-tel-input reformats the existing value when it
     // starts, so a rebuild puts back exactly what the user typed.
     if ( previous ) {
+      // Set explicitly: a saved "+" number in the value attribute would win over initialCountry
+      if ( previousCountry ) telObj.setCountry( previousCountry );
       node.value = typed;
       if ( hadFocus ) node.focus();
     } else {
