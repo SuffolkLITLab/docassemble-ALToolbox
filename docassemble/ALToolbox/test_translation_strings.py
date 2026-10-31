@@ -1,5 +1,6 @@
 # do not pre-load
 
+import glob
 import os
 import re
 import unittest
@@ -159,14 +160,26 @@ class TestCatalogResponseBody(unittest.TestCase):
 class TestAltoolboxJsStrings(unittest.TestCase):
     """Keep the translator's checklist in step with the shipped JavaScript."""
 
-    def _static_path(self, name: str) -> str:
-        return os.path.join(os.path.dirname(__file__), "data", "static", name)
+    # The translator itself, and modules that only show it in documentation.
+    NOT_CALLERS = {"al_translate.js", "translation_strings.py"}
 
-    def test_every_string_passed_to_underscore_is_listed(self) -> None:
-        with open(self._static_path("TextCounter.js"), encoding="utf-8") as counter_js:
-            source = counter_js.read()
-        found = set(re.findall(r'\b_\(\s*"((?:[^"\\]|\\.)*)"', source))
-        self.assertTrue(found, "expected TextCounter.js to call _()")
+    def test_every_translated_string_is_listed(self) -> None:
+        package = os.path.dirname(__file__)
+        sources = glob.glob(os.path.join(package, "*.py")) + glob.glob(
+            os.path.join(package, "data", "static", "*.js")
+        )
+        found: set[str] = set()
+        for path in sources:
+            name = os.path.basename(path)
+            if name in self.NOT_CALLERS or name.startswith("test_"):
+                continue
+            with open(path, encoding="utf-8") as source_file:
+                calls = re.findall(
+                    r'\b(?:_|alTranslate)\(\s*(["`])((?:(?!\1)[^\\]|\\.)*)\1',
+                    source_file.read(),
+                )
+            found.update(text for _quote, text in calls)
+        self.assertTrue(found, "expected ALToolbox to call _() or alTranslate()")
         self.assertTrue(
             found.issubset(set(ALTOOLBOX_JS_STRINGS)),
             f"missing from ALTOOLBOX_JS_STRINGS: {found - set(ALTOOLBOX_JS_STRINGS)}",

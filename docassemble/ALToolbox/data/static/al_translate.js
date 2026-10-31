@@ -200,7 +200,12 @@
         writeCache(language, catalog.words);
         // The interview may have moved on to another language while this was
         // in flight; the cache is still worth keeping, the words are not.
-        if (language === activeLanguage) {
+        // A background refresh usually brings back the same words; only
+        // announce real changes so widgets don't redraw under the user.
+        if (
+          language === activeLanguage &&
+          JSON.stringify(catalog.words) !== JSON.stringify(words)
+        ) {
           setWords(catalog.words);
           announce(language);
         }
@@ -212,6 +217,8 @@
 
   function load(language) {
     activeLanguage = language;
+    // Exposed so widgets can format other locale-aware text in the same language.
+    alTranslate.language = language;
     var cached = readCache(language);
     if (cached && cached.words) {
       // Use the cache immediately so that _() works on this paint, then

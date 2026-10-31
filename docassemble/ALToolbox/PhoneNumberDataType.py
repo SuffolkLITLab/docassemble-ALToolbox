@@ -94,8 +94,9 @@ function validatePhoneNumber( value, element, params ) {
     
     // Get the special field that has already been created during page load
     var telLibObj = window.intlTelInput.getInstance( element );
-    // Validate its value when the form is submitted
-    return telLibObj.isValidNumberPrecise();
+    // Validate its value when the form is submitted. There is briefly no
+    // instance while phone-number-validation.js rebuilds the field.
+    return telLibObj ? telLibObj.isValidNumberPrecise() : true;
   }
   // If it's an empty field, then it's valid as far as this is concerned.
   return true;
@@ -116,7 +117,7 @@ function showInvalidInputMessage( params, field ) {
   return (
     $(field).attr('data-alInvalidInputMessage')
     // The default message could be confusing for invalid US phone numbers
-    || `This phone number doesn't look right. Note that a non-US number needs a "+" before the number.`
+    || alTranslate(`This phone number doesn't look right. Note that a non-US number needs a "+" before the number.`)
   )
 };
 

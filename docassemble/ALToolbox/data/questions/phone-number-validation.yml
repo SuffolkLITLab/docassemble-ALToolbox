@@ -9,6 +9,9 @@ comment: |
   - Allow customization of default country
   - Actually control the input so that the user can't type something in the wrong format to begin with.
 ---
+include:
+  - translation_strings.yml
+---
 features:
   javascript:
     - "https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.5/build/js/intlTelInput.min.js"
