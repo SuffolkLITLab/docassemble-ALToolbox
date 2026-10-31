@@ -64,9 +64,11 @@ function setupPhoneInputs() {
   const i18n = phoneInputTranslations();
   for ( var node of phoneNodes ) {
     // Rebuilding an input that is already set up replaces its interface text,
-    // keeping the country the user picked
+    // keeping the country, text and focus the user had
     const previous = window.intlTelInput.getInstance( node );
     const previousCountry = previous?.getSelectedCountryData().iso2;
+    const typed = node.value;
+    const hadFocus = document.activeElement === node;
     previous?.destroy();
     var telObj = window.intlTelInput( node, {
       // The default country without any input into the plugin is 'us'
@@ -88,8 +90,12 @@ function setupPhoneInputs() {
     // can see it if you go forward and back three times on our demo screens.
     
     // See https://www.npmjs.com/package/intl-tel-input#recommended-usage about the full international format.
-    // Only on first setup: a rebuild keeps what the user has typed so far.
-    if ( !previous ) {
+    // Only on first setup: intl-tel-input reformats the existing value when it
+    // starts, so a rebuild puts back exactly what the user typed.
+    if ( previous ) {
+      node.value = typed;
+      if ( hadFocus ) node.focus();
+    } else {
       $(node).val(telObj.getNumber());
     }
   };
