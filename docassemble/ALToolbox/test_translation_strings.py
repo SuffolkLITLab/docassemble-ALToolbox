@@ -168,7 +168,7 @@ class TestAltoolboxJsStrings(unittest.TestCase):
         sources = glob.glob(os.path.join(package, "*.py")) + glob.glob(
             os.path.join(package, "data", "static", "*.js")
         )
-        found = set()
+        found: set[str] = set()
         for path in sources:
             name = os.path.basename(path)
             if name in self.NOT_CALLERS or name.startswith("test_"):
