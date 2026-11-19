@@ -1,3 +1,4 @@
+# do no pre-load
 """Minimal docassemble runtime context for the python-only unit tests.
 
 As of docassemble 1.10, per-request state lives in a contextvar exposed as
